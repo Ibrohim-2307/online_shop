@@ -6,6 +6,53 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+    --color-market-bg: #FAFBF7;
+    --color-market-surface: #FFFFFF;
+    --color-market-text: #172326;
+    --color-market-lime: #C9F46B;
+    --color-market-emerald: #123C2F;
+    --color-market-emerald-hover: #0d2a21;
+    --color-market-peach: #FFD9C8;
+    --color-market-peach-dark: #F5A988;
+    --color-market-muted: #64748B;
+    --color-market-border: #E8ECE4;
+
+    --radius-card: 20px;
+    --radius-btn: 14px;
+}
+
+/* Custom Base Styles */
+body {
+    background-color: var(--color-market-bg, #FAFBF7);
+    color: var(--color-market-text, #172326);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Accessible focus outline */
+:focus-visible {
+    outline: 2px solid var(--color-market-emerald, #123C2F);
+    outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Hide scrollbar for clean horizontal category pills */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

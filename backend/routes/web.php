@@ -4,9 +4,13 @@ use App\Http\Controllers\Web\AuthController as WebAuthController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('web.health');
-});
+use App\Http\Controllers\Web\StorefrontController;
+
+Route::get('/', [StorefrontController::class, 'index'])->name('home');
+Route::get('/catalog', [StorefrontController::class, 'catalog'])->name('catalog');
+Route::get('/products/{slug}', [StorefrontController::class, 'product'])->name('product.show');
+Route::get('/sellers/{slug}', [StorefrontController::class, 'seller'])->name('seller.show');
+Route::get('/wishlist', [StorefrontController::class, 'wishlist'])->name('wishlist');
 
 Route::get('/login', [WebAuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');

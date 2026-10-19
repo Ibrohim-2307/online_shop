@@ -1,13 +1,15 @@
 -- ---------------------------------------------------------
 -- Demo Seed Data Export for Marketplace
--- Conforms to TECHNICAL_SPEC.md
--- Generated on: 2026-10-19 16:38:22
+-- Conforms strictly to TECHNICAL_SPEC.md
+-- Note: Contains ONLY synthetic demo catalog and accounts.
+-- Real users, customer passwords, OTPs and tokens are NEVER exported.
+-- Generated on: 2026-10-19 16:47:40
 -- ---------------------------------------------------------
 
 SET FOREIGN_KEY_CHECKS = 0;
 
 --
--- Dumping data for table `roles`
+-- Dumping synthetic demo data for table `roles`
 --
 INSERT INTO `roles` (`id`, `name`, `label`, `description`, `created_at`, `updated_at`) VALUES ('1', 'customer', 'Chakana xaridor', 'Oddiy ro\'yxatdan o\'tgan xaridor', '2026-10-19 15:49:46', '2026-10-19 15:49:46');
 INSERT INTO `roles` (`id`, `name`, `label`, `description`, `created_at`, `updated_at`) VALUES ('2', 'wholesale_customer', 'Ulgurji xaridor', 'Tadbirkor yoki yuridik shaxs bo\'lgan ulgurji xaridor', '2026-10-19 15:49:46', '2026-10-19 15:49:46');
@@ -20,7 +22,7 @@ INSERT INTO `roles` (`id`, `name`, `label`, `description`, `created_at`, `update
 INSERT INTO `roles` (`id`, `name`, `label`, `description`, `created_at`, `updated_at`) VALUES ('9', 'admin', 'Tizim administratori', 'Platformaning barcha modullari bo\'yicha to\'liq vakolatli rahbar', '2026-10-19 15:49:46', '2026-10-19 15:49:46');
 
 --
--- Dumping data for table `permissions`
+-- Dumping synthetic demo data for table `permissions`
 --
 INSERT INTO `permissions` (`id`, `name`, `label`, `module`, `created_at`, `updated_at`) VALUES ('1', 'view_catalog', 'Katalogni ko\'rish', 'catalog', '2026-10-19 15:49:46', '2026-10-19 15:49:46');
 INSERT INTO `permissions` (`id`, `name`, `label`, `module`, `created_at`, `updated_at`) VALUES ('2', 'place_order', 'Buyurtma berish', 'orders', '2026-10-19 15:49:46', '2026-10-19 15:49:46');
@@ -46,51 +48,51 @@ INSERT INTO `permissions` (`id`, `name`, `label`, `module`, `created_at`, `updat
 INSERT INTO `permissions` (`id`, `name`, `label`, `module`, `created_at`, `updated_at`) VALUES ('22', 'process_payouts', 'To\'lovlar va hisob-kitoblarni boshqarish', 'finance', '2026-10-19 15:49:46', '2026-10-19 15:49:46');
 
 --
--- Dumping data for table `role_permissions`
+-- Dumping synthetic demo data for table `role_permissions`
 --
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('1', '1');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('2', '1');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '1');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('4', '1');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '1');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('1', '2');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('2', '2');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '2');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('1', '3');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('2', '1');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('2', '2');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('2', '3');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '3');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('2', '4');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '4');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '1');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '5');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '5');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '6');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '6');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '7');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('4', '7');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '7');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '8');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('4', '8');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '8');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '9');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '10');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('4', '1');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('4', '7');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('4', '8');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('4', '9');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('5', '9');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '9');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('3', '10');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '10');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('6', '11');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('7', '11');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '11');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('6', '12');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '12');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('6', '13');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '13');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('7', '11');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('7', '14');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '14');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('8', '15');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '15');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('8', '16');
-INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '16');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('8', '17');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '1');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '2');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '3');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '4');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '5');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '6');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '7');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '8');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '9');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '10');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '11');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '12');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '13');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '14');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '15');
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '16');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '17');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '18');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '19');
@@ -99,34 +101,34 @@ INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '21');
 INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '22');
 
 --
--- Dumping data for table `users`
+-- Dumping synthetic demo data for table `users`
 --
 INSERT INTO `users` (`id`, `name`, `email`, `phone`, `email_verified_at`, `password`, `is_active`, `last_login_at`, `remember_token`, `created_at`, `updated_at`) VALUES ('1', 'Akbar Sotuvchi', 'seller@market.uz', '+998901234567', NULL, '$2y$12$GInGLEIp9/kAZBpbJ9mhf.1tpshsiUsEjowKUFsnBFm1xdqkDpFCi', '1', NULL, NULL, '2026-10-19 16:37:09', '2026-10-19 16:37:09');
 
 --
--- Dumping data for table `user_roles`
+-- Dumping synthetic demo data for table `user_roles`
 --
 INSERT INTO `user_roles` (`user_id`, `role_id`, `created_at`, `updated_at`) VALUES ('1', '3', '2026-10-19 16:37:09', '2026-10-19 16:37:09');
 
 --
--- Dumping data for table `sellers`
+-- Dumping synthetic demo data for table `sellers`
 --
 INSERT INTO `sellers` (`id`, `name`, `slug`, `legal_name`, `tax_id`, `status`, `phone`, `email`, `address`, `commission_rate`, `logo_path`, `rating`, `created_at`, `updated_at`) VALUES ('1', 'StroyBaza Ulgurji Savdo', 'stroybaza-ulgurji', 'StroyBaza Grand MCHJ', '308123456', 'active', '+998901234567', 'contact@stroybaza.uz', 'Toshkent sh., Sergeli tumani, Yangi Sergeli ko\'chasi, 24-uy', '5.00', NULL, '4.90', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 
 --
--- Dumping data for table `seller_members`
+-- Dumping synthetic demo data for table `seller_members`
 --
 INSERT INTO `seller_members` (`id`, `seller_id`, `user_id`, `role`, `permissions`, `is_active`, `created_at`, `updated_at`) VALUES ('1', '1', '1', 'owner', '[\"*\"]', '1', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 
 --
--- Dumping data for table `categories`
+-- Dumping synthetic demo data for table `categories`
 --
 INSERT INTO `categories` (`id`, `parent_id`, `name`, `slug`, `description`, `icon`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('1', NULL, 'Qurilish materiallari', 'qurilish-materiallari', NULL, NULL, '1', '1', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 INSERT INTO `categories` (`id`, `parent_id`, `name`, `slug`, `description`, `icon`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('2', NULL, 'Sanoat uskunalari', 'sanoat-uskunalari', NULL, NULL, '2', '1', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 INSERT INTO `categories` (`id`, `parent_id`, `name`, `slug`, `description`, `icon`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('3', NULL, 'Oziq-ovqat va ichimliklar', 'oziq-ovqat-va-ichimliklar', NULL, NULL, '3', '1', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 
 --
--- Dumping data for table `products`
+-- Dumping synthetic demo data for table `products`
 --
 INSERT INTO `products` (`id`, `seller_id`, `category_id`, `name`, `slug`, `description`, `trade_mode`, `unit`, `items_per_box`, `unit_step`, `min_order_quantity`, `status`, `is_active`, `created_at`, `updated_at`) VALUES ('1', '1', '1', 'Qurilish Sementi M-500', 'sement-m500', 'Yuqori sifatli portland sement M-500. Poydevor va monolit quyish uchun mo\'ljallangan.', 'both', 'piece', NULL, '1.000', '1.000', 'approved', '1', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 INSERT INTO `products` (`id`, `seller_id`, `category_id`, `name`, `slug`, `description`, `trade_mode`, `unit`, `items_per_box`, `unit_step`, `min_order_quantity`, `status`, `is_active`, `created_at`, `updated_at`) VALUES ('2', '1', '2', 'Sanoat Dizel Generatori 300 kW', 'sanoat-generator-300kw', 'Avtonom elektr ta\'minoti uchun yuqori quvvatli dizel generator stansiyasi.', 'both', 'piece', NULL, '1.000', '1.000', 'approved', '1', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
@@ -134,7 +136,7 @@ INSERT INTO `products` (`id`, `seller_id`, `category_id`, `name`, `slug`, `descr
 INSERT INTO `products` (`id`, `seller_id`, `category_id`, `name`, `slug`, `description`, `trade_mode`, `unit`, `items_per_box`, `unit_step`, `min_order_quantity`, `status`, `is_active`, `created_at`, `updated_at`) VALUES ('4', '1', '1', 'Po\'lat Armatura A500C 12mm', 'armatura-a500c', 'Issiq prokatlangan po\'lat armatura, davlat standarti GOST 52544.', 'wholesale_only', 'ton', NULL, '0.500', '1.000', 'approved', '1', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
 
 --
--- Dumping data for table `product_variants`
+-- Dumping synthetic demo data for table `product_variants`
 --
 INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `name`, `attributes`, `barcode`, `is_active`, `created_at`, `updated_at`) VALUES ('1', '1', 'CEMENT-M500-BAG', '50 kg qop', '{\"brand\": \"Bekobod Sement\", \"weight\": \"50kg\"}', '4780001234567', '1', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `name`, `attributes`, `barcode`, `is_active`, `created_at`, `updated_at`) VALUES ('2', '2', 'GEN-IND-300M', '300 kW Standart Komplektatsiya', '{\"fuel\": \"Diesel\", \"power\": \"300kW\"}', '4780009876543', '1', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
@@ -142,7 +144,7 @@ INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `name`, `attributes`,
 INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `name`, `attributes`, `barcode`, `is_active`, `created_at`, `updated_at`) VALUES ('4', '4', 'ARM-A500C-12MM-TON', '12mm tonna', '{\"grade\": \"A500C\", \"diameter\": \"12mm\"}', '4780007778899', '1', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
 
 --
--- Dumping data for table `price_tiers`
+-- Dumping synthetic demo data for table `price_tiers`
 --
 INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('1', '1', '1.000', '299.000', '300000', 'UZS', '2026-10-19 16:37:27', '2026-10-19 16:37:53');
 INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('2', '1', '300.000', '999.000', '270000', 'UZS', '2026-10-19 16:37:27', '2026-10-19 16:37:53');
@@ -155,12 +157,12 @@ INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quan
 INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('9', '4', '10.000', NULL, '8900000', 'UZS', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
 
 --
--- Dumping data for table `warehouses`
+-- Dumping synthetic demo data for table `warehouses`
 --
 INSERT INTO `warehouses` (`id`, `seller_id`, `name`, `code`, `address`, `is_active`, `created_at`, `updated_at`) VALUES ('1', '1', 'Asosiy Ombor (Sergeli)', 'WH-SERGELI-01', 'Toshkent sh., Sergeli sanoat zonasi, 14-bino', '1', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
 
 --
--- Dumping data for table `inventory_balances`
+-- Dumping synthetic demo data for table `inventory_balances`
 --
 INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '50000.000', '0.000', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
 INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('2', '1', '2', '50.000', '0.000', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
@@ -168,7 +170,7 @@ INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `q
 INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('4', '1', '4', '350.000', '0.000', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
 
 --
--- Dumping data for table `inventory_movements`
+-- Dumping synthetic demo data for table `inventory_movements`
 --
 INSERT INTO `inventory_movements` (`id`, `warehouse_id`, `product_variant_id`, `type`, `quantity`, `balance_before`, `balance_after`, `reason`, `reference_type`, `reference_id`, `user_id`, `created_at`) VALUES ('1', '1', '1', 'inflow', '50000.000', '0.000', '50000.000', 'Boshlang\'ich ombor kirimi', 'initial_seed', NULL, '1', '2026-10-19 19:37:53');
 INSERT INTO `inventory_movements` (`id`, `warehouse_id`, `product_variant_id`, `type`, `quantity`, `balance_before`, `balance_after`, `reason`, `reference_type`, `reference_id`, `user_id`, `created_at`) VALUES ('2', '1', '2', 'inflow', '50.000', '0.000', '50.000', 'Zavoddan qabul qilingan generatorlar', 'initial_seed', NULL, '1', '2026-10-19 19:37:53');

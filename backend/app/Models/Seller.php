@@ -55,6 +55,16 @@ class Seller extends Model
         return $this->hasMany(SellerDocument::class);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function warehouses(): HasMany
+    {
+        return $this->hasMany(Warehouse::class);
+    }
+
     public function owner(): ?SellerMember
     {
         return $this->members()->where('role', 'owner')->first();

@@ -2,7 +2,7 @@
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
 Sana: 19-oktabr, 2026  
-Joriy holat: **01, 02 va 03-bosqichlar (Katalog, ombor balansi, optom narxlar, all-units pricing va ombor harakatlari auditi) to'liq bajarildi va alohida MySQL test bazasida 40 ta test bilan tasdiqlandi.** 04-bosqichga (Dizayn tizimi va xaridor veb-sayti) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
+Joriy holat: **01, 02, 03 va 04-bosqichlar (Dizayn tizimi, xaridor veb-sayti, optom narx kalkulyatori, to'liq responsiv veb-do'kon va skrinshotlar) to'liq bajarildi va alohida MySQL test bazasida 47 ta test bilan tasdiqlandi.** 05-bosqichga (Savatcha va ishonchli checkout) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 
 ---
 
@@ -35,9 +35,11 @@ Joriy holat: **01, 02 va 03-bosqichlar (Katalog, ombor balansi, optom narxlar, a
 | **Bloklangan Tokenlar** | `EnsureUserIsActive` middleware — Bloklangan foydalanuvchining avval olingan tokeni ham rad etiladi | 403 Forbidden bilan himoyalangan |
 | **Audit Tizimi** | `AuditService` — Muhim hisob, vakolat va do'kon o'zgarishlari loglanadi; parol/tokenlar avtomatik `[REDACTED]` qilinadi | Faol va testlangan |
 | **Manzillar (Addresses)**| `addresses` jadvali, `AddressPolicy` orqali foydalanuvchi manzil daxlsizligi | 403 Forbidden bilan himoyalangan |
+| **Dizayn Tizimi (preview.mp4)** | Laym-yashil (`#C9F46B`), To'q zumrad (`#123C2F`), Oq fon (`#FAFBF7`), Plus Jakarta Sans | Tailwind v4 @theme va Blade |
+| **Xaridor Veb-Sayti** | Bosh sahifa, Katalog, Mahsulot (reaktiv narx kalkulyatori), Sotuvchi do'koni, Sevimlilar | To'liq backend ma'lumotlari bilan |
 | **Xaridor Mobil Ilova** | `apps/customer_flutter` (Flutter 3.47.2, Riverpod, HealthScreen) | Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
 | **Kuryer Mobil Ilova** | `apps/courier_flutter` (Flutter 3.47.2, Riverpod, CourierHealthScreen)| Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
-| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | **42 test o'tdi (270 ta assertion)** |
+| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | **47 test o'tdi (296 ta assertion)** |
 
 ---
 
@@ -47,7 +49,7 @@ Joriy holat: **01, 02 va 03-bosqichlar (Katalog, ombor balansi, optom narxlar, a
 - [x] **01 — Poydevor, ishlaydigan lokal muhit va Android emulyator sinovi:** PHP 8.4 va Composer 2.10.3 izolyatsiyalangan holda o'rnatildi; Laravel 13 backend, `customer_flutter` va `courier_flutter` yaratildi; MySQL ulandi; health check va Request ID middleware tayyorlandi; Android emulyatorida (`emulator-5554`) haqiqiy backend va MySQL health javobi tasdiqlandi. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 - [x] **02 — Baza, foydalanuvchi, xavfsizlik va ruxsatlar:** Baza jadvallari, rollar, sotuvchi xodimlari, multi-tenant izolyatsiyasi, Sanctum auth, bir martalik parolni tiklash, web sessiya va CSRF, Admin MFA, OTP cheklovlari va demo himoyasi, bloklangan tokenlar nazorati, audit log tizimi to'liq yakunlandi (33 test, 201 assertion).
 - [x] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService (float ishlatilmaydi), ombor balansi, rezervatsiya va harakatlar auditi (`inventory_movements`), multi-tenant sotuvchi izolyatsiyasi to'liq yakunlandi va alohida MySQL test bazasida testlandi (42 test, 270 assertion). Tayyor `demo_seed.sql` eksport qilindi.
-- [ ] **04 — Dizayn tizimi va xaridor veb-sayti:** Laym-yashil / to'q sarlavha / oq fon tokenlari, Blade + Livewire komponentlari, katalog, qidiruv, responsive moslashuv.
+- [x] **04 — Dizayn tizimi va xaridor veb-sayti:** `preview.mp4` asosidagi zamonaviy dizayn tizimi, Tailwind v4 tokenlari, Plus Jakarta Sans, Blade layouts va komponentlari, Bosh sahifa, qidiruvli Katalog, reaktiv all-units narx kalkulyatorli Mahsulot sahifasi, Sotuvchi profili, Sevimlilar; responsivlik (1440px, 768px, 390px, 360px) skrinshotlar bilan tasdiqlandi (47 test, 296 assertion).
 - [ ] **05 — Savatcha va ishonchli checkout:** Multi-vendor cart, server quote, race condition zaxira rezervatsiyasi, idempotency key, outbox.
 - [ ] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi:** Payment adapter, demo to'lov oqimi, webhook signature tekshiruvi, immutable ledger, refund & dispute.
 - [ ] **07 — Seller, admin va logistika panellari:** Sotuvchi kabineti, admin boshqaruvi, logistika operatori, RFQ takliflari, ma'lumotlar izolyatsiyasi.
@@ -256,3 +258,67 @@ Barcha testlar `.\infra\artisan.bat test` orqali alohida `online_shop_test` MySQ
   Tests:    42 passed (270 assertions)
   Duration: 19.31s
 ```
+
+---
+
+## 6. 04-Bosqich Amaliy Natijalari (Dizayn Tizimi va Xaridor Veb-Sayti)
+
+### A. Dizayn Tizimi va Tokenlar (`preview.mp4` Asosida):
+- **Ranglar:** Laym-yashil (`#C9F46B`), Chuqur to'q zumrad (`#123C2F`), Yumshoq oq fon (`#FAFBF7`), Qoramtir matn (`#172326`), Shaftoli chegirma urg'usi (`#FFD9C8`).
+- **Tipografiya:** Google Fonts `Plus Jakarta Sans` (400, 500, 600, 700, 800) — SIL Open Font License.
+- **Burchak Radiusi:** Karta radiuslari 20px (`rounded-3xl`), tugmalar 12-14px (`rounded-xl` / `rounded-2xl`).
+- **A11y:** Skip-to-content havola, oflayn rejim detektori, minimal 44x44px bosish zonalari (tap targets), WCAG 2.1 AA kontrast darajasi.
+- **Kompilyatsiya:** Vite 7.0 + Tailwind CSS v4 + Alpine.js 3.14 (`public/build/assets/`).
+
+### B. Foydalanuvchi Sahifalari va Haqiqiy Backend Ulanishi:
+1. **Bosh Sahifa (`/`)**:
+   - Yangi avlod marketplace qahramon banneri, ommabop toifalar ro'yxati, saralangan tovarlar (chakana va optom kartalar), tasdiqlangan sotuvchilar vitrinasi.
+2. **Katalog va Qidiruv (`/catalog`)**:
+   - Qidiruv (`?q=...`), toifalar filtri (`?category=...`), savdo rejimi (`?trade_mode=wholesale_only|retail_only|both`), saralash va sahifalash. Natija topilmaganda chiroyli bo'sh holat (empty state).
+3. **Mahsulot Tafsiloti (`/products/{slug}`)**:
+   - SKU, shtrixkod, brend, og'irlik, variantlar selektori.
+   - **Interaktiv Optom Narx Kalkulyatori (Alpine.js)**: 299 dona va 300 dona chegarasidagi jami summa tejovi vizual ko'rsatiladi (300 dona xarid qilganda 299 donadan arzonroq tushish effekti va 1000 dona chegara).
+   - Haqiqiy ko'p omborli qoldiqlar (`warehouses` va `inventory_balances`) jadvali.
+4. **Sotuvchi Do'koni (`/sellers/{slug}`)**:
+   - Do'kon nomi, INN/STIR, tasdiqlanganlik nishoni, reyting va sotuvchining barcha mahsulotlari.
+5. **Sevimlilar (`/wishlist`)**:
+   - Brauzer `localStorage` asosidagi reaktiv sevimlilar ro'yxati, hisoblagich va bo'sh holat ekrani.
+
+### C. Responsiv Brauzer Sinovlari va Skrinshotlar:
+Google Chrome orqali real backend (`http://127.0.0.1:8000`) sahifalari quyidagi o'lchamlarda skrinshot qilindi va saqlandi:
+- `docs/screenshots/screenshot_desktop_home.png` (1440×900 px — Desktop Home)
+- `docs/screenshots/screenshot_desktop_catalog.png` (1440×900 px — Desktop Catalog)
+- `docs/screenshots/screenshot_desktop_product.png` (1440×900 px — Desktop Product Detail & All-Units Pricing)
+- `docs/screenshots/screenshot_desktop_seller.png` (1440×900 px — Desktop Seller Storefront)
+- `docs/screenshots/screenshot_tablet_catalog.png` (768×1024 px — Tablet Catalog)
+- `docs/screenshots/screenshot_mobile_home.png` (390×844 px — Mobile Home & Sticky Bottom Bar)
+- `docs/screenshots/screenshot_mobile_product.png` (390×844 px — Mobile Product Detail)
+- `docs/screenshots/screenshot_mobile_360.png` (360×780 px — Small Mobile View)
+Barcha ko'rinishlarda gorizontal siljish (horizontal scroll/overflow) 0 ekanligi tekshirildi va tasdiqlandi.
+
+### D. Demo Seed Izolyatsiyasi (`database/exports/demo_seed.sql`):
+- `infra/export_demo_seed.php` eksport skripti faqat sun'iy demo hisoblar (`@market.uz`, `+998901234567`) va namuna tovarlarni eksport qiladi.
+- Real foydalanuvchilar, sessiyalar, shaxsiy access tokenlar, parollar va audit loglar eksport qilinmaydi.
+
+### E. PHPUnit Test Natijalari (01–04 Bosqichlar):
+```text
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true
+
+   PASS  Tests\Feature\AuthAndPermissionTest (15 tests)
+   PASS  Tests\Feature\AuthSecurityHardeningTest (12 tests)
+   PASS  Tests\Feature\CatalogAndPricingTest (9 tests)
+   PASS  Tests\Feature\ExampleTest (1 test)
+   PASS  Tests\Feature\HealthCheckTest (4 tests)
+
+   PASS  Tests\Feature\StorefrontWebTest
+  ✓ home page returns ok and displays real catalog
+  ✓ catalog search and category filtering
+  ✓ product detail page displays all units tiers and warehouse stock
+  ✓ seller profile page displays store info and products
+  ✓ wishlist page returns ok with empty state
+
+  Tests:    47 passed (296 assertions)
+  Duration: 17.52s
+```
+

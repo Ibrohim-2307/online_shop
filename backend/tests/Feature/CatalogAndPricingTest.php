@@ -130,31 +130,95 @@ class CatalogAndPricingTest extends TestCase
         $this->assertEquals('270000', $quote999['unit_price']);
         $this->assertEquals('269730000', $quote999['total_price']);
 
-        // 4. Boundary 1000 units: 1000 * 250,000 = 250,000,000 UZS
+        // 4. Boundary 1000 units: 1000 * 250,000 = 250,000,000 UZS (as specified in TECHNICAL_SPEC.md)
         $quote1000 = $this->pricingService->calculateQuote($variant, 1000);
+        $this->assertEquals('300000', $quote1000['base_unit_price']);
         $this->assertEquals('250000', $quote1000['unit_price']);
         $this->assertEquals('250000000', $quote1000['total_price']);
         $this->assertTrue(bccomp($quote1000['total_price'], $quote999['total_price']) < 0);
 
-        // Also test API endpoint for quote calculation
-        $response = $this->postJson("/api/v1/products/{$variant->id}/quote", ['quantity' => 300]);
-        $response->assertStatus(200)
-            ->assertJsonPath('data.total_price', '81000000')
-            ->assertJsonPath('data.unit_price', '270000');
+        // Also test API endpoint for quote calculation at 300 and 1000 units
+        $response300 = $this->postJson("/api/v1/products/{$variant->id}/quote", ['quantity' => 300]);
+        $response300->assertStatus(200)
+            ->assertJsonPath('data.base_unit_price', '300000')
+            ->assertJsonPath('data.unit_price', '270000')
+            ->assertJsonPath('data.total_price', '81000000');
+
+        $response1000 = $this->postJson("/api/v1/products/{$variant->id}/quote", ['quantity' => 1000]);
+        $response1000->assertStatus(200)
+            ->assertJsonPath('data.base_unit_price', '300000')
+            ->assertJsonPath('data.unit_price', '250000')
+            ->assertJsonPath('data.total_price', '250000000');
     }
 
     /**
-     * Requirement 2: No floating-point math for money calculations.
-     * Prevents binary precision loss on high-value equipment or large order quantities.
+     * Requirement: Seller dynamically configures and adjusts custom price tiers.
+     * Price tiers are not hardcoded; sellers can create, update, and manage their own pricing.
      */
-    public function test_money_calculations_strictly_avoid_float_precision_loss(): void
+    public function test_seller_can_configure_custom_price_tiers_dynamically(): void
     {
-        [$seller, $user] = $this->createSeller('Uskunalar Zavodi', 'uskunalar');
+        [$seller, $user] = $this->createSeller('TemirSavdo', 'temir-savdo');
 
         $product = Product::create([
             'seller_id' => $seller->id,
-            'name' => 'Sanoat Liniyasi Generator',
-            'slug' => 'sanoat-liniyasi',
+            'name' => 'Armatura A500C',
+            'slug' => 'armatura-a500c',
+            'trade_mode' => 'both',
+            'unit' => 'piece',
+            'status' => 'approved',
+            'is_active' => true,
+        ]);
+
+        $variant = ProductVariant::create([
+            'product_id' => $product->id,
+            'sku' => 'ARM-12MM-12M',
+            'name' => '12mm 12m sterjen',
+        ]);
+
+        // Seller configures custom tiers via Seller API
+        $setTiersResp = $this->actingAs($user)->postJson("/api/v1/seller/variants/{$variant->id}/price-tiers", [
+            'tiers' => [
+                ['min_quantity' => 1, 'max_quantity' => 299, 'unit_price' => 300000, 'currency' => 'UZS'],
+                ['min_quantity' => 300, 'max_quantity' => 999, 'unit_price' => 270000, 'currency' => 'UZS'],
+                ['min_quantity' => 1000, 'max_quantity' => null, 'unit_price' => 250000, 'currency' => 'UZS'],
+            ],
+        ]);
+        $setTiersResp->assertStatus(200);
+
+        // Quote at 1000 units reflects seller's custom 250,000 UZS tier
+        $quoteInitial = $this->pricingService->calculateQuote($variant->fresh(), 1000);
+        $this->assertEquals('250000', $quoteInitial['unit_price']);
+        $this->assertEquals('250000000', $quoteInitial['total_price']);
+
+        // Seller adjusts the 1000+ tier dynamically (e.g. promo discount to 245,000 UZS)
+        $updateTiersResp = $this->actingAs($user)->postJson("/api/v1/seller/variants/{$variant->id}/price-tiers", [
+            'tiers' => [
+                ['min_quantity' => 1, 'max_quantity' => 299, 'unit_price' => 300000, 'currency' => 'UZS'],
+                ['min_quantity' => 300, 'max_quantity' => 999, 'unit_price' => 270000, 'currency' => 'UZS'],
+                ['min_quantity' => 1000, 'max_quantity' => null, 'unit_price' => 245000, 'currency' => 'UZS'],
+            ],
+        ]);
+        $updateTiersResp->assertStatus(200);
+
+        // Quote immediately reflects updated seller configuration: 1000 * 245,000 = 245,000,000 UZS
+        $quoteUpdated = $this->pricingService->calculateQuote($variant->fresh(), 1000);
+        $this->assertEquals('245000', $quoteUpdated['unit_price']);
+        $this->assertEquals('245000000', $quoteUpdated['total_price']);
+    }
+
+    /**
+     * Requirement 2A: Large number calculation without discount strictly avoids float precision loss.
+     * 100,000 units @ 300,000,000 UZS = 30,000,000,000,000 UZS (30 trillion UZS).
+     * In native PHP float, 100000 * 300000000 becomes 3.0E+13. BCMath keeps full precision string.
+     */
+    public function test_large_number_calculation_without_discount_strictly_avoids_float(): void
+    {
+        [$seller, $user] = $this->createSeller('Uskunalar Zavodi A', 'uskunalar-a');
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'name' => 'Sanoat Turbinasi',
+            'slug' => 'sanoat-turbinasi',
             'trade_mode' => 'both',
             'unit' => 'piece',
             'unit_step' => 1.000,
@@ -165,11 +229,64 @@ class CatalogAndPricingTest extends TestCase
 
         $variant = ProductVariant::create([
             'product_id' => $product->id,
-            'sku' => 'GEN-IND-300M',
+            'sku' => 'TURB-IND-300M',
+            'name' => 'Gidroturbina 300M',
+        ]);
+
+        // Base price only (no tiered discount): 300,000,000 UZS for any volume
+        PriceTier::create([
+            'product_variant_id' => $variant->id,
+            'min_quantity' => 1.000,
+            'max_quantity' => null,
+            'unit_price' => 300000000,
+            'currency' => 'UZS',
+        ]);
+
+        $quote = $this->pricingService->calculateQuote($variant, 100000);
+
+        $this->assertIsString($quote['base_unit_price']);
+        $this->assertEquals('300000000', $quote['base_unit_price']); // Boshlang'ich narx
+        $this->assertEquals('300000000', $quote['unit_price']);      // Qo'llangan narx (chegirmasiz)
+
+        // 100,000 * 300,000,000 = 30,000,000,000,000 UZS (30 trillion UZS)
+        $expectedTotal = '30000000000000';
+        $this->assertIsString($quote['total_price']);
+        $this->assertEquals($expectedTotal, $quote['total_price']);
+    }
+
+    /**
+     * Requirement 2B: Large number calculation with tiered discount strictly avoids float precision loss.
+     * Example B from TECHNICAL_SPEC.md:
+     * Base retail price: 300,000,000 UZS (1-9 units)
+     * Wholesale tier price: 270,000,000 UZS (10+ units)
+     * 100,000 units:
+     * - Boshlang'ich (chakana) narx: 300,000,000 UZS
+     * - Qo'llangan (ulgurji) narx: 270,000,000 UZS
+     * - Yakuniy summa: 100,000 * 270,000,000 = 27,000,000,000,000 UZS (27 trillion UZS).
+     */
+    public function test_large_number_calculation_with_tiered_discount_strictly_avoids_float(): void
+    {
+        [$seller, $user] = $this->createSeller('Uskunalar Zavodi B', 'uskunalar-b');
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'name' => 'Sanoat Generatori Liniyasi',
+            'slug' => 'sanoat-generator-b',
+            'trade_mode' => 'both',
+            'unit' => 'piece',
+            'unit_step' => 1.000,
+            'min_order_quantity' => 1.000,
+            'status' => 'approved',
+            'is_active' => true,
+        ]);
+
+        $variant = ProductVariant::create([
+            'product_id' => $product->id,
+            'sku' => 'GEN-IND-300M-TIERED',
             'name' => '300 kW Generator',
         ]);
 
-        // Retail: 300,000,000 UZS per unit; Wholesale: 270,000,000 UZS per unit
+        // Retail: 300,000,000 UZS per unit (1 - 9 units)
         PriceTier::create([
             'product_variant_id' => $variant->id,
             'min_quantity' => 1.000,
@@ -178,6 +295,7 @@ class CatalogAndPricingTest extends TestCase
             'currency' => 'UZS',
         ]);
 
+        // Wholesale tier: 270,000,000 UZS per unit (10+ units)
         PriceTier::create([
             'product_variant_id' => $variant->id,
             'min_quantity' => 10.000,
@@ -186,12 +304,12 @@ class CatalogAndPricingTest extends TestCase
             'currency' => 'UZS',
         ]);
 
-        // High volume calculation: 100,000 units @ 270,000,000 UZS = 27,000,000,000,000 UZS (27 trillion)
-        // In native PHP float, 100000 * 270000000 becomes 2.7E+13 with precision degradation.
         $quote = $this->pricingService->calculateQuote($variant, 100000);
 
-        $expectedTotal = '27000000000000';
-        $this->assertIsString($quote['total_price']);
+        // Explicitly assert initial price, applied price, and final total
+        $this->assertEquals('300000000', $quote['base_unit_price']); // Boshlang'ich (chakana) narx
+        $this->assertEquals('270000000', $quote['unit_price']);      // Qo'llangan (ulgurji) pog'ona narxi
+        $expectedTotal = '27000000000000';                           // Yakuniy summa (27 trillion UZS)
         $this->assertEquals($expectedTotal, $quote['total_price']);
     }
 

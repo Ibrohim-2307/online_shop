@@ -109,7 +109,9 @@ class PricingService
     public function matchTier(ProductVariant $variant, string|int|float $quantity): ?PriceTier
     {
         $qtyStr = (string) $quantity;
-        $tiers = $variant->priceTiers()->orderBy('min_quantity')->get();
+        $tiers = $variant->relationLoaded('priceTiers')
+            ? $variant->priceTiers->sortBy('min_quantity')
+            : $variant->priceTiers()->orderBy('min_quantity')->get();
 
         foreach ($tiers as $tier) {
             $minMatch = bccomp($qtyStr, (string) $tier->min_quantity, 3) >= 0;
@@ -132,6 +134,7 @@ class PricingService
      *   sku: string,
      *   quantity: string,
      *   unit: string,
+     *   base_unit_price: string,
      *   unit_price: string,
      *   total_price: string,
      *   currency: string,
@@ -155,6 +158,12 @@ class PricingService
             throw new InvalidArgumentException("Ushbu miqdor ({$quantity}) uchun narx pog'onasi belgilanmagan");
         }
 
+        $tiers = $variant->relationLoaded('priceTiers')
+            ? $variant->priceTiers->sortBy('min_quantity')
+            : $variant->priceTiers()->orderBy('min_quantity')->get();
+        $baseTier = $tiers->first();
+        $baseUnitPrice = $baseTier ? (string) $baseTier->unit_price : (string) $tier->unit_price;
+
         // All-units calculation: total_price = quantity * unit_price (Zero floating-point arithmetic!)
         $totalPrice = bcmul((string) $quantity, (string) $tier->unit_price, 0);
 
@@ -163,6 +172,7 @@ class PricingService
             'sku' => $variant->sku,
             'quantity' => (string) $quantity,
             'unit' => $product->unit,
+            'base_unit_price' => $baseUnitPrice,
             'unit_price' => (string) $tier->unit_price,
             'total_price' => $totalPrice,
             'currency' => $tier->currency,

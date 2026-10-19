@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Seller;
 use App\Models\SellerMember;
 use App\Models\User;
+use App\Services\Audit\AuditService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class SellerController extends Controller
 {
     /**
-     * Resolve the target seller and verify tenant access.
+     * Resolve the target seller and verify tenant access and store active status.
      */
     protected function resolveSeller(Request $request, ?int $sellerId = null): Seller
     {
@@ -32,14 +33,17 @@ class SellerController extends Controller
             if ($user->cannot('view', $seller)) {
                 throw new AccessDeniedHttpException("Siz boshqa do'kon ma'lumotlarini ko'ra olmaysiz");
             }
+        } else {
+            $seller = $request->attributes->get('current_seller') ?? $user->activeSeller();
 
-            return $seller;
+            if (!$seller) {
+                throw new AccessDeniedHttpException("Siz biron bir do'konga a'zo emassiz");
+            }
         }
 
-        $seller = $request->attributes->get('current_seller') ?? $user->activeSeller();
-
-        if (!$seller) {
-            throw new AccessDeniedHttpException("Siz biron bir do'konga a'zo emassiz");
+        // Requirement: Suspended store management actions must be restricted
+        if ($seller->status === 'suspended' && !$user->hasRole('admin')) {
+            throw new AccessDeniedHttpException("Ushbu do'kon faoliyati to'xtatilgan (suspended). Boshqaruv amallari cheklangan.");
         }
 
         return $seller;
@@ -88,7 +92,10 @@ class SellerController extends Controller
             'tax_id' => ['nullable', 'string', 'max:50'],
         ]);
 
+        $oldValues = $seller->only(array_keys($validated));
         $seller->update($validated);
+
+        AuditService::log('seller.profile_updated', $seller, $oldValues, $validated);
 
         return ApiResponse::success($seller, "Do'kon ma'lumotlari muvaffaqiyatli yangilandi");
     }
@@ -111,6 +118,7 @@ class SellerController extends Controller
 
     /**
      * Add a staff member to the store.
+     * Prevents operator/staff from adding owner or promoting without manageMembers permission.
      */
     public function addMember(Request $request): JsonResponse
     {
@@ -120,6 +128,7 @@ class SellerController extends Controller
             throw new AccessDeniedHttpException("Do'kon xodimlarini qo'shish uchun sizda ruxsat yo'q");
         }
 
+        // Crucial: Only manager, operator, accountant can be added. 'owner' cannot be added or created!
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'role' => ['required', 'string', Rule::in(['manager', 'operator', 'accountant'])],
@@ -147,6 +156,11 @@ class SellerController extends Controller
         // Assign appropriate role
         $roleName = 'seller_' . $validated['role'];
         $targetUser->assignRole($roleName);
+
+        AuditService::log('seller.member_added', $seller, null, [
+            'user_id' => $targetUser->id,
+            'role' => $validated['role'],
+        ]);
 
         return ApiResponse::created($member->load('user:id,name,email,phone'), "Xodim do'konga muvaffaqiyatli biriktirildi");
     }
@@ -179,6 +193,7 @@ class SellerController extends Controller
         }
 
         $user = $member->user;
+        $memberData = ['user_id' => $user?->id, 'role' => $member->role];
         $member->delete();
 
         // Remove seller role if not in any other seller
@@ -186,6 +201,8 @@ class SellerController extends Controller
             $user->removeRole('seller_manager');
             $user->removeRole('seller_operator');
         }
+
+        AuditService::log('seller.member_removed', $seller, $memberData, null);
 
         return ApiResponse::success(null, "Xodim do'kondan muvaffaqiyatli chiqarildi");
     }

@@ -5,6 +5,7 @@ namespace App\Services\Auth;
 use App\Models\OtpCode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 class DemoOtpService implements OtpServiceInterface
 {
@@ -13,7 +14,12 @@ class DemoOtpService implements OtpServiceInterface
      */
     public function send(string $phone, string $type = 'login'): array
     {
-        // In local or test environments, default deterministic code can be '123456' or random
+        // Demo OTP service must NEVER be used in production environment
+        if (app()->environment('production')) {
+            throw new RuntimeException("Xavfsizlik xatosi: Demo OTP servisi production muhitida ishlatilishi qat'iyan taqiqlangan. Haqiqiy SMS gateway provayderini sozlang.");
+        }
+
+        // In local or test environments, default deterministic code is '123456'
         $isTestOrLocal = app()->environment('local', 'testing');
         $code = $isTestOrLocal ? '123456' : (string) random_int(100000, 999999);
 
@@ -46,22 +52,27 @@ class DemoOtpService implements OtpServiceInterface
      */
     public function verify(string $phone, string $code, string $type = 'login'): bool
     {
+        if (app()->environment('production')) {
+            throw new RuntimeException("Xavfsizlik xatosi: Demo OTP servisi production muhitida ishlatilishi qat'iyan taqiqlangan.");
+        }
+
         $otp = OtpCode::where('phone', $phone)
             ->where('type', $type)
             ->whereNull('used_at')
             ->orderByDesc('id')
             ->first();
 
+        // Reject if no unused code found (also prevents replay of used codes)
         if (!$otp) {
             return false;
         }
 
-        // Check expiration
+        // Reject expired codes
         if ($otp->isExpired()) {
             return false;
         }
 
-        // Check brute force attempts (max 5)
+        // Reject brute-force attempts if threshold exceeded (max 5)
         if ($otp->attempts >= 5) {
             return false;
         }
@@ -72,7 +83,7 @@ class DemoOtpService implements OtpServiceInterface
             return false;
         }
 
-        // Mark as used
+        // Mark as used immediately to prevent replay
         $otp->update(['used_at' => Carbon::now()]);
 
         return true;

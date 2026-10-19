@@ -10,22 +10,27 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::get('/health', HealthController::class)->name('api.v1.health');
 
-    // Public authentication routes
+    // Public authentication routes (with rate limiting)
     Route::prefix('auth')->group(function () {
-        Route::post('/register', [AuthController::class, 'register']);
-        Route::post('/login', [AuthController::class, 'login']);
-        Route::post('/otp/send', [AuthController::class, 'otpSend']);
-        Route::post('/otp/verify', [AuthController::class, 'otpVerify']);
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+        Route::post('/mfa/verify', [AuthController::class, 'verifyAdminMfa'])->middleware('throttle:auth');
+        Route::post('/otp/send', [AuthController::class, 'otpSend'])->middleware('throttle:otp');
+        Route::post('/otp/verify', [AuthController::class, 'otpVerify'])->middleware('throttle:otp');
+
+        // Password reset routes (time-limited, single-use token)
+        Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
+        Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
 
         // Authenticated auth routes
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('/me', [AuthController::class, 'me']);
             Route::post('/logout', [AuthController::class, 'logout']);
         });
     });
 
     // Authenticated API resources
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
         // Addresses CRUD (ownership strictly enforced by AddressPolicy)
         Route::apiResource('addresses', AddressController::class);

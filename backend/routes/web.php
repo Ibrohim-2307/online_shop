@@ -1,11 +1,16 @@
 <?php
 
+use App\Http\Controllers\Web\AuthController as WebAuthController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('web.health');
 });
+
+Route::get('/login', [WebAuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');
+Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
 Route::get('/health', function () {
     $dbStatus = 'Ulangan (MySQL 8.0)';

@@ -134,6 +134,7 @@ class User extends Authenticatable
         if ($role && !$this->roles->contains('id', $role->id)) {
             $this->roles()->attach($role->id);
             $this->load('roles');
+            \App\Services\Audit\AuditService::log('user.role_assigned', $this, null, ['role' => $roleName]);
         }
     }
 
@@ -143,6 +144,8 @@ class User extends Authenticatable
         if ($role) {
             $this->roles()->detach($role->id);
             $this->load('roles');
+            \App\Services\Audit\AuditService::log('user.role_removed', $this, ['role' => $roleName], null);
         }
     }
 }
+

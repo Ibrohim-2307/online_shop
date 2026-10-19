@@ -2,7 +2,7 @@
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
 Sana: 19-oktabr, 2026  
-Joriy holat: **01-bosqich (Poydevor, muhit va Android emulyator sinovi) hamda 02-bosqich (Baza, foydalanuvchi va ruxsatlar) to'liq bajarildi.** 03-bosqichga (Katalog, ombor va optom narxlar) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
+Joriy holat: **01-bosqich hamda 02-bosqich (Baza, foydalanuvchi, xavfsizlik va ruxsatlar) to'liq bajarildi va 33 ta test bilan tasdiqlandi.** 03-bosqichga (Katalog, ombor va optom narxlar) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 
 ---
 
@@ -17,15 +17,21 @@ Joriy holat: **01-bosqich (Poydevor, muhit va Android emulyator sinovi) hamda 02
 | **Sxema Eksporti** | `database/exports/schema.sql` (phpMyAdmin uchun tayyor export) | Tayyor |
 | **API Standarti** | `/api/v1`, `AssignRequestId` middleware, standart `ApiResponse` muvaffaqiyat va xatolik javoblari | Ishlamoqda |
 | **Health Check** | `/api/v1/health` (JSON) va `/health` (Web Blade dashboard) | 200 OK (MySQL tekshiruvi bilan) |
-| **Autentifikatsiya** | `laravel/sanctum: ^4.3`, Token revoke, Register (customer, wholesale, seller), Login, Logout, /me | To'liq ishlamoqda |
-| **OTP Xizmati** | `OtpServiceInterface`, `DemoOtpService` (5 daqiqali TTL, brute-force urinishlar nazorati) | Tayyor va testlangan |
-| **Rollar va Ruxsatlar** | 9 ta rol (`customer`, `wholesale_customer`, `seller_owner`, `seller_manager`, `seller_operator`, `courier`, `logistics_operator`, `moderator`, `admin`), 19 ta granulyar permission | Seeder va middleware bilan faol |
-| **Do'konlar (Sellers)** | `sellers`, `seller_members`, `seller_documents` jadvallari, ko'p sotuvchili model | Bajarildi |
-| **Multi-Tenant Izolyatsiya**| `SellerPolicy`, `EnsureSellerTenant` — Sotuvchilar bir-birining ma'lumotlarini ko'ra yoki o'zgartira olmaydi | 403 Forbidden bilan himoyalangan |
+| **Autentifikatsiya** | `laravel/sanctum: ^4.3`, Token revoke, Register, Login, Logout, /me | To'liq ishlamoqda |
+| **Parolni Tiklash** | 15 daqiqali muddati cheklangan bir martalik token; qayta ishlatish (replay) rad etiladi | Ishlamoqda va testlangan |
+| **Web Sessiya** | Web Login/Logout, CSRF himoyasi, login paytida `session()->regenerate()` (fixation himoyasi)| Tayyor va testlangan |
+| **Admin MFA** | Administrator hisobiga kirishda 2-bosqichli OTP tasdiqlash talabi | Ishlamoqda va testlangan |
+| **Rate Limiting** | API (60/m), Auth (10/m), OTP (5/m) limitlari | Ishlamoqda va testlangan |
+| **OTP Xizmati** | `OtpServiceInterface`, `DemoOtpService` (5 min TTL, 5 xato urinish chegarasi, replay blok; Productionda demo taqiqlangan) | Tayyor va testlangan |
+| **Rollar va Ruxsatlar** | 9 ta rol, 19 ta granulyar permission, registratsiyada vakolat o'g'irlash (privilege escalation) to'liq bloklangan | Seeder va middleware bilan faol |
+| **Sotuvchilar (Sellers)** | `sellers`, `seller_members`, `seller_documents`, `audit_logs` | Bajarildi |
+| **Multi-Tenant Izolyatsiya**| `SellerPolicy`, `EnsureSellerTenant` — Sotuvchilar bir-birining profili va xodimlarini ko'ra/o'zgartira olmaydi | 403 Forbidden bilan himoyalangan |
+| **Bloklangan Tokenlar** | `EnsureUserIsActive` middleware — Bloklangan foydalanuvchining avval olingan tokeni ham rad etiladi | 403 Forbidden bilan himoyalangan |
+| **Audit Tizimi** | `AuditService` — Muhim hisob, vakolat va do'kon o'zgarishlari loglanadi; parol/tokenlar avtomatik `[REDACTED]` qilinadi | Faol va testlangan |
 | **Manzillar (Addresses)**| `addresses` jadvali, `AddressPolicy` orqali foydalanuvchi manzil daxlsizligi | 403 Forbidden bilan himoyalangan |
 | **Xaridor Mobil Ilova** | `apps/customer_flutter` (Flutter 3.47.2, Riverpod, HealthScreen) | Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
 | **Kuryer Mobil Ilova** | `apps/courier_flutter` (Flutter 3.47.2, Riverpod, CourierHealthScreen)| Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
-| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | 21 test o'tdi (128 ta assertion) |
+| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | **33 test o'tdi (201 ta assertion)** |
 
 ---
 
@@ -33,7 +39,7 @@ Joriy holat: **01-bosqich (Poydevor, muhit va Android emulyator sinovi) hamda 02
 
 - [x] **00 — Tayyorgarlik va Muhit Audit:** Repozitoriy ochildi, `TECHNICAL_SPEC.md` va `preview.mp4` biriktirildi, talablar xaritasi, muhit tekshiruvi, arxitektura qarorlari qabul qilindi.
 - [x] **01 — Poydevor, ishlaydigan lokal muhit va Android emulyator sinovi:** PHP 8.4 va Composer 2.10.3 izolyatsiyalangan holda o'rnatildi; Laravel 13 backend, `customer_flutter` va `courier_flutter` yaratildi; MySQL ulandi; health check va Request ID middleware tayyorlandi; Android emulyatorida (`emulator-5554`) haqiqiy backend va MySQL health javobi tasdiqlandi. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
-- [x] **02 — Baza, foydalanuvchi va ruxsatlar:** Migrations, rollar (xaridor, ulgurji xaridor, sotuvchi, moderator, admin, kuryer, logist), multi-tenant seller izolyatsiyasi, Sanctum auth, OTP adapteri va permission testlari to'liq yakunlandi (21 test, 128 ta assertion).
+- [x] **02 — Baza, foydalanuvchi, xavfsizlik va ruxsatlar:** Baza jadvallari, rollar, sotuvchi xodimlari, multi-tenant izolyatsiyasi, Sanctum auth, bir martalik parolni tiklash, web sessiya va CSRF, Admin MFA, OTP cheklovlari va demo himoyasi, bloklangan tokenlar nazorati, audit log tizimi to'liq yakunlandi (33 test, 201 assertion).
 - [ ] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService, ombor balansi va audit.
 - [ ] **04 — Dizayn tizimi va xaridor veb-sayti:** Laym-yashil / to'q sarlavha / oq fon tokenlari, Blade + Livewire komponentlari, katalog, qidiruv, responsive moslashuv.
 - [ ] **05 — Savatcha va ishonchli checkout:** Multi-vendor cart, server quote, race condition zaxira rezervatsiyasi, idempotency key, outbox.
@@ -76,62 +82,105 @@ Joriy holat: **01-bosqich (Poydevor, muhit va Android emulyator sinovi) hamda 02
 
 ---
 
-## 4. 02-Bosqich Amaliy Natijalari (Baza, Foydalanuvchi va Ruxsatlar)
+## 4. 02-Bosqich Amaliy Natijalari (Baza, Foydalanuvchi, Xavfsizlik va Ruxsatlar)
 
 ### A. Ma'lumotlar Bazasi va Migratsiyalar:
 - `users`: `phone` (unique), `is_active` (boolean), `last_login_at` maydonlari qo'shildi.
 - `roles`: 9 ta standart rol yaratildi (`customer`, `wholesale_customer`, `seller_owner`, `seller_manager`, `seller_operator`, `courier`, `logistics_operator`, `moderator`, `admin`).
 - `permissions`: 19 ta granulyar ruxsat yaratildi va tegishli rollarga biriktirildi.
 - `role_permissions` va `user_roles`: Pivot jadvallar va constraintlar.
-- `sellers`: Multi-vendor do'konlar (name, slug, legal_name, tax_id, status: pending/active/suspended/rejected, commission_rate, rating).
+- `sellers`: Multi-vendor do'konlar (nomi, slug, legal_name, tax_id, status, commission_rate, rating).
 - `seller_members`: Sotuvchi xodimlari va rollari (owner, manager, operator, accountant) va granulyar JSON ruxsatlar.
 - `seller_documents`: Sotuvchi litsenziya va INN hujjatlari (pending/approved/rejected).
 - `addresses`: Xaridor yetkazib berish manzillari (title, recipient, phone, full_address, lat, lng, is_default).
 - `otp_codes`: Telefon raqamni tasdiqlash kodlari (phone, code, type, expires_at, used_at, attempts).
-- `database/exports/schema.sql`: phpMyAdmin orqali yuklash uchun butun sxema eksport qilindi.
+- `audit_logs`: Xavfsizlik va ma'lumotlar o'zgarishi auditi jadvali (action, entity, old_values, new_values, ip, user_agent).
+- `database/exports/schema.sql`: phpMyAdmin orqali yangi bazaga yuklash uchun to'liq yangilangan SQL sxemasi.
 
-### B. Xavfsizlik va Multi-Tenant Izolyatsiyasi:
-1. **Sotuvchilar Ma'lumotlari Izolyatsiyasi (`SellerPolicy`, `EnsureSellerTenant`):**
-   - Sotuvchi A sotuvchi B ning profili yoki xodimlari ro'yxatini ko'rishga uringanda server `403 Forbidden` (`FORBIDDEN`) qaytaradi.
-   - Sotuvchi A sotuvchi B ning do'kon parametrlarini o'zgartirishga yoki xodimini o'chirishga uringanda server `403 Forbidden` bilan so'rovni qat'iy rad etadi.
-2. **Manzillar Daxlsizligi (`AddressPolicy`):**
-   - Foydalanuvchi A o'zidan boshqa istalgan foydalanuvchining manzilini ko'rish, yangilash yoki o'chirishga uringanda server `403 Forbidden` qaytaradi.
-3. **Rol Ruxsatlari Chegarasi (`EnsureRole`):**
-   - Oddiy xaridor yoki sotuvchi administrator yo'llariga (`/api/v1/admin/*`, masalan foydalanuvchilar ro'yxati yoki do'kon holatini tasdiqlash) kirishga uringanda `403 Forbidden` qaytariladi.
-   - Bloklangan (`is_active = false`) foydalanuvchi login qila olmaydi (403 Forbidden).
+### B. Tekshirilgan va Amalga Oshirilgan Xavfsizlik Talablari:
+1. **Parolni tiklash:**
+   - `POST /api/v1/auth/password/forgot` 15 daqiqali muddati cheklangan token yaratadi.
+   - `POST /api/v1/auth/password/reset` yangi parolni o'rnatgach, tokenni bazadan darhol o'chiradi.
+   - Xuddi shu token bilan ikkinchi marta murojaat qilinganda so'rov qat'iyan rad etiladi (`INVALID_TOKEN` — replay attackdan himoyalangan).
+2. **Web sessiyasi:**
+   - Web `GET /login`, `POST /login`, `POST /logout` yaratildi.
+   - CSRF himoyasi to'liq faol.
+   - Muvaffaqiyatli kirishda `session()->regenerate()` chaqirilib, sessiya identifikatori yangilanadi (session fixation himoyasi).
+3. **Admin MFA oqimi:**
+   - `admin` roli bor foydalanuvchi login qilganda to'g'ridan-to'g'ri admin token berilmaydi; `mfa_required: true` va vaqtinchalik `mfa_token` qaytariladi.
+   - Tasdiqlanmagan token bilan admin APIlariga kirish taqiqlanadi (401).
+   - `POST /api/v1/auth/mfa/verify` orqali OTP kodi tasdiqlangandan keyingina to'liq admin tokeni beriladi.
+4. **Rate Limit va OTP xavfsizligi:**
+   - Auth endpointlari uchun 10 so'rov/daqiqa, OTP uchun 5 so'rov/daqiqa chegarasi qo'yildi (6-so'rovda HTTP 429 Too Many Requests qaytadi).
+   - OTP muddati o'tgan bo'lsa rad etiladi (`INVALID_OTP`).
+   - 5 marta ketma-ket xato kod kiritilgach, hisob bloklanadi (brute-force himoyasi).
+   - Bir marta ishlatilgan kod qayta ishlatilishi rad etiladi.
+   - `DemoOtpService`: `APP_ENV=production` bo'lganda `RuntimeException` chiqarib, demo rejimining productionga chiqib ketishini 100% bloklaydi.
+5. **Bloklangan foydalanuvchi tokeni:**
+   - `EnsureUserIsActive` middleware orqali token avval olingan bo'lsa ham, agar foydalanuvchi keyinchalik admin tomonidan bloklansa (`is_active = false`), uning barcha API so'rovlari darhol 403 Forbidden (`ACCOUNT_DEACTIVATED`) bilan to'xtatiladi.
+6. **Registratsiyada vakolat o'g'irlash (Privilege Escalation) himoyasi:**
+   - `/api/v1/auth/register` ga yuborilgan har qanday `role=admin`, `roles=['admin']`, `is_admin=true` parametrlari server tomonidan to'liq chetlab o'tiladi; foydalanuvchi faqat ruxsat etilgan xaridor rolini oladi va admin yo'llariga kira olmaydi.
+7. **Sotuvchi xodimining vakolatlari va to'xtatilgan do'kon cheklovi:**
+   - `operator` boshqa xodim qo'sha olmaydi (403 Forbidden).
+   - Hech kim xodimni `owner` roliga ko'tara olmaydi (422 xatosi).
+   - Faoliyati to'xtatilgan (`status = 'suspended'`) do'kon uchun barcha boshqaruv amallari 403 Forbidden bilan cheklanadi.
+8. **Audit tizimi va maxfiylik:**
+   - Rollar o'zgarishi, foydalanuvchi va do'kon statuslari yangilanishi, parolni tiklash `audit_logs` jadvaliga yoziladi.
+   - Parol, token va maxfiy ma'lumotlar avtomatik ravishda `[REDACTED]` holatiga keltirilib, loglarga ochiq holda tushishi bartaraf etildi.
 
-### C. PHPUnit Avtomatlashtirilgan Test Natijalari:
-Barcha testlar `.\infra\artisan.bat test` buyrug'i orqali to'liq ishga tushirildi:
+> [!IMPORTANT]
+> **Cheklovlar va kelgusi bosqichlar eslatmasi:**  
+> Hozircha multi-tenant ma'lumotlar izolyatsiyasi faqat 02-bosqichda mavjud bo'lgan resurslar (**do'kon profili**, **do'kon xodimlari** va **foydalanuvchi manzillari**) bo'yicha to'liq tekshirildi va tasdiqlandi. Hali yaratilmagan buyurtmalar (orders), ombor (inventory), to'lovlar (payments) va kuryerlik trackingi bo'yicha tenant izolyatsiyasi ushbu modullar yaratiladigan 03, 05, 06, 07, 08-bosqichlarda amalga oshiriladi va testlanadi.
+
+---
+
+### C. PHPUnit Avtomatlashtirilgan Test Natijalari (33 ta test):
+Barcha testlar `.\infra\artisan.bat test` orqali 100% muvaffaqiyatli yakunlandi:
+
 ```text
    PASS  Tests\Unit\ExampleTest
   ✓ that true is true
 
    PASS  Tests\Feature\AuthAndPermissionTest
-  ✓ customer can register and receives sanctum token                              0.79s
-  ✓ seller can register store and becomes seller owner                            0.10s
-  ✓ user can login with valid credentials                                         0.11s
-  ✓ inactive user cannot login                                                    0.09s
-  ✓ otp send and verify flow                                                      0.12s
-  ✓ authenticated user can view me and logout                                     0.09s
-  ✓ customer can create and read own address                                      0.07s
-  ✓ user cannot view or update another users address                              0.06s
-  ✓ seller a cannot view seller b profile or members                              0.07s
-  ✓ seller a cannot update seller b store profile                                 0.07s
-  ✓ seller a cannot remove seller b staff member                                  0.11s
-  ✓ seller can manage own store and add staff                                     0.11s
-  ✓ customer cannot access admin endpoints                                        0.08s
+  ✓ customer can register and receives sanctum token                              1.28s
+  ✓ seller can register store and becomes seller owner                            0.16s
+  ✓ user can login with valid credentials                                         0.17s
+  ✓ inactive user cannot login                                                    0.14s
+  ✓ otp send and verify flow                                                      0.19s
+  ✓ authenticated user can view me and logout                                     0.12s
+  ✓ customer can create and read own address                                      0.16s
+  ✓ user cannot view or update another users address                              0.20s
+  ✓ seller a cannot view seller b profile or members                              0.16s
+  ✓ seller a cannot update seller b store profile                                 0.22s
+  ✓ seller a cannot remove seller b staff member                                  0.25s
+  ✓ seller can manage own store and add staff                                     0.26s
+  ✓ customer cannot access admin endpoints                                        0.14s
   ✓ customer cannot access seller endpoints                                       0.06s
-  ✓ admin can access admin endpoints and moderate sellers                         0.06s
+  ✓ admin can access admin endpoints and moderate sellers                         0.19s
+
+   PASS  Tests\Feature\AuthSecurityHardeningTest
+  ✓ password reset succeeds and token replay is rejected                          0.20s
+  ✓ expired password reset token is rejected                                      0.17s
+  ✓ web session login regenerates session and logout invalidates                  0.35s
+  ✓ admin login requires mfa and blocks unverified access                         0.23s
+  ✓ otp expiration wrong attempts limit and replay rejection                      0.23s
+  ✓ login and otp endpoints enforce rate limiting                                 0.19s
+  ✓ demo otp throws exception in production                                       0.14s
+  ✓ deactivated user previously issued token is immediately blocked               0.13s
+  ✓ registration privilege escalation is strictly neutralized                     0.14s
+  ✓ seller operator cannot add staff or promote to owner                          0.17s
+  ✓ suspended store management operations are blocked                             0.15s
+  ✓ audit logs record security events without passwords or tokens                 0.20s
 
    PASS  Tests\Feature\ExampleTest
-  ✓ the application returns a successful response                                 0.04s
+  ✓ the application returns a successful response                                 0.07s
 
    PASS  Tests\Feature\HealthCheckTest
-  ✓ api v1 health endpoint returns success                                        0.03s
-  ✓ custom request id is preserved                                                0.02s
-  ✓ web health dashboard returns ok                                               0.04s
-  ✓ unknown api route returns standardized json error                             0.03s
+  ✓ api v1 health endpoint returns success                                        0.05s
+  ✓ custom request id is preserved                                                0.06s
+  ✓ web health dashboard returns ok                                               0.08s
+  ✓ unknown api route returns standardized json error                             0.07s
 
-  Tests:    21 passed (128 assertions)
-  Duration: 2.80s
+  Tests:    33 passed (201 assertions)
+  Duration: 7.35s
 ```

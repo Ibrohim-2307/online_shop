@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Seller;
 use App\Models\User;
+use App\Services\Audit\AuditService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,7 +73,10 @@ class AdminController extends Controller
             'commission_rate' => ['nullable', 'numeric', 'between:0,100'],
         ]);
 
+        $oldValues = $seller->only(['status', 'commission_rate']);
         $seller->update($validated);
+
+        AuditService::log('seller.status_updated', $seller, $oldValues, $validated);
 
         return ApiResponse::success($seller, "Sotuvchi holati o'zgartirildi: {$seller->status}");
     }
@@ -88,7 +92,10 @@ class AdminController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
+        $oldValues = ['is_active' => $user->is_active];
         $user->update(['is_active' => $validated['is_active']]);
+
+        AuditService::log('user.status_updated', $user, $oldValues, $validated);
 
         $statusText = $validated['is_active'] ? 'faollashtirildi' : 'faolsizlantirildi';
 

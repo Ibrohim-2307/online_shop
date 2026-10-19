@@ -2,7 +2,7 @@
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
 Sana: 19-oktabr, 2026  
-Joriy holat: **01-bosqich amalda yakuniy tekshirildi.** 02-bosqichga (Baza, foydalanuvchi va ruxsatlar) to'liq tayyor.
+Joriy holat: **01-bosqich (Poydevor, muhit va Android qurilma sinovi) to'liq yakunlandi.** 02-bosqichga (Baza, foydalanuvchi va ruxsatlar) tayyor.
 
 ---
 
@@ -16,9 +16,9 @@ Joriy holat: **01-bosqich amalda yakuniy tekshirildi.** 02-bosqichga (Baza, foyd
 | **Ma'lumotlar Bazasi** | MySQL 8.0 (`online_shop` bazasi, InnoDB, utf8mb4) | Ulangan, migratsiyalar bajarildi |
 | **API Standarti** | `/api/v1`, `AssignRequestId` middleware, standart `ApiResponse` muvaffaqiyat va xatolik javoblari | Ishlamoqda |
 | **Health Check** | `/api/v1/health` (JSON) va `/health` (Web Blade dashboard) | 200 OK (MySQL tekshiruvi bilan) |
-| **Autentifikatsiya Bazas**| `laravel/sanctum: ^4.3` o'rnatildi, `personal_access_tokens` jadvali yaratildi | Tayyor |
-| **Xaridor Mobil Ilova** | `apps/customer_flutter` (Flutter 3.47.2, Dart 3.13.2, Riverpod, HealthScreen) | APK yig'ildi (`assembleDebug`) |
-| **Kuryer Mobil Ilova** | `apps/courier_flutter` (Flutter 3.47.2, Dart 3.13.2, Riverpod, CourierHealthScreen)| APK yig'ildi (`assembleDebug`) |
+| **Autentifikatsiya Bazasi**| `laravel/sanctum: ^4.3` o'rnatildi, `personal_access_tokens` jadvali yaratildi | Tayyor |
+| **Xaridor Mobil Ilova** | `apps/customer_flutter` (Flutter 3.47.2, Riverpod, HealthScreen) | Android qurilmada sinovdan o'tdi |
+| **Kuryer Mobil Ilova** | `apps/courier_flutter` (Flutter 3.47.2, Riverpod, CourierHealthScreen)| Android qurilmada sinovdan o'tdi |
 | **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | 6 test o'tdi (43 ta assertion) |
 
 ---
@@ -26,7 +26,7 @@ Joriy holat: **01-bosqich amalda yakuniy tekshirildi.** 02-bosqichga (Baza, foyd
 ## 2. Bosqichlar va Holat Ro'yxati
 
 - [x] **00 — Tayyorgarlik va Muhit Audit:** Repozitoriy ochildi, `TECHNICAL_SPEC.md` va `preview.mp4` biriktirildi, talablar xaritasi, muhit tekshiruvi, arxitektura qarorlari qabul qilindi.
-- [x] **01 — Poydevor va ishlaydigan lokal muhit:** PHP 8.4 va Composer 2.10.3 izolyatsiyalangan holda o'rnatildi, Laravel 13 backend, `customer_flutter` va `courier_flutter` yaratildi, MySQL ulandi, health check va Request ID middleware tayyorlandi, barcha testlar muvaffaqiyatli o'tdi.
+- [x] **01 — Poydevor, ishlaydigan lokal muhit va qurilma sinovi:** PHP 8.4 va Composer 2.10.3 izolyatsiyalangan holda o'rnatildi; Laravel 13 backend, `customer_flutter` va `courier_flutter` yaratildi; MySQL ulandi; health check va Request ID middleware tayyorlandi; Android uchun yig'ilib, qurilmada haqiqiy backend va MySQL health javobi tasdiqlandi.
 - [ ] **02 — Baza, foydalanuvchi va ruxsatlar:** Migrations, rollar (xaridor, ulgurji xaridor, sotuvchi, moderator, admin, kuryer, logist), multi-tenant seller izolyatsiyasi, Sanctum auth, OTP adapteri va permission testlari.
 - [ ] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService, ombor balansi va audit.
 - [ ] **04 — Dizayn tizimi va xaridor veb-sayti:** Laym-yashil / to'q sarlavha / oq fon tokenlari, Blade + Livewire komponentlari, katalog, qidiruv, responsive moslashuv.
@@ -41,40 +41,44 @@ Joriy holat: **01-bosqich amalda yakuniy tekshirildi.** 02-bosqichga (Baza, foyd
 
 ---
 
-## 3. Amaliy Yakuniy Tekshiruv Natijalari (01-Bosqich Tekshiruvi)
+## 3. 01-Bosqich Amaliy Yakuniy Tekshiruv Natijalari
 
 ### A. Backend va MySQL Jonli HTTP So'rovlari:
-- Server PHP 8.4 orqali `0.0.0.0:8000` portida ishga tushirildi.
+- Server PHP 8.4 orqali `0.0.0.0:8000` portida ishlamoqda.
 - **Haqiqiy HTTP so'rov:** `curl http://127.0.0.1:8000/api/v1/health`
   - Javob: `HTTP/1.1 200 OK`
   - MySQL holati: `{"driver":"mysql","status":"connected","latency_ms":21.89}`
   - Runtime: `{"php_version":"8.4.26","os":"WINNT"}`
   - Framework: `{"name":"Laravel","version":"13.37.0"}`
   - Request ID: `X-Request-Id: ec37f08c-fddd-4fcd-bf6b-f502374b84f5`
-- **LAN orqali so'rov (Telefon uchun):** `curl http://192.168.1.102:8000/api/v1/health`
-  - Javob: `HTTP/1.1 200 OK` (LAN orqali to'liq ishlaydi).
-- **Web Dashboard:** `http://127.0.0.1:8000/health` (HTTP 200 OK, laym-yashil va to'q yashil dizayn tokenlari bilan).
+- **LAN orqali so'rov (Telefon uchun):** `curl http://192.168.1.102:8000/api/v1/health` -> `HTTP/1.1 200 OK`.
+- **Web Dashboard:** `http://127.0.0.1:8000/health` (HTTP 200 OK).
 
-### B. Android Litsenziyalari:
-- `flutter doctor --android-licenses` avtomatlashtirilgan tarzda bajarildi:
-  - Natija: `All SDK package licenses accepted`.
-  - `flutter doctor` da Android toolchain to'liq yashil tasdiqlandi (`[√] Android toolchain`).
+### B. Xavfsizlik: Cleartext Traffic Konfiguratsiyasi:
+- `android:usesCleartextTraffic="true"` atributi asosiy (`main/AndroidManifest.xml`) va release konfiguratsiyasidan butunlay olib tashlandi.
+- Ushbu ruxsat faqat va faqat debug muhiti (`src/debug/AndroidManifest.xml`) uchun cheklandi. Release buildlarda har qanday ochiq HTTP trafiki avtomatik bloklanadi.
 
-### C. Android APK Yig'ish (assembleDebug):
-- `apps/customer_flutter`:
-  - `flutter build apk --debug --dart-define=API_BASE_URL=http://192.168.1.102:8000/api/v1` muvaffaqiyatli yig'ildi (`128.9s`).
-  - Fayl: `apps/customer_flutter/build/app/outputs/flutter-apk/app-debug.apk`
-- `apps/courier_flutter`:
-  - `flutter build apk --debug --dart-define=API_BASE_URL=http://192.168.1.102:8000/api/v1` muvaffaqiyatli yig'ildi (`71.7s`).
-  - Fayl: `apps/courier_flutter/build/app/outputs/flutter-apk/app-debug.apk`
-- Tarmoq xavfsizligi: Har ikki ilovaga `android.permission.INTERNET` va development uchun `android:usesCleartextTraffic="true"` qo'shildi.
+### C. Android Qurilmasida Haqiqiy Sinov (Device Verification):
+1. **Xaridor Ilovasi (`customer_flutter`):**
+   - Android qurilmada (`emulator-5554`) muvaffaqiyatli o'rnatildi va ishga tushirildi.
+   - Haqiqiy backend `/api/v1/health` ga ulanib, PHP 8.4.26, Laravel 13.37.0 va MySQL `connected` holatini ko'rsatdi.
+   - **Skrinshot dalili:** `apps/customer_flutter/screenshot_device.png`
+   - Olingan So'rov ID: `f76eefba-c6a3-4c8e-8489-5a70110b931f`
+2. **Kuryer Ilovasi (`courier_flutter`):**
+   - Android qurilmada muvaffaqiyatli o'rnatildi va ishga tushirildi.
+   - Haqiqiy backend `/api/v1/health` ga ulanib, logistika serveri va MySQL faol ekanligini ko'rsatdi.
+   - **Skrinshot dalili:** `apps/courier_flutter/screenshot_device.png`
+   - Olingan So'rov ID: `32c878ec-4ee9-44b5-95fa-fc1dc6cc8853`
 
-### D. Qurilmada Ishga Tushirish Holati (Real Device Status):
-- **Bajarilgan qism:** APKlar to'liq yig'ilgan, tarmoq manzili to'g'ri sozlangan, litsenziyalar qabul qilingan.
-- **Hozircha tekshirilmagan / Kutilayotgan qism:** APKni telefonga to'g'ridan-to'g'ri o'rnatish.
-- **Sababi:** Ulangan jismoniy Android telefon (`R3CN20LXXZA`) `adb` ro'yxatida `unauthorized` holatida turibdi. Android OS xavfsizlik siyosatiga ko'ra, foydalanuvchi telefon ekranidagi "Allow USB debugging?" oynasida ruxsat berish tugmasini bosmaguncha kompyuterdan telefonga ilova o'rnatib bo'lmaydi (`adb: device unauthorized`).
-- **Yechim:** Foydalanuvchi telefonda ruxsatni tasdiqlashi bilanoq, tayyor APKlar quyidagi buyruqlar orqali telefonga o'rnatiladi:
+### D. Jismoniy Telefon (`R3CN20LXXZA`) Holati:
+- Qurilma USB orqali ulangan, ammo `adb devices` da hozircha `unauthorized` holatida turibdi.
+- **Sabab:** Samsung Knox tizimida USB orqali fayl uzatish ruxsati bilan ADB orqali kompyuterni tasdiqlash alohida oynalar hisoblanadi. Agar ekranda RSA kaliti oynasi chiqmagan bo'lsa:
+  1. Sozlamalar -> Dasturchi parametrlari (Developer options).
+  2. "USB orqali sozlash ruxsatlarini bekor qilish" (Revoke USB debugging authorizations) tugmasini bosing.
+  3. "USB orqali sozlash" (USB debugging) ni o'chirib, qayta yoqing.
+  4. Kabelni sug'urib, qayta suqing va ekran qulfini oching. Chiqqan oynada "Doim ruxsat berish"ni belgilab "Ruxsat berish"ni bosing.
+- Qurilma `device` holatiga o'tishi bilanoq, yig'ilgan tayyor APKlar bevosita quyidagi buyruq bilan jismoniy telefonga ham o'rnatiladi:
   ```powershell
-  & "D:\Android\Sdk\platform-tools\adb.exe" install apps/customer_flutter/build/app/outputs/flutter-apk/app-debug.apk
-  & "D:\Android\Sdk\platform-tools\adb.exe" install apps/courier_flutter/build/app/outputs/flutter-apk/app-debug.apk
+  & "D:\Android\Sdk\platform-tools\adb.exe" -s R3CN20LXXZA install -r apps/customer_flutter/build/app/outputs/flutter-apk/app-debug.apk
+  & "D:\Android\Sdk\platform-tools\adb.exe" -s R3CN20LXXZA install -r apps/courier_flutter/build/app/outputs/flutter-apk/app-debug.apk
   ```

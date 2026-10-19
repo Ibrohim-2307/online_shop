@@ -1,0 +1,129 @@
+openapi: 3.1.0
+info:
+  title: Marketplace Multi-Vendor API
+  version: 1.0.0
+  description: Chakana va ulgurji savdoli ko'p sotuvchili marketplace platformasi uchun API spetsifikatsiyasi.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Mahalliy rivojlantirish serveri
+
+paths:
+  /health:
+    get:
+      summary: Tizim salomatligi va xizmatlar holati
+      description: Backend, PHP versiyasi, MySQL bazasi va muhit holatini tekshiradi.
+      responses:
+        '200':
+          description: Tizim to'liq ishchi holatda
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+              description: Unikal so'rov identifikatori
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Tizimda yoki ma'lumotlar bazasida nosozlik mavjud
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - success
+        - message
+        - data
+        - request_id
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Tizim barqaror ishlamoqda
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: healthy
+            service:
+              type: string
+              example: Marketplace API
+            api_version:
+              type: string
+              example: v1
+            framework:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Laravel
+                version:
+                  type: string
+                  example: "13.37.0"
+            runtime:
+              type: object
+              properties:
+                php_version:
+                  type: string
+                  example: "8.4.26"
+                os:
+                  type: string
+                  example: WINNT
+            database:
+              type: object
+              properties:
+                driver:
+                  type: string
+                  example: mysql
+                status:
+                  type: string
+                  example: connected
+                latency_ms:
+                  type: number
+                  example: 1.25
+            environment:
+              type: string
+              example: local
+            timestamp:
+              type: string
+              format: date-time
+        request_id:
+          type: string
+          example: 9d1b09b0-4f51-419b-a0ef-192a2a013e8b
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - request_id
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: BAD_REQUEST
+            message:
+              type: string
+              example: Noto'g'ri so'rov parametrlari
+            details:
+              type: object
+              nullable: true
+        request_id:
+          type: string
+          example: 9d1b09b0-4f51-419b-a0ef-192a2a013e8b

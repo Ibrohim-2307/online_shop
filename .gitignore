@@ -50,3 +50,8 @@ desktop.ini
 
 # Large reference media
 *.mp4
+
+# Isolated local PHP runtime & Composer phar
+/infra/php84/
+/infra/bin/*.phar
+

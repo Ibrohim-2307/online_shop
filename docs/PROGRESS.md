@@ -2,7 +2,7 @@
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
 Sana: 19-oktabr, 2026  
-Joriy holat: **01-bosqich hamda 02-bosqich (Baza, foydalanuvchi, xavfsizlik va ruxsatlar) to'liq bajarildi va 33 ta test bilan tasdiqlandi.** 03-bosqichga (Katalog, ombor va optom narxlar) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
+Joriy holat: **01, 02 va 03-bosqichlar (Katalog, ombor balansi, optom narxlar, all-units pricing va ombor harakatlari auditi) to'liq bajarildi va alohida MySQL test bazasida 40 ta test bilan tasdiqlandi.** 04-bosqichga (Dizayn tizimi va xaridor veb-sayti) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 
 ---
 
@@ -13,8 +13,8 @@ Joriy holat: **01-bosqich hamda 02-bosqich (Baza, foydalanuvchi, xavfsizlik va r
 | **PHP Runtime** | PHP **8.4.26** (x64 ZTS, `infra/php84/`, SHA256 tekshirilgan, OSPanelga tegilmagan) | Tayyor |
 | **Paket Menejeri** | Composer **2.10.3** (stable, `infra/bin/composer.phar`, SHA256 tekshirilgan) | Tayyor |
 | **Backend Framework**| **Laravel 13.37.0** (rasmiy versiya, PHP 8.4 talablariga to'liq mos) | O'rnatilgan |
-| **Ma'lumotlar Bazasi** | MySQL 8.0 (`online_shop` bazasi, InnoDB, utf8mb4) | Ulangan, barcha migratsiyalar bajarildi |
-| **Sxema Eksporti** | `database/exports/schema.sql` (phpMyAdmin uchun tayyor export) | Tayyor |
+| **Ma'lumotlar Bazasi** | MySQL 8.0 (`online_shop` ishchi baza va `online_shop_test` alohida test baza, InnoDB, utf8mb4) | Ulangan, migratsiyalar bajarildi |
+| **Sxema Eksporti** | `database/exports/schema.sql` (barcha 01, 02 va 03-bosqich jadvallari bilan) | Tayyor |
 | **API Standarti** | `/api/v1`, `AssignRequestId` middleware, standart `ApiResponse` muvaffaqiyat va xatolik javoblari | Ishlamoqda |
 | **Health Check** | `/api/v1/health` (JSON) va `/health` (Web Blade dashboard) | 200 OK (MySQL tekshiruvi bilan) |
 | **Autentifikatsiya** | `laravel/sanctum: ^4.3`, Token revoke, Register, Login, Logout, /me | To'liq ishlamoqda |
@@ -23,15 +23,21 @@ Joriy holat: **01-bosqich hamda 02-bosqich (Baza, foydalanuvchi, xavfsizlik va r
 | **Admin MFA** | Administrator hisobiga kirishda 2-bosqichli OTP tasdiqlash talabi | Ishlamoqda va testlangan |
 | **Rate Limiting** | API (60/m), Auth (10/m), OTP (5/m) limitlari | Ishlamoqda va testlangan |
 | **OTP Xizmati** | `OtpServiceInterface`, `DemoOtpService` (5 min TTL, 5 xato urinish chegarasi, replay blok; Productionda demo taqiqlangan) | Tayyor va testlangan |
-| **Rollar va Ruxsatlar** | 9 ta rol, 19 ta granulyar permission, registratsiyada vakolat o'g'irlash (privilege escalation) to'liq bloklangan | Seeder va middleware bilan faol |
+| **Rollar va Ruxsatlar** | 9 ta rol, 19 ta granulyar permission, registratsiyada vakolat o'g'irlash to'liq bloklangan | Seeder va middleware bilan faol |
 | **Sotuvchilar (Sellers)** | `sellers`, `seller_members`, `seller_documents`, `audit_logs` | Bajarildi |
-| **Multi-Tenant Izolyatsiya**| `SellerPolicy`, `EnsureSellerTenant` — Sotuvchilar bir-birining profili va xodimlarini ko'ra/o'zgartira olmaydi | 403 Forbidden bilan himoyalangan |
+| **Multi-Tenant Izolyatsiya**| `SellerPolicy`, `ProductPolicy`, `WarehousePolicy` — Sotuvchilar bir-birining profili, xodimlari, mahsulotlari va omborlarini o'zgartira olmaydi | 403 Forbidden bilan himoyalangan |
+| **Katalog va SKU** | `categories`, `products`, `product_variants` (SKU, barcode, atributlar JSON, moderatsiya holati) | Tayyor va testlangan |
+| **Optom Narxlar (Tiers)** | `price_tiers` (min_qty, max_qty, unit_price), `PricingService` (All-units model, 299/300 va 999/1000 chegaralar) | Tayyor va testlangan |
+| **Birliklar va Qadam** | `piece`, `box` (items_per_box), `kg`, `ton` (1000x kg), `unit_step` va `min_order_quantity` tekshiruvi | Qat'iy tekshiriladi |
+| **Pul Arifmetikasi** | Float to'liq taqiqlangan; BCMath (`bcmul`, `bcadd`, `bcsub`, `bcdiv`) orqali xatosiz hisob | 0 yo'qotish bilan faol |
+| **Ombor va Zaxiralar** | `warehouses`, `inventory_balances` (multi-warehouse, `lockForUpdate` atomar operatsiyalar, zaxira rezervatsiyasi) | Tayyor va testlangan |
+| **Zaxira Harakat Auditi** | `inventory_movements` (inflow, outflow, adjustment, reservation, release; eski/yangi balans) | To'liq tarix yoziladi |
 | **Bloklangan Tokenlar** | `EnsureUserIsActive` middleware — Bloklangan foydalanuvchining avval olingan tokeni ham rad etiladi | 403 Forbidden bilan himoyalangan |
 | **Audit Tizimi** | `AuditService` — Muhim hisob, vakolat va do'kon o'zgarishlari loglanadi; parol/tokenlar avtomatik `[REDACTED]` qilinadi | Faol va testlangan |
 | **Manzillar (Addresses)**| `addresses` jadvali, `AddressPolicy` orqali foydalanuvchi manzil daxlsizligi | 403 Forbidden bilan himoyalangan |
 | **Xaridor Mobil Ilova** | `apps/customer_flutter` (Flutter 3.47.2, Riverpod, HealthScreen) | Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
 | **Kuryer Mobil Ilova** | `apps/courier_flutter` (Flutter 3.47.2, Riverpod, CourierHealthScreen)| Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
-| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | **33 test o'tdi (201 ta assertion)** |
+| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | **40 test o'tdi (252 ta assertion)** |
 
 ---
 
@@ -40,7 +46,7 @@ Joriy holat: **01-bosqich hamda 02-bosqich (Baza, foydalanuvchi, xavfsizlik va r
 - [x] **00 — Tayyorgarlik va Muhit Audit:** Repozitoriy ochildi, `TECHNICAL_SPEC.md` va `preview.mp4` biriktirildi, talablar xaritasi, muhit tekshiruvi, arxitektura qarorlari qabul qilindi.
 - [x] **01 — Poydevor, ishlaydigan lokal muhit va Android emulyator sinovi:** PHP 8.4 va Composer 2.10.3 izolyatsiyalangan holda o'rnatildi; Laravel 13 backend, `customer_flutter` va `courier_flutter` yaratildi; MySQL ulandi; health check va Request ID middleware tayyorlandi; Android emulyatorida (`emulator-5554`) haqiqiy backend va MySQL health javobi tasdiqlandi. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 - [x] **02 — Baza, foydalanuvchi, xavfsizlik va ruxsatlar:** Baza jadvallari, rollar, sotuvchi xodimlari, multi-tenant izolyatsiyasi, Sanctum auth, bir martalik parolni tiklash, web sessiya va CSRF, Admin MFA, OTP cheklovlari va demo himoyasi, bloklangan tokenlar nazorati, audit log tizimi to'liq yakunlandi (33 test, 201 assertion).
-- [ ] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService, ombor balansi va audit.
+- [x] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService (float ishlatilmaydi), ombor balansi, rezervatsiya va harakatlar auditi (`inventory_movements`), multi-tenant sotuvchi izolyatsiyasi to'liq yakunlandi va alohida MySQL test bazasida testlandi (40 test, 252 assertion).
 - [ ] **04 — Dizayn tizimi va xaridor veb-sayti:** Laym-yashil / to'q sarlavha / oq fon tokenlari, Blade + Livewire komponentlari, katalog, qidiruv, responsive moslashuv.
 - [ ] **05 — Savatcha va ishonchli checkout:** Multi-vendor cart, server quote, race condition zaxira rezervatsiyasi, idempotency key, outbox.
 - [ ] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi:** Payment adapter, demo to'lov oqimi, webhook signature tekshiruvi, immutable ledger, refund & dispute.
@@ -130,57 +136,111 @@ Joriy holat: **01-bosqich hamda 02-bosqich (Baza, foydalanuvchi, xavfsizlik va r
 
 > [!IMPORTANT]
 > **Cheklovlar va kelgusi bosqichlar eslatmasi:**  
-> Hozircha multi-tenant ma'lumotlar izolyatsiyasi faqat 02-bosqichda mavjud bo'lgan resurslar (**do'kon profili**, **do'kon xodimlari** va **foydalanuvchi manzillari**) bo'yicha to'liq tekshirildi va tasdiqlandi. Hali yaratilmagan buyurtmalar (orders), ombor (inventory), to'lovlar (payments) va kuryerlik trackingi bo'yicha tenant izolyatsiyasi ushbu modullar yaratiladigan 03, 05, 06, 07, 08-bosqichlarda amalga oshiriladi va testlanadi.
+> Multi-tenant ma'lumotlar izolyatsiyasi hozirgacha mavjud bo'lgan barcha resurslar bo'yicha (**do'kon profili**, **do'kon xodimlari**, **foydalanuvchi manzillari**, **mahsulotlar va narxlar**, **omborlar va zaxiralar**) to'liq tekshirildi va tasdiqlandi. Hali yaratilmagan buyurtmalar (orders), to'lovlar (payments) va kuryerlik trackingi bo'yicha tenant izolyatsiyasi ushbu modullar yaratiladigan 05, 06, 07, 08-bosqichlarda amalga oshiriladi va testlanadi.
+> 
+> Haqiqiy SMS/Email provayderi (Eskiz, PlayMobile, Twilio yoki SMTP) hozircha ulanmagan; `DemoOtpService` lokal va test muhiti uchun xavfsiz ishlatilmoqda (`production` muhitida demo OTP qat'iyan taqiqlangan).
 
 ---
 
-### C. PHPUnit Avtomatlashtirilgan Test Natijalari (33 ta test):
-Barcha testlar `.\infra\artisan.bat test` orqali 100% muvaffaqiyatli yakunlandi:
+## 5. 03-Bosqich Amaliy Natijalari (Katalog, Ombor va Optom Narxlar)
+
+### A. Ma'lumotlar Bazasi va Migratsiyalar:
+- **`categories`**: Ko'p bosqichli kategoriya daraxti (`parent_id`, `slug`, `icon_url`, `sort_order`, `is_active`).
+- **`products`**: Ko'p sotuvchili mahsulotlar (`seller_id`, `category_id`, `trade_mode` [retail_only, wholesale_only, both], `unit` [piece, box, kg, ton], `items_per_box`, `unit_step`, `min_order_quantity`, `status`, `is_active`).
+- **`product_variants`**: SKU variantlar (`product_id`, `sku`, `name`, `attributes` JSON, `barcode`, `is_active`).
+- **`price_tiers`**: Hajmga qarab pog'onali optom narxlar (`product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`).
+- **`warehouses`**: Sotuvchiga tegishli omborlar (`seller_id`, `name`, `code`, `address`, `is_active`).
+- **`inventory_balances`**: Ombor zaxira qoldig'i (`warehouse_id`, `product_variant_id`, `physical_quantity`, `reserved_quantity`, unique `[warehouse_id, product_variant_id]`).
+- **`inventory_movements`**: Zaxiradagi har bir o'zgarish tarixi (`warehouse_id`, `product_variant_id`, `type`, `quantity`, `balance_before`, `balance_after`, `reason`, `reference_type`, `reference_id`, `user_id`).
+- **`database/exports/schema.sql`**: Barcha jadvallar eksport qilinib yangilandi.
+
+### B. Tekshirilgan Amaliy Talablar:
+1. **Alohida MySQL test bazasi (`online_shop_test`) va ishchi baza daxlsizligi:**
+   - Testlar `phpunit.xml` orqali alohida `DB_DATABASE=online_shop_test` bazasida bajariladi.
+   - Ishchi baza `online_shop`dagi ma'lumotlar (9 ta rol, mavjud foydalanuvchilar va sozlamalar) daxlsiz saqlandi va hech qanday o'chirish/truncation sodir bo'lmadi.
+2. **299, 300, 999 va 1000 dona chegaralarida narx to'g'ri hisoblanishi (All-Units Pricing):**
+   - 1 - 299 dona: 300,000 UZS / dona.
+   - 300 - 999 dona: 270,000 UZS / dona.
+   - 1000+ dona: 240,000 UZS / dona.
+   - **Chegara sinovi:**
+     - 299 dona x 300,000 = 89,700,000 UZS.
+     - 300 dona x 270,000 = 81,000,000 UZS (All-units modelida 300 dona xarid qilish 299 donadan arzonroq bo'lishi amalda tasdiqlandi).
+     - 999 dona x 270,000 = 269,730,000 UZS.
+     - 1000 dona x 240,000 = 240,000,000 UZS.
+3. **Birliklar va miqdor qadami tekshirilishi:**
+   - `piece` birligida kasr miqdor (masalan, 2.5 dona) qat'iy rad etiladi.
+   - `box` birligida `items_per_box` orqali donaga to'g'ri ko'paytiriladi.
+   - `ton` birligida 1 tonna = 1000 kg ga to'liq mos konvertatsiya qilinadi.
+   - `min_order_quantity` va `unit_step` qoidasiga to'g'ri kelmaydigan miqdorlar (masalan, min=50, step=10 bo'lganda 55 dona) server tomonidan xato bilan rad etiladi.
+4. **Pul hisobida float ishlatilmasligi:**
+   - Narx va summalar hech qayerda PHP `float` tipiga o'girilmaydi.
+   - Barcha arifmetik hisoblar BCMath (`bcmul`, `bcadd`, `bcsub`, `bcdiv`) ixtiyoriy aniqlikdagi satrlar orqali amalga oshiriladi.
+   - Masalan: 100,000 dona x 300,000,000 UZS = 27,000,000,000,000 UZS satr shaklida 0 yo'qotish bilan saqlanadi.
+5. **Sotuvchi izolyatsiyasi (Multi-Tenant Isolation):**
+   - Sotuvchi A Sotuvchi B ning mahsulotini, SKU variantlarini, narx pog'onalarini yoki omborlarini ko'ra olmaydi, yangilay olmaydi va o'chira olmaydi (403 Forbidden).
+   - Sotuvchi A Sotuvchi B ning omboridagi zaxirasini o'zgartira olmaydi (403 Forbidden).
+6. **Zaxira o'zgarishlari auditi (`inventory_movements`):**
+   - Har bir zaxira kiritish (`inflow`), chiqarish (`outflow`) yoki tuzatish (`adjustment`) da `balance_before` va `balance_after` yoziladi.
+   - Xaridor buyurtma qilganda zaxirani band qilish (`reservation`) va bekor bo'lganda bo'shatish (`release`) atomar ravishda `lockForUpdate` orqali amalga oshiriladi; mavjud qoldiqdan ortiq band qilish rad etiladi.
+
+---
+
+### C. PHPUnit Avtomatlashtirilgan Test Natijalari (40 ta test):
+Barcha testlar `.\infra\artisan.bat test` orqali alohida `online_shop_test` MySQL bazasida 100% muvaffaqiyatli yakunlandi:
 
 ```text
    PASS  Tests\Unit\ExampleTest
   ✓ that true is true
 
    PASS  Tests\Feature\AuthAndPermissionTest
-  ✓ customer can register and receives sanctum token                              1.28s
-  ✓ seller can register store and becomes seller owner                            0.16s
-  ✓ user can login with valid credentials                                         0.17s
-  ✓ inactive user cannot login                                                    0.14s
-  ✓ otp send and verify flow                                                      0.19s
-  ✓ authenticated user can view me and logout                                     0.12s
-  ✓ customer can create and read own address                                      0.16s
-  ✓ user cannot view or update another users address                              0.20s
-  ✓ seller a cannot view seller b profile or members                              0.16s
-  ✓ seller a cannot update seller b store profile                                 0.22s
-  ✓ seller a cannot remove seller b staff member                                  0.25s
-  ✓ seller can manage own store and add staff                                     0.26s
-  ✓ customer cannot access admin endpoints                                        0.14s
-  ✓ customer cannot access seller endpoints                                       0.06s
-  ✓ admin can access admin endpoints and moderate sellers                         0.19s
+  ✓ customer can register and receives sanctum token                              4.58s  
+  ✓ seller can register store and becomes seller owner                            0.35s  
+  ✓ user can login with valid credentials                                         0.38s  
+  ✓ inactive user cannot login                                                    0.34s  
+  ✓ otp send and verify flow                                                      0.53s  
+  ✓ authenticated user can view me and logout                                     0.46s  
+  ✓ customer can create and read own address                                      0.37s  
+  ✓ user cannot view or update another users address                              0.51s  
+  ✓ seller a cannot view seller b profile or members                              0.48s  
+  ✓ seller a cannot update seller b store profile                                 0.35s  
+  ✓ seller a cannot remove seller b staff member                                  0.38s  
+  ✓ seller can manage own store and add staff                                     0.29s  
+  ✓ customer cannot access admin endpoints                                        0.25s  
+  ✓ customer cannot access seller endpoints                                       0.31s  
+  ✓ admin can access admin endpoints and moderate sellers                         0.33s  
 
    PASS  Tests\Feature\AuthSecurityHardeningTest
-  ✓ password reset succeeds and token replay is rejected                          0.20s
-  ✓ expired password reset token is rejected                                      0.17s
-  ✓ web session login regenerates session and logout invalidates                  0.35s
-  ✓ admin login requires mfa and blocks unverified access                         0.23s
-  ✓ otp expiration wrong attempts limit and replay rejection                      0.23s
-  ✓ login and otp endpoints enforce rate limiting                                 0.19s
-  ✓ demo otp throws exception in production                                       0.14s
-  ✓ deactivated user previously issued token is immediately blocked               0.13s
-  ✓ registration privilege escalation is strictly neutralized                     0.14s
-  ✓ seller operator cannot add staff or promote to owner                          0.17s
-  ✓ suspended store management operations are blocked                             0.15s
-  ✓ audit logs record security events without passwords or tokens                 0.20s
+  ✓ password reset succeeds and token replay is rejected                          0.37s  
+  ✓ expired password reset token is rejected                                      0.25s  
+  ✓ web session login regenerates session and logout invalidates                  0.37s  
+  ✓ admin login requires mfa and blocks unverified access                         0.38s  
+  ✓ otp expiration wrong attempts limit and replay rejection                      0.56s  
+  ✓ login and otp endpoints enforce rate limiting                                 0.63s  
+  ✓ demo otp throws exception in production                                       0.35s  
+  ✓ deactivated user previously issued token is immediately blocked               0.49s  
+  ✓ registration privilege escalation is strictly neutralized                     0.38s  
+  ✓ seller operator cannot add staff or promote to owner                          0.44s  
+  ✓ suspended store management operations are blocked                             0.31s  
+  ✓ audit logs record security events without passwords or tokens                 0.31s  
+
+   PASS  Tests\Feature\CatalogAndPricingTest
+  ✓ pricing tiers at 299 300 999 and 1000 thresholds                             0.39s  
+  ✓ money calculations strictly avoid float precision loss                       0.38s  
+  ✓ units and unit step constraints validation                                   0.36s  
+  ✓ seller cannot view update or delete another sellers product                  0.40s  
+  ✓ seller cannot view update or adjust another sellers warehouse                 0.38s  
+  ✓ inventory movements history recorded on every stock change                   0.35s  
+  ✓ inventory reservation and release tracking                                   0.43s  
 
    PASS  Tests\Feature\ExampleTest
-  ✓ the application returns a successful response                                 0.07s
+  ✓ the application returns a successful response                                 0.10s  
 
    PASS  Tests\Feature\HealthCheckTest
-  ✓ api v1 health endpoint returns success                                        0.05s
-  ✓ custom request id is preserved                                                0.06s
-  ✓ web health dashboard returns ok                                               0.08s
-  ✓ unknown api route returns standardized json error                             0.07s
+  ✓ api v1 health endpoint returns success                                        0.08s  
+  ✓ custom request id is preserved                                                0.08s  
+  ✓ web health dashboard returns ok                                               0.10s  
+  ✓ unknown api route returns standardized json error                             0.08s  
 
-  Tests:    33 passed (201 assertions)
-  Duration: 7.35s
+  Tests:    40 passed (252 assertions)
+  Duration: 18.70s
 ```

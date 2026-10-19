@@ -33,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Address::class, AddressPolicy::class);
         Gate::policy(Seller::class, SellerPolicy::class);
+        Gate::policy(\App\Models\Product::class, \App\Policies\ProductPolicy::class);
+        Gate::policy(\App\Models\Warehouse::class, \App\Policies\WarehousePolicy::class);
 
         // Security requirement: Rate limiters for API, Auth and OTP
         RateLimiter::for('api', function (Request $request) {

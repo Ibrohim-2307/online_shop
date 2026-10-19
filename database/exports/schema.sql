@@ -1,6 +1,6 @@
 -- =========================================================
 -- Marketplace MySQL Schema Export
--- Generated: 2026-10-19 16:02:20
+-- Generated: 2026-10-19 16:26:20
 -- Database: online_shop
 -- =========================================================
 
@@ -76,6 +76,28 @@ CREATE TABLE `cache_locks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------
+-- Table structure for `categories`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `categories`;
+CREATE TABLE `categories` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` bigint unsigned DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `icon` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `categories_slug_unique` (`slug`),
+  KEY `categories_parent_id_foreign` (`parent_id`),
+  KEY `categories_is_active_sort_order_index` (`is_active`,`sort_order`),
+  CONSTRAINT `categories_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
 -- Table structure for `failed_jobs`
 -- ---------------------------------------------------------
 DROP TABLE IF EXISTS `failed_jobs`;
@@ -89,6 +111,51 @@ CREATE TABLE `failed_jobs` (
   `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `inventory_balances`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `inventory_balances`;
+CREATE TABLE `inventory_balances` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `warehouse_id` bigint unsigned NOT NULL,
+  `product_variant_id` bigint unsigned NOT NULL,
+  `quantity` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `reserved_quantity` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_warehouse_sku` (`warehouse_id`,`product_variant_id`),
+  KEY `inventory_balances_product_variant_id_foreign` (`product_variant_id`),
+  CONSTRAINT `inventory_balances_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `inventory_balances_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `inventory_movements`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `inventory_movements`;
+CREATE TABLE `inventory_movements` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `warehouse_id` bigint unsigned NOT NULL,
+  `product_variant_id` bigint unsigned NOT NULL,
+  `type` enum('inflow','outflow','adjustment','reservation','release') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` decimal(12,3) NOT NULL,
+  `balance_before` decimal(12,3) NOT NULL,
+  `balance_after` decimal(12,3) NOT NULL,
+  `reason` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference_id` bigint unsigned DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `inventory_movements_product_variant_id_foreign` (`product_variant_id`),
+  KEY `inventory_movements_user_id_foreign` (`user_id`),
+  KEY `idx_inv_mov_history` (`warehouse_id`,`product_variant_id`,`created_at`),
+  CONSTRAINT `inventory_movements_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `inventory_movements_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `inventory_movements_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------
@@ -134,7 +201,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------
 -- Table structure for `otp_codes`
@@ -200,6 +267,74 @@ CREATE TABLE `personal_access_tokens` (
   UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
   KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`),
   KEY `personal_access_tokens_expires_at_index` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `price_tiers`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `price_tiers`;
+CREATE TABLE `price_tiers` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `product_variant_id` bigint unsigned NOT NULL,
+  `min_quantity` decimal(12,3) NOT NULL,
+  `max_quantity` decimal(12,3) DEFAULT NULL,
+  `unit_price` bigint unsigned NOT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UZS',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `price_tiers_product_variant_id_min_quantity_max_quantity_index` (`product_variant_id`,`min_quantity`,`max_quantity`),
+  CONSTRAINT `price_tiers_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `product_variants`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `product_variants`;
+CREATE TABLE `product_variants` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint unsigned NOT NULL,
+  `sku` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attributes` json DEFAULT NULL,
+  `barcode` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `product_variants_sku_unique` (`sku`),
+  KEY `product_variants_product_id_foreign` (`product_id`),
+  KEY `product_variants_barcode_index` (`barcode`),
+  CONSTRAINT `product_variants_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `products`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `products`;
+CREATE TABLE `products` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `seller_id` bigint unsigned NOT NULL,
+  `category_id` bigint unsigned DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `trade_mode` enum('retail_only','wholesale_only','both') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'both',
+  `unit` enum('piece','box','kg','ton') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'piece',
+  `items_per_box` int unsigned DEFAULT NULL,
+  `unit_step` decimal(12,3) NOT NULL DEFAULT '1.000',
+  `min_order_quantity` decimal(12,3) NOT NULL DEFAULT '1.000',
+  `status` enum('draft','pending','approved','rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `products_slug_unique` (`slug`),
+  KEY `products_seller_id_status_is_active_index` (`seller_id`,`status`,`is_active`),
+  KEY `products_category_id_status_is_active_index` (`category_id`,`status`,`is_active`),
+  KEY `products_trade_mode_index` (`trade_mode`),
+  CONSTRAINT `products_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `products_seller_id_foreign` FOREIGN KEY (`seller_id`) REFERENCES `sellers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------
@@ -341,6 +476,24 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `users_email_unique` (`email`),
   UNIQUE KEY `users_phone_unique` (`phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `warehouses`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `warehouses`;
+CREATE TABLE `warehouses` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `seller_id` bigint unsigned NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` text COLLATE utf8mb4_unicode_ci,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `warehouses_seller_id_is_active_index` (`seller_id`,`is_active`),
+  CONSTRAINT `warehouses_seller_id_foreign` FOREIGN KEY (`seller_id`) REFERENCES `sellers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

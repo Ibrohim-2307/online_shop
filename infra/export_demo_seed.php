@@ -17,18 +17,19 @@ $tableQueries = [
     // Only synthetic demo users (strictly matching @market.uz domain and demo phone)
     'users' => "SELECT id, name, email, phone, email_verified_at, password, is_active, last_login_at, remember_token, created_at, updated_at 
                 FROM users 
-                WHERE email IN ('seller@market.uz', 'customer@market.uz') 
+                WHERE email IN ('seller@market.uz', 'customer@market.uz', 'courier@market.uz') 
                    OR phone = '+998901234567' 
                 ORDER BY id ASC",
     'user_roles' => "SELECT ur.* FROM user_roles ur 
                      JOIN users u ON ur.user_id = u.id 
-                     WHERE u.email IN ('seller@market.uz', 'customer@market.uz') 
+                     WHERE u.email IN ('seller@market.uz', 'customer@market.uz', 'courier@market.uz') 
                         OR u.phone = '+998901234567'",
     'sellers' => "SELECT * FROM sellers WHERE slug = 'stroybaza-ulgurji'",
     'seller_members' => "SELECT sm.* FROM seller_members sm 
                          JOIN sellers s ON sm.seller_id = s.id 
                          WHERE s.slug = 'stroybaza-ulgurji'",
     'categories' => "SELECT * FROM categories ORDER BY sort_order ASC, id ASC",
+    'banners' => "SELECT * FROM banners ORDER BY sort_order ASC, id ASC",
     'products' => "SELECT * FROM products WHERE seller_id IN (SELECT id FROM sellers WHERE slug = 'stroybaza-ulgurji') ORDER BY id ASC",
     'product_variants' => "SELECT pv.* FROM product_variants pv 
                            JOIN products p ON pv.product_id = p.id 

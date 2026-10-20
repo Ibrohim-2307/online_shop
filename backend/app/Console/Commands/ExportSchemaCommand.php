@@ -56,6 +56,24 @@ class ExportSchemaCommand extends Command
             $sql .= $createStatement . ";\n\n";
         }
 
+        // Append migration metadata so fresh imports match Laravel migration state
+        $migrations = DB::table('migrations')->orderBy('id')->get();
+        if ($migrations->isNotEmpty()) {
+            $sql .= "-- ---------------------------------------------------------\n";
+            $sql .= "-- Migration metadata records\n";
+            $sql .= "-- ---------------------------------------------------------\n";
+            $sql .= "LOCK TABLES `migrations` WRITE;\n";
+            foreach ($migrations as $m) {
+                $sql .= sprintf(
+                    "INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (%d, '%s', %d);\n",
+                    $m->id,
+                    addslashes($m->migration),
+                    $m->batch
+                );
+            }
+            $sql .= "UNLOCK TABLES;\n\n";
+        }
+
         $sql .= "SET FOREIGN_KEY_CHECKS = 1;\n";
 
         $targetFile = $exportDir . '/schema.sql';

@@ -2,16 +2,18 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Seed the application's database with demo data.
      */
     public function run(): void
     {
@@ -19,5 +21,29 @@ class DatabaseSeeder extends Seeder
             RoleAndPermissionSeeder::class,
             DemoCatalogSeeder::class,
         ]);
+
+        // Demo Customer
+        $customer = User::firstOrCreate(
+            ['email' => 'customer@market.uz'],
+            [
+                'name' => 'Dilshod Xaridor',
+                'phone' => '+998909876543',
+                'password' => Hash::make('Customer123!'),
+                'is_active' => true,
+            ]
+        );
+        $customer->assignRole('customer');
+
+        // Demo Courier
+        $courier = User::firstOrCreate(
+            ['email' => 'courier@market.uz'],
+            [
+                'name' => 'Rustam Kuryer',
+                'phone' => '+998905554433',
+                'password' => Hash::make('Courier123!'),
+                'is_active' => true,
+            ]
+        );
+        $courier->assignRole('courier');
     }
 }

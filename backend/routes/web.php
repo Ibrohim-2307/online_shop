@@ -20,6 +20,10 @@ Route::get('/login', [WebAuthController::class, 'showLoginForm'])->name('login')
 Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
+// Installation routes
+Route::get('/install', [\App\Http\Controllers\Install\InstallerController::class, 'show'])->name('install.show');
+Route::post('/install', [\App\Http\Controllers\Install\InstallerController::class, 'install'])->name('install.process');
+
 Route::get('/health', function () {
     $dbStatus = 'Ulangan (MySQL 8.0)';
     try {

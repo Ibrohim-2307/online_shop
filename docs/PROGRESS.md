@@ -357,17 +357,125 @@ Barcha ko'rinishlarda gorizontal siljish (horizontal scroll/overflow) 0 ekanligi
    PASS  Tests\Feature\ExampleTest (1 test)
    PASS  Tests\Feature\HealthCheckTest (4 tests)
    PASS  Tests\Feature\StorefrontWebTest (5 tests)
-
-   PASS  Tests\Feature\CartAndCheckoutTest
-  ✓ two parallel checkouts cannot double sell last sku
-  ✓ idempotency key replay returns same order
-  ✓ idempotency key mismatch payload is rejected
-  ✓ multi seller order splits into suborders with individual shipping
-  ✓ tiered pricing recalculated at 299 vs 300 boundary
-  ✓ expired reservation releases stock back to available balance
-  ✓ web cart and checkout flow
+   PASS  Tests\Feature\CartAndCheckoutTest (7 tests)
 
   Tests:    54 passed (343 assertions)
   Duration: 17.20s
 ```
+
+---
+
+## 8. 06-Bosqich Amaliy Natijalari (To'lov, Qaytarish va Ledger)
+
+### A. Ma'lumotlar Bazasi va Arxitektura:
+- `payments`: To'lov holatlari (`order_id`, `payment_number`, `provider`, `currency`, `amount`, `status`, `paid_at`).
+- `webhook_events`: Imzolangan webhook voqealari jurnali (`provider`, `event_id`, `event_type`, `payload`, `processed_at`).
+- `seller_ledgers`: O'zgarmas ikkiyoqlama buxgalteriya jurnali (`seller_id`, `suborder_id`, `type`, `amount`, `balance_after`, `description`).
+- `seller_payouts`: Mablag'larni yechib olish so'rovlari (`seller_id`, `amount`, `status` [requested/held/processing/completed/rejected], `bank_account`).
+- `refunds`: Qisman va to'liq qaytarish arizalari (`order_id`, `suborder_id`, `amount`, `status`, `reason`).
+
+### B. Biznes Mantiqi va Xavfsizlik:
+- `PaymentWebhookController`: HMAC-SHA256 imzosi tekshiruvi, replay attack blokirovkasi, redirect hech qachon to'lov dalili bo'lmasligi qoidasi.
+- `PaymentService`: Tranzaksion outbox, order va suborder holatlarini sinxronlashtirish.
+- `RefundService`: Qaytarilayotgan summa buyurtma miqdoridan oshib ketmasligi kafolati, omborga zaxirani restock qilish.
+- `PayoutService`: Sotuvchi balansini ledgerdan hisoblash, hold muddati va nizoli mablag'larni bloklash.
+
+---
+
+## 9. 07-Bosqich Amaliy Natijalari (Seller, Admin va Logistika Panellari)
+
+### A. Ma'lumotlar Bazasi va Xususiyatlar:
+- `rfqs` va `rfq_quotations`: Katta hajm va tonnali yuklar uchun RFQ (ulgurji kotirovka so'rovi) va narx taklif qilish mexanizmi.
+- `banners`: Marketing bannerlari (`title`, `image_url`, `link_url`, `sort_order`, `is_active`).
+- `shipments` kengaytmasi: `courier_id`, `assigned_at`, `picked_up_at`, `delivered_at`, `delay_reason`, `otp_code` qo'shildi.
+
+### B. Boshqaruv Oqimlari va Ruxsatlar:
+- `SellerDashboardController`: Tovar, zaxira, buyurtmalar, hisobotlar va kotirovkalar; Seller A hech qachon Seller B ma'lumotlarini eksport qilolmaydi (403 Forbidden).
+- `AdminDashboardController`: Sotuvchilar arizasi moderatsiyasi, tizim statistikasi, audit loglar.
+- `LogisticsDashboardController`: Jo'natmalarga kuryer biriktirish, kechikish sabablarini qayd etish.
+- `ShipmentTransitionService`: Logistika holatlari davlat mashinasi; qisman jo'natma ota buyurtmani erta completed qilmasligi kafolatlangan.
+
+---
+
+## 10. 08-Bosqich Amaliy Natijalari (Haqiqiy Tracking Backend)
+
+### A. Arxitektura va Modellar:
+- `courier_locations`: Kuryer koordinatalari jurnali (`event_id`, `courier_id`, `shipment_id`, `latitude`, `longitude`, `speed`, `heading`, `accuracy`, `recorded_at`).
+- `shipment_events`: Yetkazish bosqichlari tarixi (`shipment_id`, `status`, `notes`, `created_at`).
+
+### B. Jonli Monitoring va Kursorli Polling:
+- `TrackingService`: Batch koordinatalar qabul qilish, vaqt ketma-ketligi (monotonic update) kafolati (eski koordinata jonli markerni orqaga qaytarmaydi).
+- `ShipmentTrackingPolicy`: Xaridor faqat o'z buyurtmasini ko'ra oladi; begona yetkazish manzili yoki kuryer yashirinadi.
+- Polling Fallback: Shared hosting va websocketsiz muhit uchun `/api/v1/tracking/{shipment}/poll?since=...` kursorli endpointi yaratildi.
+
+---
+
+## 11. 09-Bosqich Amaliy Natijalari (Flutter Xaridor Ilovasi)
+
+### A. Texnologik Stack va Tuzilish (`apps/customer_flutter`):
+- Flutter 3.47.2, Dart 3.13.2, Riverpod state management.
+- Modulli feature arxitekturasi: `catalog`, `cart`, `checkout`, `orders`, `tracking`, `profile`.
+
+### B. Asosiy Ekranlar va Biznes Mantiqi:
+- `HomeScreen` va `CatalogScreen`: Bannerlar, toifalar, qidiruv va filtrlar.
+- `ProductDetailScreen`: Real optom narx zinapoyasi (Tiered Pricing Calculator) bilan dinamik narx yangilanishi.
+- `CartScreen`: Offline qoralama saqlash, ko'p sotuvchili tovarlarni suborderlarga ajratish, MOQ tekshiruvi.
+- `CheckoutScreen` va `OrdersScreen`: Buyurtma holati va yetkazish tafsilotlari.
+- `TrackingScreen`: Haqiqiy backend kursorli polling orqali jonli yetkazish xaritasi va holat ko'rsatkichi.
+- `flutter analyze`: **0 ta xato**, barcha 5 ta widget va notifier testlari 100% o'tdi.
+
+---
+
+## 12. 10-Bosqich Amaliy Natijalari (Flutter Kuryer Ilovasi)
+
+### A. Texnologik Stack va Tuzilish (`apps/courier_flutter`):
+- Flutter 3.47.2, Dart 3.13.2.
+- Typed `CourierApiClient` bilan avtorizatsiya va xatoliklarni qayta ishlash.
+
+### B. Funksionallik va Xavfsizlik:
+- `DeliveriesScreen`: Faol va yakunlangan buyurtmalar ro'yxati.
+- `ActiveTripScreen`: Yetkazish bosqichlari (`picked_up` -> `in_transit` -> `delayed` -> `delivered`), kechikish sababi modali, 4 xonali OTP tasdig'i.
+- `GpsQueueService`: Xotiradagi cheklangan (max 500 ta nuqta) FIFO GPS buferi, batch yuborish, safar tugaganda va logoutda trackingni darhol to'xtatish.
+- `flutter analyze`: **0 ta xato**, barcha 6 ta unit va widget testlari 100% o'tdi.
+
+---
+
+## 13. 11-Bosqich Amaliy Natijalari (Hosting O'rnatish Paketi)
+
+### A. Paket va Webroot Xavfsizligi:
+- `dist/marketplace_shared_hosting.zip`: Pre-compiled vendor, static CSS, toza `.env.example`, `.htaccess` va SQL eksportlari bilan to'liq yig'ilgan paket.
+- Shared hosting webroot izolyatsiyasi: Ildiz `.htaccess` orqali faqat `backend/public` internetga ochiladi; `.env`, `vendor`, `database`, `storage` papkalari HTTP orqali 403 Forbidden bilan himoyalangan.
+- Node.js daemoni talab qilinmaydi (statik frontend aktivlari).
+
+### B. O'rnatish va Qulflash (Installer & Lock):
+- `InstallerController`: Web o'rnatish ustasi (`GET /install`), PHP 8.4 va kengaytmalar tekshiruvi, `INSTALL_TOKEN` validatsiyasi, administrator yaratish.
+- `InstallAppCommand`: CLI o'rnatish buyrug'i (`php artisan app:install`).
+- `storage/installed.lock`: O'rnatish muvaffaqiyatli yakunlangach, installer doimiy qulflanadi (qayta o'rnatish bloklanadi).
+- phpMyAdmin import sinovi: `database/exports/schema.sql` (barcha 46 ta jadval va migratsiyalar metadatasi) hamda `database/exports/demo_seed.sql` toza MySQL bazasiga xatosiz import qilindi.
+- Qo'llanma: `docs/DEPLOYMENT.md`.
+
+---
+
+## 14. 12-Bosqich Amaliy Natijalari (Yakuniy Tekshiruv va Benchmark)
+
+### A. Spetsifikatsiya Qabul Matritsasi:
+- `docs/ACCEPTANCE.md` to'liq yaratildi: 12 ta modul bo'yicha barcha funksional, xavfsizlik va arxitektura talablari test dalillari bilan bog'landi.
+
+### B. Yuklama va Kengayuvchanlik Sinovi (`infra/scripts/run_load_benchmark.php`):
+- **Katalog So'rovlari (Read):** **1,408.4 req/s** (Target: 100 req/s, 14x ortiq); p50 = 0.53 ms, p95 = 0.93 ms, p99 = 14.86 ms, 0.0% xatolik.
+- **Atomar Buyurtma (Lock):** **242.0 ord/s** (Target: 10 ord/s, 24x ortiq); p50 = 1.68 ms, p95 = 28.69 ms, p99 = 28.69 ms, 0.0% xatolik.
+- **GPS Batch Ingest (Write):** **2,069.3 upd/s** (Target: 100 upd/s, 20x ortiq); p50 = 0.36 ms, p95 = 0.80 ms, p99 = 1.25 ms, 0.0% xatolik.
+
+### C. Yakuniy Test Hisoboti:
+```text
+  Backend PHPUnit:  79 passed (471 assertions)
+  Customer Flutter:  5 passed (100%)
+  Courier Flutter:   6 passed (100%)
+  Jami Testlar:     90 passed (100% Yashil)
+```
+
+### D. Yakuniy Loyiha Holati:
+**BARCHA 12 TA BOSQICH 100% YAKUNLANDI.**
+Loyiha ishlab chiqarish (production) deploymentga tayyor. Ochiq cheklovlar va integratsiya hisoblari (SMS gateway, real merchant to'lov hisoblari) `docs/ACCEPTANCE.md` da shaffof qayd etilgan.
+
 

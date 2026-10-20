@@ -1,0 +1,23 @@
+# =========================================================
+# Root .htaccess for Shared Hosting Deployments
+# Directs public web traffic into backend/public/
+# Strictly denies access to application internals and secrets
+# =========================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Deny access to sensitive files and hidden dotfiles
+    RewriteRule ^\.(.*)$ - [F,L]
+    RewriteRule ^(.*)\.(env|json|lock|md|xml|yml|yaml|sql|bat|ps1|sh)$ - [F,L]
+
+    # 2. Block direct HTTP access to internal PHP and project folders
+    RewriteRule ^(backend/(app|bootstrap|config|database|resources|routes|storage|tests|vendor)|infra|docs|apps)/ - [F,L]
+
+    # 3. Transparently rewrite public requests into backend/public
+    RewriteCond %{REQUEST_URI} !^/backend/public/
+    RewriteRule ^(.*)$ backend/public/$1 [L]
+</IfModule>
+
+# Prevent directory indexing
+Options -Indexes

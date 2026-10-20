@@ -3,7 +3,7 @@
 -- Conforms strictly to TECHNICAL_SPEC.md
 -- Note: Contains ONLY synthetic demo catalog and accounts.
 -- Real users, customer passwords, OTPs and tokens are NEVER exported.
--- Generated on: 2026-10-19 16:47:40
+-- Generated on: 2026-10-20 07:15:45
 -- ---------------------------------------------------------
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -104,11 +104,15 @@ INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES ('9', '22');
 -- Dumping synthetic demo data for table `users`
 --
 INSERT INTO `users` (`id`, `name`, `email`, `phone`, `email_verified_at`, `password`, `is_active`, `last_login_at`, `remember_token`, `created_at`, `updated_at`) VALUES ('1', 'Akbar Sotuvchi', 'seller@market.uz', '+998901234567', NULL, '$2y$12$GInGLEIp9/kAZBpbJ9mhf.1tpshsiUsEjowKUFsnBFm1xdqkDpFCi', '1', NULL, NULL, '2026-10-19 16:37:09', '2026-10-19 16:37:09');
+INSERT INTO `users` (`id`, `name`, `email`, `phone`, `email_verified_at`, `password`, `is_active`, `last_login_at`, `remember_token`, `created_at`, `updated_at`) VALUES ('2', 'Dilshod Xaridor', 'customer@market.uz', '+998909876543', NULL, '$2y$12$ncbN6X/tT1skDno0heJEFOxTamuils/vYTiSCH2btS/qD0gdFrfZm', '1', NULL, NULL, '2026-10-20 07:08:45', '2026-10-20 07:08:45');
+INSERT INTO `users` (`id`, `name`, `email`, `phone`, `email_verified_at`, `password`, `is_active`, `last_login_at`, `remember_token`, `created_at`, `updated_at`) VALUES ('3', 'Rustam Kuryer', 'courier@market.uz', '+998905554433', NULL, '$2y$12$p7kb9W0aoreAeYjeAVSOCe3TZKyFjjRgZ8yoaVmBBSq9nvV.8jmlG', '1', NULL, NULL, '2026-10-20 07:08:46', '2026-10-20 07:08:46');
 
 --
 -- Dumping synthetic demo data for table `user_roles`
 --
 INSERT INTO `user_roles` (`user_id`, `role_id`, `created_at`, `updated_at`) VALUES ('1', '3', '2026-10-19 16:37:09', '2026-10-19 16:37:09');
+INSERT INTO `user_roles` (`user_id`, `role_id`, `created_at`, `updated_at`) VALUES ('2', '1', '2026-10-20 07:08:45', '2026-10-20 07:08:45');
+INSERT INTO `user_roles` (`user_id`, `role_id`, `created_at`, `updated_at`) VALUES ('3', '6', '2026-10-20 07:08:46', '2026-10-20 07:08:46');
 
 --
 -- Dumping synthetic demo data for table `sellers`
@@ -146,14 +150,14 @@ INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `name`, `attributes`,
 --
 -- Dumping synthetic demo data for table `price_tiers`
 --
-INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('1', '1', '1.000', '299.000', '300000', 'UZS', '2026-10-19 16:37:27', '2026-10-19 16:37:53');
-INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('2', '1', '300.000', '999.000', '270000', 'UZS', '2026-10-19 16:37:27', '2026-10-19 16:37:53');
+INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('1', '1', '1.000', '299.000', '300000', 'UZS', '2026-10-19 16:37:27', '2026-10-20 07:08:45');
+INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('2', '1', '300.000', '999.000', '270000', 'UZS', '2026-10-19 16:37:27', '2026-10-20 07:08:45');
 INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('3', '1', '1000.000', NULL, '250000', 'UZS', '2026-10-19 16:37:27', '2026-10-19 16:37:27');
-INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('4', '2', '1.000', '9.000', '300000000', 'UZS', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
+INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('4', '2', '1.000', '9.000', '300000000', 'UZS', '2026-10-19 16:37:53', '2026-10-20 07:08:45');
 INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('5', '2', '10.000', NULL, '270000000', 'UZS', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
-INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('6', '3', '5.000', '49.000', '48000', 'UZS', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
+INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('6', '3', '5.000', '49.000', '48000', 'UZS', '2026-10-19 16:37:53', '2026-10-20 07:08:45');
 INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('7', '3', '50.000', NULL, '42000', 'UZS', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
-INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('8', '4', '1.000', '9.500', '9500000', 'UZS', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
+INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('8', '4', '1.000', '9.500', '9500000', 'UZS', '2026-10-19 16:37:53', '2026-10-20 07:08:45');
 INSERT INTO `price_tiers` (`id`, `product_variant_id`, `min_quantity`, `max_quantity`, `unit_price`, `currency`, `created_at`, `updated_at`) VALUES ('9', '4', '10.000', NULL, '8900000', 'UZS', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
 
 --
@@ -164,10 +168,10 @@ INSERT INTO `warehouses` (`id`, `seller_id`, `name`, `code`, `address`, `is_acti
 --
 -- Dumping synthetic demo data for table `inventory_balances`
 --
-INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '50000.000', '0.000', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
-INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('2', '1', '2', '50.000', '0.000', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
-INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('3', '1', '3', '2000.000', '0.000', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
-INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('4', '1', '4', '350.000', '0.000', '2026-10-19 16:37:53', '2026-10-19 16:37:53');
+INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '50000.000', '0.000', '2026-10-19 16:37:53', '2026-10-20 07:08:45');
+INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('2', '1', '2', '50.000', '0.000', '2026-10-19 16:37:53', '2026-10-20 07:08:45');
+INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('3', '1', '3', '2000.000', '0.000', '2026-10-19 16:37:53', '2026-10-20 07:08:45');
+INSERT INTO `inventory_balances` (`id`, `warehouse_id`, `product_variant_id`, `quantity`, `reserved_quantity`, `created_at`, `updated_at`) VALUES ('4', '1', '4', '350.000', '0.000', '2026-10-19 16:37:53', '2026-10-20 07:08:45');
 
 --
 -- Dumping synthetic demo data for table `inventory_movements`

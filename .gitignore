@@ -38,7 +38,10 @@ yarn-error.log
 **/.pub/
 **/coverage/
 
-# IDE & OS
+# Distribution & Artifacts
+dist/*.zip
+dist/staging_hosting/
+storage/installed.lock
 .idea/
 .vscode/
 *.swp

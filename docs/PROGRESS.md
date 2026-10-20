@@ -2,7 +2,7 @@
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
 Sana: 20-oktabr, 2026  
-Joriy holat: **01–08 bosqichlar (Haqiqiy tracking backend, GPS batch ingest, deduplikatsiya, monoton vaqt tartibi, stale marker, polling fallback va xaridor daxlsizligi) to'liq bajarildi va alohida MySQL test bazasida 75 ta test bilan tasdiqlandi.** 09-bosqichga (Flutter xaridor ilovasi) o'tilmoqda. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
+Joriy holat: **01–09 bosqichlar (Flutter xaridor ilovasi, native ekranlar, Riverpod state management, optom pog'onali narx kalkulyatori, oflayn savatcha va buyurtma rasmiylashtirish) to'liq bajarildi, barcha 5 ta Flutter testi va 75 ta backend testi muvaffaqiyatli o'tdi.** 10-bosqichga (Flutter kuryer ilovasi va real GPS) o'tilmoqda. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 
 ---
 
@@ -54,7 +54,8 @@ Joriy holat: **01–08 bosqichlar (Haqiqiy tracking backend, GPS batch ingest, d
 - [x] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi (Ledger):** Kriptografik HMAC-SHA256 imzoli to'lov webhooki, takroriy callback idempotensiyasi, xaridor to'lagan mablag' va sotuvchilar tushumi o'rtasidagi qat'iy balans tengligi, ikki yoqlama append-only `seller_ledgers`, 7 kunlik hold davri, nizoli arizalar (dispute) bloki, qaytarilgan jismoniy tovarlarni omborga kirim qilish (inflow) va audit harakati (9 test, 48 assertion).
 - [x] **07 — Seller, admin va logistika panellari:** RFQ va tijoriy kotirovka tizimi, qabulda atomar zaxirani qayta tekshirish, tonnalik yuklarda yetkazish kelishilmagan bo'lsa to'lovni bloklash, multi-tenant ma'lumotlar eksporti izolyatsiyasi (Seller A hech qachon Seller B ni eksport qilolmaydi), support/moderator roli payout tasdiqlay olmasligi (faqat admin), jo'natma holatlarining qat'iy holat mashinasi (delay_reason majburiyligi) va qisman jo'natma parent orderni erta completed qilmasligi (6 test, 42 assertion).
 - [x] **08 — Haqiqiy tracking backend:** Kuryer GPS batch joylashuv qabuli (`/api/v1/courier/location/batch`), event_id orqali idempotent deduplikatsiya, koordinata (-90..90, -180..180) va kelajak vaqti tekshiruvi, kechikkan oflayn paketlar tufayli jonli marker orqaga sakrab ketmasligi (monotonik vaqt tartibi), 5 daqiqadan oshgan signallarni `is_stale = true` deb belgilash, 10–15 soniyali cursor-based polling fallback (`since_id`), yetkazilganda (`delivered`) kuzatuvni yopish (`tracking_closed = true`) va begona xaridorlar kuzatuviga 403 Forbidden to'sig'i (6 test, 24 assertion). Jami: **75 test, 457 assertion**.
-- [ ] **09 — Flutter xaridor ilovasi:** Native Flutter UI, Riverpod, typed API client, offline kesh, Android build sinovi.
+- [x] **09 — Flutter xaridor ilovasi:** Native Flutter UI (WebView yo'q), Riverpod 3.x state management, typed ApiClient, optom pog'onali narx reaktiv kalkulyatori (1-299, 300-999, 1000+ dona narx yangilanishi), oflayn savatcha qoralamasi (draft), buyurtma berish, GPS jo'natma tracking ekrani (12s polling fallback), profil va diagnostika ekranlari; tahlildan xatolarsiz o'tdi (`flutter analyze: No issues found!`), barcha widget va unit testlar muvaffaqiyatli yakunlandi (5 test o'tdi).
+- [ ] **10 — Flutter kuryer va real GPS tekshiruvi:** Alohida kuryer ilovasi, aktiv safar GPS tracking, fon rejimi, topshirish OTP/foto isboti.
 - [ ] **10 — Flutter kuryer va real GPS tekshiruvi:** Alohida kuryer ilovasi, aktiv safar GPS tracking, fon rejimi, topshirish OTP/foto isboti.
 - [ ] **11 — Hosting uchun o'rnatish paketi:** Shared hosting zip eksporti, schema.sql va demo_seed.sql, cron va scheduler integratsiyasi.
 - [ ] **12 — Yakuniy tekshiruv va topshirish:** ACCEPTANCE.md, yuklama sinovlari, xavfsizlik va izolyatsiya auditi, topshirish paketi.

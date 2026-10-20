@@ -6,14 +6,15 @@
     $step = (float)($product->unit_step ?? 1);
 @endphp
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16"
-     x-data="{
+<script>
+function productDetails() {
+    return {
         selectedVariantId: {{ $defaultVariant ? $defaultVariant->id : 'null' }},
         quantity: {{ $minQty }},
         minQuantity: {{ $minQty }},
         step: {{ $step }},
         unit: '{{ $unitLabel }}',
-        variants: {{ $product->variants->toJson() }},
+        variants: @json($product->variants),
         currentQuote: {
             unit_price: '0',
             base_unit_price: '0',
@@ -27,12 +28,14 @@
         async addToCart() {
             this.addingToCart = true;
             try {
+                const tokenEl = document.querySelector('meta[name="csrf-token"]');
+                const token = tokenEl ? tokenEl.getAttribute('content') : '';
                 const res = await fetch('/api/v1/cart/items', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]').getAttribute('content')
+                        'X-CSRF-TOKEN': token
                     },
                     body: JSON.stringify({
                         variant_id: this.selectedVariantId,
@@ -126,7 +129,11 @@
             if (!numStr) return '0';
             return numStr.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         }
-     }">
+    };
+}
+</script>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16" x-data="productDetails()">
 
     <!-- Breadcrumb -->
     <nav class="flex flex-wrap items-center gap-2 text-xs text-[#64748B] mb-6" aria-label="Breadcrumb">

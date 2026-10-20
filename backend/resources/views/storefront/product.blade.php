@@ -152,48 +152,54 @@ function productDetails() {
         
         <!-- Left: Product Image / Visual Showcase (5 cols) -->
         <div class="lg:col-span-5 space-y-4">
-            <div class="aspect-square bg-white rounded-3xl border border-[#E8ECE4] p-8 flex items-center justify-center relative overflow-hidden shadow-xs">
+            <div class="aspect-square bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden flex items-center justify-center relative shadow-xs">
                 <!-- Badges -->
                 <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
                     @if($product->trade_mode === 'wholesale_only')
-                        <span class="px-3 py-1 rounded-xl bg-[#123C2F] text-[#C9F46B] text-xs font-black uppercase tracking-wider">
+                        <span class="px-3 py-1 rounded-xl bg-[#123C2F] text-[#C9F46B] text-xs font-black uppercase tracking-wider shadow-sm">
                             Ulgurji Savdo (Optom)
                         </span>
                     @elseif($product->trade_mode === 'both')
-                        <span class="px-3 py-1 rounded-xl bg-[#C9F46B] text-[#123C2F] text-xs font-black uppercase tracking-wider">
+                        <span class="px-3 py-1 rounded-xl bg-[#C9F46B] text-[#123C2F] text-xs font-black uppercase tracking-wider shadow-sm">
                             Chakana + Optom
                         </span>
                     @else
-                        <span class="px-3 py-1 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-[#172326] text-xs font-bold">
+                        <span class="px-3 py-1 rounded-xl bg-white/90 backdrop-blur-sm border border-[#E8ECE4] text-[#172326] text-xs font-bold shadow-sm">
                             Chakana
                         </span>
                     @endif
                 </div>
 
-                <!-- Product SVG Representation -->
-                <div class="w-40 h-40 rounded-3xl bg-[#FAFBF7] border border-[#E8ECE4] flex items-center justify-center text-[#123C2F] shadow-sm">
-                    @if(str_contains(strtolower($product->name), 'sement'))
-                        <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                    @elseif(str_contains(strtolower($product->name), 'generator') || str_contains(strtolower($product->name), 'uskuna'))
-                        <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    @elseif(str_contains(strtolower($product->name), 'suv'))
-                        <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                        </svg>
-                    @elseif(str_contains(strtolower($product->name), 'armatura'))
-                        <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
-                    @else
-                        <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                    @endif
-                </div>
+                @if($product->image_url)
+                    <img src="{{ $product->image_url }}" 
+                         alt="{{ $product->name }}" 
+                         class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                @else
+                    <!-- Product SVG Representation -->
+                    <div class="w-40 h-40 rounded-3xl bg-[#FAFBF7] border border-[#E8ECE4] flex items-center justify-center text-[#123C2F] shadow-sm">
+                        @if(str_contains(strtolower($product->name), 'sement'))
+                            <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        @elseif(str_contains(strtolower($product->name), 'generator') || str_contains(strtolower($product->name), 'uskuna'))
+                            <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        @elseif(str_contains(strtolower($product->name), 'suv'))
+                            <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                        @elseif(str_contains(strtolower($product->name), 'armatura'))
+                            <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                        @else
+                            <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             <!-- Seller Card Preview -->

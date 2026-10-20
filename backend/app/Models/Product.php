@@ -18,6 +18,7 @@ class Product extends Model
         'name',
         'slug',
         'description',
+        'image_url',
         'trade_mode',
         'unit',
         'items_per_box',

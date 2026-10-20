@@ -192,6 +192,7 @@ class CartService
                 'variant_id' => $variant->id,
                 'product_id' => $product->id,
                 'product_name' => $product->name,
+                'image_url' => $product->image_url,
                 'sku' => $variant->sku,
                 'unit' => $product->unit,
                 'quantity' => (float) $item->quantity,

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             RoleAndPermissionSeeder::class,
             DemoCatalogSeeder::class,
             ExpandedCatalogSeeder::class,
+            ProductImageSeeder::class,
         ]);
 
         // Demo Customer

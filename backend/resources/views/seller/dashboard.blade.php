@@ -155,6 +155,7 @@
                 <table class="w-full text-left text-xs text-slate-600">
                     <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
                         <tr>
+                            <th class="p-3.5">Rasm</th>
                             <th class="p-3.5">Mahsulot Nomi / SKU</th>
                             <th class="p-3.5">Savdo Rejimi</th>
                             <th class="p-3.5">Birligi & Qadam</th>
@@ -167,6 +168,15 @@
                         @foreach($products as $p)
                             @foreach($p->variants as $v)
                                 <tr class="hover:bg-slate-50/50">
+                                    <td class="p-3.5">
+                                        <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 flex items-center justify-center flex-shrink-0">
+                                            @if($p->image_url)
+                                                <img src="{{ $p->image_url }}" alt="{{ $p->name }}" class="w-full h-full object-cover">
+                                            @else
+                                                <span class="text-slate-400 text-[10px]">Rasm yo'q</span>
+                                            @endif
+                                        </div>
+                                    </td>
                                     <td class="p-3.5 font-bold text-slate-900">
                                         <a href="{{ route('product.show', $p->slug) }}" class="hover:text-emerald-700 hover:underline">
                                             {{ $p->name }}
@@ -464,8 +474,14 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mahsulot Rasmi (Rasm havolasi / URL)</label>
+                        <input type="text" name="image_url" placeholder="Masalan: /images/products/sement.jpg yoki https://..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        <span class="text-[11px] text-slate-400">Bo'sh qoldirilsa toifaga mos standart rasm avtomatik o'rnatiladi</span>
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mahsulot Haqida Tavsif</label>
-                        <textarea name="description" rows="2" placeholder="O'lchamlari, texnik xususiyatlari, sertifikatlari..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]"></textarea>
+                        <textarea name="description" rows="2" placeholder="O'lchamlari, texnik xususiyatlari, sertifikatlari..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]"></textarea>
                     </div>
 
                     <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">

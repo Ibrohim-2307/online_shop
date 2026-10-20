@@ -196,11 +196,22 @@
                                 $totalStock = $prod->variants->flatMap->inventoryBalances->sum('quantity');
                             @endphp
                             <tr class="hover:bg-slate-50/50">
-                                <td class="p-3.5 font-bold text-slate-900">
-                                    <a href="{{ route('product.show', $prod->slug) }}" target="_blank" class="hover:text-emerald-700 hover:underline">
-                                        {{ $prod->name }}
-                                    </a>
-                                    <span class="block text-[11px] text-slate-500 font-normal">Toifa: {{ $prod->category->name ?? '—' }}</span>
+                                <td class="p-3.5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-11 h-11 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 flex-shrink-0 flex items-center justify-center">
+                                            @if($prod->image_url)
+                                                <img src="{{ $prod->image_url }}" alt="{{ $prod->name }}" class="w-full h-full object-cover">
+                                            @else
+                                                <span class="text-[9px] text-slate-400">Rasm yo'q</span>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <a href="{{ route('product.show', $prod->slug) }}" target="_blank" class="font-bold text-slate-900 hover:text-emerald-700 hover:underline">
+                                                {{ $prod->name }}
+                                            </a>
+                                            <span class="block text-[11px] text-slate-500 font-normal">Toifa: {{ $prod->category->name ?? '—' }}</span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="p-3.5">
                                     <span class="font-semibold text-slate-800">{{ $prod->seller->name ?? '—' }}</span>

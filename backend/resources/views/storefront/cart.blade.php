@@ -87,10 +87,14 @@
                                         
                                         <!-- Product info -->
                                         <div class="flex items-start gap-4">
-                                            <div class="w-16 h-16 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] flex items-center justify-center flex-shrink-0">
-                                                <svg class="w-8 h-8 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                </svg>
+                                            <div class="w-16 h-16 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] overflow-hidden flex items-center justify-center flex-shrink-0">
+                                                @if(!empty($it['image_url']))
+                                                    <img src="{{ $it['image_url'] }}" alt="{{ $it['product_name'] }}" class="w-full h-full object-cover">
+                                                @else
+                                                    <svg class="w-8 h-8 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                    </svg>
+                                                @endif
                                             </div>
                                             <div>
                                                 <h4 class="font-bold text-sm text-[#172326]">{{ $it['product_name'] }}</h4>

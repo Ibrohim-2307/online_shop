@@ -45,5 +45,17 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $courier->assignRole('courier');
+
+        // Demo Admin
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@market.uz'],
+            [
+                'name' => 'Bosh Administrator',
+                'phone' => '+998901112233',
+                'password' => Hash::make('Admin123!'),
+                'is_active' => true,
+            ]
+        );
+        $admin->assignRole('admin');
     }
 }

@@ -24,6 +24,14 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 Route::get('/install', [\App\Http\Controllers\Install\InstallerController::class, 'show'])->name('install.show');
 Route::post('/install', [\App\Http\Controllers\Install\InstallerController::class, 'install'])->name('install.process');
 
+// Admin Web Dashboard
+Route::get('/admin', [\App\Http\Controllers\Web\AdminDashboardController::class, 'index'])->name('admin.dashboard');
+Route::post('/admin/sellers/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateSellerStatus'])->name('admin.sellers.status');
+Route::post('/admin/users/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateUserStatus'])->name('admin.users.status');
+
+// Seller Web Dashboard
+Route::get('/seller', [\App\Http\Controllers\Web\SellerDashboardController::class, 'index'])->name('seller.dashboard');
+
 Route::get('/health', function () {
     $dbStatus = 'Ulangan (MySQL 8.0)';
     try {

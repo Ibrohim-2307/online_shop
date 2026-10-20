@@ -142,10 +142,20 @@
                     <!-- Account / Auth -->
                     @auth
                         <div class="flex items-center gap-2 pl-2">
+                            @if(auth()->user()->hasRole(['admin', 'moderator']))
+                                <a href="{{ route('admin.dashboard') }}" class="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-700 border border-rose-500/20 text-xs font-bold hover:bg-rose-500/20 transition">
+                                    Admin Panel
+                                </a>
+                            @elseif(auth()->user()->hasRole(['seller_owner', 'seller_manager', 'seller_operator']))
+                                <a href="{{ route('seller.dashboard') }}" class="px-3 py-1.5 rounded-xl bg-[#C9F46B]/20 text-[#123C2F] border border-[#C9F46B]/40 text-xs font-bold hover:bg-[#C9F46B]/30 transition">
+                                    Do'kon Kabineti
+                                </a>
+                            @endif
+
                             <span class="text-xs font-bold text-[#123C2F] hidden md:inline">{{ auth()->user()->name }}</span>
-                            <form action="{{ route('logout') }}" method="POST">
+                            <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
-                                <button type="submit" class="text-xs text-red-600 hover:underline">Chiqish</button>
+                                <button type="submit" class="px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition">Chiqish</button>
                             </form>
                         </div>
                     @else

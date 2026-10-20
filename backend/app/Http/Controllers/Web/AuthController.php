@@ -56,6 +56,14 @@ class AuthController extends Controller
 
         AuditService::log('web.login', $user);
 
+        if ($user->hasRole(['admin', 'moderator'])) {
+            return redirect()->intended('/admin');
+        }
+
+        if ($user->hasRole(['seller_owner', 'seller_manager', 'seller_operator'])) {
+            return redirect()->intended('/seller');
+        }
+
         return redirect()->intended('/health');
     }
 

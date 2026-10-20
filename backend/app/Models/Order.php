@@ -45,4 +45,14 @@ class Order extends Model
     {
         return $this->hasMany(InventoryReservation::class);
     }
+
+    public function getItemsAttribute()
+    {
+        return $this->suborders->flatMap->items;
+    }
+
+    public function getShipmentsAttribute()
+    {
+        return $this->suborders->flatMap->shipments;
+    }
 }

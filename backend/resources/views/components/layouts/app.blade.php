@@ -149,6 +149,12 @@
                         <span class="hidden sm:inline">Savatcha</span>
                     </a>
 
+                    <!-- Orders Hub Link (Buyurtmalar & Xaridlar) -->
+                    <a href="{{ route('orders.hub') }}" class="relative flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] transition-colors" title="Buyurtmalar va Yetkazib Berishlar">
+                        <span class="text-sm">📦</span>
+                        <span class="hidden md:inline">Buyurtmalar</span>
+                    </a>
+
                     <!-- Account / Auth -->
                     @auth
                         <div class="flex items-center gap-2 pl-2">
@@ -234,6 +240,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 <span class="text-[11px]">Savatcha</span>
+            </a>
+
+            <a href="{{ route('orders.hub') }}" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl {{ request()->routeIs('orders.*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
+                <span class="text-base">📦</span>
+                <span class="text-[10px]">Buyurtmalar</span>
             </a>
 
             <a href="{{ auth()->check() ? route('home') : route('login') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-[#64748B]">

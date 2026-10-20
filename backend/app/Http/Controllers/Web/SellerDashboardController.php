@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Category;
 use Illuminate\Support\Str;
+use App\Models\Order;
 use App\Models\Rfq;
 use App\Models\Seller;
 use App\Models\SellerLedger;
@@ -50,6 +51,12 @@ class SellerDashboardController extends Controller
             ->limit(15)
             ->get();
 
+        $procurementOrders = Order::where('user_id', $user->id)
+            ->with(['suborders.seller', 'suborders.items', 'suborders.shipments'])
+            ->latest()
+            ->limit(15)
+            ->get();
+
         $warehouses = Warehouse::with('balances.variant')
             ->where('seller_id', $seller->id)
             ->get();
@@ -69,13 +76,15 @@ class SellerDashboardController extends Controller
             'total_products' => $products->count(),
             'total_suborders' => Suborder::where('seller_id', $seller->id)->count(),
             'pending_orders' => Suborder::where('seller_id', $seller->id)->where('status', 'pending')->count(),
+            'procurement_orders_count' => $procurementOrders->count(),
+            'in_transit_procurement' => $procurementOrders->filter(fn($o) => $o->suborders->flatMap->shipments->contains(fn($s) => $s->status === 'in_transit'))->count(),
             'current_balance' => $currentBalance,
             'rating' => $seller->rating,
         ];
 
         $categories = Category::where('is_active', true)->orderBy('sort_order')->get();
 
-        return view('seller.dashboard', compact('seller', 'products', 'categories', 'suborders', 'warehouses', 'rfqs', 'ledgerEntries', 'stats'));
+        return view('seller.dashboard', compact('seller', 'products', 'categories', 'suborders', 'procurementOrders', 'warehouses', 'rfqs', 'ledgerEntries', 'stats'));
     }
 
     /**

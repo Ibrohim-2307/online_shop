@@ -125,8 +125,11 @@
             <button @click="currentTab = 'products'" :class="currentTab === 'products' ? 'bg-[#123C2F] text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 Tovarlar & Narx Pog'onalari ({{ $products->count() }})
             </button>
-            <button @click="currentTab = 'orders'" :class="currentTab === 'orders' ? 'bg-[#123C2F] text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                Buyurtmalar ({{ $suborders->count() }})
+            <button @click="currentTab = 'orders'" :class="currentTab === 'orders' ? 'bg-[#123C2F] text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                <span>📦 Buyurtmalar & Ta'minot</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-[#C9F46B] text-[#123C2F] font-black">
+                    {{ $suborders->count() + $procurementOrders->count() }}
+                </span>
             </button>
             <button @click="currentTab = 'rfqs'" :class="currentTab === 'rfqs' ? 'bg-[#123C2F] text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 Optom Narx So'rovlari (RFQ) ({{ $rfqs->count() }})
@@ -223,52 +226,174 @@
             </div>
         </div>
 
-        <!-- TAB 2: ORDERS -->
-        <div x-show="currentTab === 'orders'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-sm">Kelib Tushgan Buyurtmalar (Suborders)</h3>
+        <!-- TAB 2: DUAL ORDERS & PROCUREMENT HUB -->
+        <div x-show="currentTab === 'orders'" class="space-y-4" x-data="{ orderSubTab: 'inbound' }">
+            
+            <!-- Top sub-tab controller & External link -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2 p-1 bg-slate-100 rounded-xl">
+                    <button @click="orderSubTab = 'inbound'" 
+                            :class="orderSubTab === 'inbound' ? 'bg-[#123C2F] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                        <span>🛒 Do'kon Xaridlari (Sotib olgan tovarlarimiz)</span>
+                        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#C9F46B] text-[#123C2F] font-black">
+                            {{ $procurementOrders->count() }}
+                        </span>
+                    </button>
+                    <button @click="orderSubTab = 'outbound'" 
+                            :class="orderSubTab === 'outbound' ? 'bg-[#123C2F] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                        <span>📤 Mijozlar Buyurtmalari (Do'kon sotuvlari)</span>
+                        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#C9F46B] text-[#123C2F] font-black">
+                            {{ $suborders->count() }}
+                        </span>
+                    </button>
+                </div>
+
+                <a href="{{ route('orders.hub') }}" target="_blank" class="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1.5 transition">
+                    <span>🚀 To'liq Buyurtmalar Markazini Ochish</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-slate-600">
-                    <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                        <tr>
-                            <th class="p-3.5">Ichki Buyurtma #</th>
-                            <th class="p-3.5">Ota Buyurtma</th>
-                            <th class="p-3.5">Yetkazish Holati</th>
-                            <th class="p-3.5">Summa</th>
-                            <th class="p-3.5">Komissiya</th>
-                            <th class="p-3.5">Sana</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse($suborders as $sub)
-                            <tr class="hover:bg-slate-50/50">
-                                <td class="p-3.5 font-bold text-slate-900 font-mono">{{ $sub->suborder_number }}</td>
-                                <td class="p-3.5 font-mono text-slate-500">{{ $sub->order->order_number ?? '—' }}</td>
-                                <td class="p-3.5">
-                                    <div class="flex items-center gap-2">
+
+            <!-- SUB-TAB 1: INBOUND PURCHASES (Sotuvchining o'zi xarid qilgan tovarlari) -->
+            <div x-show="orderSubTab === 'inbound'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">Do'koningiz Sotib Olgan Tovar va Ta'minot Partiyalari</h3>
+                        <p class="text-xs text-slate-400">Ishlab chiqaruvchi va distribyutorlardan xarid qilingan zaxiralar hamda ularning yetkazilish holati</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                            <tr>
+                                <th class="p-3.5">Buyurtma #</th>
+                                <th class="p-3.5">Ta'minotchi / Zavod</th>
+                                <th class="p-3.5">Xarid qilingan tovarlar</th>
+                                <th class="p-3.5">Yetkazilish Holati</th>
+                                <th class="p-3.5">Jami Summa</th>
+                                <th class="p-3.5">Sana</th>
+                                <th class="p-3.5 text-right">Jonli Kuzatuv</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse($procurementOrders as $order)
+                                @php
+                                    $sh = $order->suborders->flatMap->shipments->first();
+                                    $isInTransit = $sh && $sh->status === 'in_transit';
+                                    $firstSub = $order->suborders->first();
+                                @endphp
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-3.5 font-bold text-slate-900 font-mono">{{ $order->order_number }}</td>
+                                    <td class="p-3.5 font-bold text-slate-800">{{ $firstSub?->seller?->name ?? 'Zavod' }}</td>
+                                    <td class="p-3.5 max-w-xs truncate">
+                                        @foreach($order->suborders->flatMap->items as $it)
+                                            <span class="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-[10px] mr-1">
+                                                {{ $it->product_name }} (×{{ $it->quantity }})
+                                            </span>
+                                        @endforeach
+                                    </td>
+                                    <td class="p-3.5">
+                                        @if($isInTransit)
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                                Kuryer Yo'lda
+                                            </span>
+                                        @else
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-800">
+                                                {{ $order->status }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3.5 font-black text-slate-900">{{ number_format($order->grand_total) }} UZS</td>
+                                    <td class="p-3.5 text-slate-400">{{ $order->created_at->format('Y-m-d H:i') }}</td>
+                                    <td class="p-3.5 text-right">
+                                        @if($sh)
+                                            <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] font-bold text-[11px] shadow-xs transition">
+                                                <span>📍</span> Xarita
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400 text-[11px]">Trek yo'q</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="p-8 text-center text-slate-400">Do'koningiz hali ta'minotchilardan xarid qilmagan</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 2: OUTBOUND CUSTOMER SALES (Mijozlar buyurtmalari) -->
+            <div x-show="orderSubTab === 'outbound'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">Mijozlardan Kelib Tushgan Buyurtmalar (Do'kon Sotuvlari)</h3>
+                        <p class="text-xs text-slate-400">Xaridorlar sizning do'koningizdan sotib olgan tovarlar ro'yxati</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                            <tr>
+                                <th class="p-3.5">Suborder #</th>
+                                <th class="p-3.5">Xaridor</th>
+                                <th class="p-3.5">Buyurtma qilingan tovarlar</th>
+                                <th class="p-3.5">Holati</th>
+                                <th class="p-3.5">Summa</th>
+                                <th class="p-3.5">Komissiya</th>
+                                <th class="p-3.5">Sana</th>
+                                <th class="p-3.5 text-right">Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse($suborders as $sub)
+                                @php
+                                    $sh = $sub->shipments->first();
+                                @endphp
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-3.5 font-bold text-slate-900 font-mono">{{ $sub->suborder_number }}</td>
+                                    <td class="p-3.5">
+                                        <div class="font-bold text-slate-800">{{ $sub->order->shipping_address['recipient_name'] ?? $sub->order->user?->name ?? 'Mijoz' }}</div>
+                                        <div class="text-[10px] text-slate-400">{{ $sub->order->shipping_address['phone'] ?? '—' }}</div>
+                                    </td>
+                                    <td class="p-3.5 max-w-xs truncate">
+                                        @foreach($sub->items as $it)
+                                            <span class="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-[10px] mr-1">
+                                                {{ $it->product_name }} (×{{ $it->quantity }})
+                                            </span>
+                                        @endforeach
+                                    </td>
+                                    <td class="p-3.5">
                                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-800">
-                                            {{ $sub->shipments->first()?->status ?? $sub->status }}
+                                            {{ $sh?->status ?? $sub->status }}
                                         </span>
-                                        @if($s = $sub->shipments->first())
-                                            <a href="{{ route('tracking', ['trackingNumber' => $s->tracking_number]) }}" target="_blank" class="px-2 py-0.5 rounded bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition flex items-center gap-0.5" title="Xaritada jonli kuzatish">
+                                    </td>
+                                    <td class="p-3.5 font-bold text-slate-900">{{ number_format($sub->total_amount) }} UZS</td>
+                                    <td class="p-3.5 text-slate-500">{{ number_format($sub->commission_amount) }} UZS</td>
+                                    <td class="p-3.5 text-slate-400">{{ $sub->created_at->format('Y-m-d H:i') }}</td>
+                                    <td class="p-3.5 text-right">
+                                        @if($sh)
+                                            <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-[11px] transition">
                                                 <span>📍</span> Xarita
                                             </a>
                                         @endif
-                                    </div>
-                                </td>
-                                <td class="p-3.5 font-bold text-slate-900">{{ number_format($sub->total_amount) }} UZS</td>
-                                <td class="p-3.5 text-slate-500">{{ number_format($sub->commission_amount) }} UZS</td>
-                                <td class="p-3.5 text-slate-400">{{ $sub->created_at->format('Y-m-d H:i') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="p-8 text-center text-slate-400">Do'konga buyurtmalar hali kelib tushmagan</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="p-8 text-center text-slate-400">Do'konga buyurtmalar hali kelib tushmagan</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
+
         </div>
 
         <!-- TAB 3: RFQs -->

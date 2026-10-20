@@ -12,7 +12,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- CSS & JS Bundle with CDN Fallback -->
+    <style>[x-cloak] { display: none !important; }</style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/build/assets/app-D2FgvmjV.css">
+    <script type="module" src="/build/assets/app-DbeYgy-K.js"></script>
 </head>
 <body class="min-h-full flex flex-col bg-[#FAFBF7] text-[#172326] antialiased selection:bg-[#C9F46B] selection:text-[#123C2F] overflow-x-hidden"
       x-data="{ 

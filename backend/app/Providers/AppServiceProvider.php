@@ -31,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (request()->server('HTTP_X_FORWARDED_PROTO') === 'https' || request()->isSecure()) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         Gate::policy(Address::class, AddressPolicy::class);
         Gate::policy(Seller::class, SellerPolicy::class);
         Gate::policy(\App\Models\Product::class, \App\Policies\ProductPolicy::class);

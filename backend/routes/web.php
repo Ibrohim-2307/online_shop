@@ -19,6 +19,14 @@ Route::get('/orders', [\App\Http\Controllers\Web\OrderHubController::class, 'ind
 Route::get('/orders/{orderNumber}', [\App\Http\Controllers\Web\OrderHubController::class, 'show'])->name('orders.detail');
 Route::get('/tracking/{trackingNumber?}', [StorefrontController::class, 'tracking'])->name('tracking');
 
+// Customer Profile & Account Center (Amazon / AliExpress / Uzum style)
+Route::get('/profile', [\App\Http\Controllers\Web\ProfileController::class, 'index'])->name('profile');
+Route::post('/profile', [\App\Http\Controllers\Web\ProfileController::class, 'updateProfile'])->name('profile.update');
+Route::post('/profile/password', [\App\Http\Controllers\Web\ProfileController::class, 'updatePassword'])->name('profile.password');
+Route::post('/profile/addresses', [\App\Http\Controllers\Web\ProfileController::class, 'storeAddress'])->name('profile.addresses.store');
+Route::delete('/profile/addresses/{id}', [\App\Http\Controllers\Web\ProfileController::class, 'deleteAddress'])->name('profile.addresses.delete');
+Route::post('/profile/addresses/{id}/default', [\App\Http\Controllers\Web\ProfileController::class, 'setDefaultAddress'])->name('profile.addresses.default');
+
 Route::get('/login', [WebAuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');

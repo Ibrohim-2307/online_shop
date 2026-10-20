@@ -64,7 +64,7 @@ class AuthController extends Controller
             return redirect()->intended('/seller');
         }
 
-        return redirect()->intended('/health');
+        return redirect()->intended('/profile');
     }
 
     /**

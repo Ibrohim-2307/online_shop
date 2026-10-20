@@ -157,7 +157,7 @@
 
                     <!-- Account / Auth -->
                     @auth
-                        <div class="flex items-center gap-2 pl-2">
+                        <div class="flex items-center gap-2 pl-1">
                             @if(auth()->user()->hasRole(['admin', 'moderator']))
                                 <a href="{{ route('admin.dashboard') }}" class="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-700 border border-rose-500/20 text-xs font-bold hover:bg-rose-500/20 transition">
                                     Admin Panel
@@ -168,16 +168,28 @@
                                 </a>
                             @endif
 
-                            <span class="text-xs font-bold text-[#123C2F] hidden md:inline">{{ auth()->user()->name }}</span>
+                            <a href="{{ route('profile') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#123C2F]/5 hover:bg-[#123C2F]/10 border border-[#123C2F]/10 transition-all text-xs font-bold text-[#123C2F]" title="Shaxsiy Kabinet / Profil">
+                                <span class="w-6 h-6 rounded-full bg-[#123C2F] text-[#C9F46B] flex items-center justify-center text-[10px] font-black">
+                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                                </span>
+                                <span class="hidden md:inline">{{ auth()->user()->name }}</span>
+                            </a>
+
                             <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
-                                <button type="submit" class="px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition">Chiqish</button>
+                                <button type="submit" class="px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition" title="Tizimdan chiqish">Chiqish</button>
                             </form>
                         </div>
                     @else
-                        <a href="{{ route('login') }}" class="px-4 py-2.5 rounded-2xl bg-[#123C2F] text-white font-semibold text-sm hover:bg-[#0d2a21] transition-colors">
-                            Kirish
-                        </a>
+                        <div class="flex items-center gap-2">
+                            <a href="{{ route('profile') }}" class="px-3 py-2 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] flex items-center gap-1.5 transition-colors" title="Mening Profilim">
+                                <svg class="w-4 h-4 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <span class="hidden sm:inline">Profil</span>
+                            </a>
+                            <a href="{{ route('login') }}" class="px-4 py-2.5 rounded-2xl bg-[#123C2F] text-white font-semibold text-sm hover:bg-[#0d2a21] transition-colors">
+                                Kirish
+                            </a>
+                        </div>
                     @endauth
 
                 </div>
@@ -247,11 +259,11 @@
                 <span class="text-[10px]">Buyurtmalar</span>
             </a>
 
-            <a href="{{ auth()->check() ? route('home') : route('login') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-[#64748B]">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="{{ route('profile') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl {{ request()->routeIs('profile*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
+                <svg class="w-6 h-6" fill="{{ request()->routeIs('profile*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span class="text-[11px]">{{ auth()->check() ? 'Profil' : 'Kirish' }}</span>
+                <span class="text-[11px]">{{ auth()->check() ? 'Profil' : 'Profil' }}</span>
             </a>
         </div>
     </nav>

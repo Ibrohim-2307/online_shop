@@ -124,7 +124,7 @@ class AuthSecurityHardeningTest extends TestCase
             'password' => 'websecret123',
         ]);
 
-        $loginResponse->assertRedirect('/health');
+        $loginResponse->assertRedirect('/profile');
         $this->assertAuthenticatedAs($user);
 
         // Verify session regeneration occurred (session fixation defense)

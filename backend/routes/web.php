@@ -28,9 +28,11 @@ Route::post('/install', [\App\Http\Controllers\Install\InstallerController::clas
 Route::get('/admin', [\App\Http\Controllers\Web\AdminDashboardController::class, 'index'])->name('admin.dashboard');
 Route::post('/admin/sellers/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateSellerStatus'])->name('admin.sellers.status');
 Route::post('/admin/users/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateUserStatus'])->name('admin.users.status');
+Route::post('/admin/products/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateProductStatus'])->name('admin.products.status');
 
 // Seller Web Dashboard
 Route::get('/seller', [\App\Http\Controllers\Web\SellerDashboardController::class, 'index'])->name('seller.dashboard');
+Route::post('/seller/products', [\App\Http\Controllers\Web\SellerDashboardController::class, 'storeProduct'])->name('seller.products.store');
 
 Route::get('/health', function () {
     $dbStatus = 'Ulangan (MySQL 8.0)';

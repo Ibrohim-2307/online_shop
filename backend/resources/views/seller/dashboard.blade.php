@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: 'products' }">
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: 'products', showAddModal: false }">
 
     <!-- Top Seller Header -->
     <header class="bg-[#123C2F] text-white border-b border-[#0d2a21] sticky top-0 z-40">
@@ -44,6 +44,35 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        @if(session('success'))
+            <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span class="text-sm font-semibold">{{ session('success') }}</span>
+                </div>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span class="text-sm font-semibold">{{ session('error') }}</span>
+                </div>
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800">
+                <div class="font-bold text-sm mb-1">Xatoliklar yuz berdi:</div>
+                <ul class="list-disc list-inside text-xs space-y-0.5">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <!-- Store Overview Banner -->
         <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -112,8 +141,15 @@
 
         <!-- TAB 1: PRODUCTS & PRICING TIERS -->
         <div x-show="currentTab === 'products'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-sm">Do'kon Mahsulotlari va Optom Narx Zinapoyasi</h3>
+            <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm">Do'kon Mahsulotlari va Optom Narx Zinapoyasi</h3>
+                    <p class="text-xs text-slate-400">Tovarlarning ulgurji va chakana narxlari hamda ombordagi qoldiqlari</p>
+                </div>
+                <button @click="showAddModal = true" type="button" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#123C2F] hover:bg-[#0e2f25] text-white text-xs font-bold shadow-sm transition">
+                    <svg class="w-4 h-4 text-[#C9F46B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    <span>+ Yangi Mahsulot Qo'shish</span>
+                </button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-600">
@@ -316,6 +352,132 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Modal: Add New Product -->
+        <div x-show="showAddModal" 
+             style="display: none;"
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div @click.away="showAddModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+                    <div>
+                        <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Katalog Boshqaruvi</span>
+                        <h3 class="text-xl font-black text-slate-900">Yangi Mahsulot Qo'shish</h3>
+                    </div>
+                    <button @click="showAddModal = false" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+                        ✕
+                    </button>
+                </div>
+
+                <form action="{{ route('seller.products.store') }}" method="POST" class="space-y-4">
+                    @csrf
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mahsulot Nomi *</label>
+                        <input type="text" name="name" required placeholder="Masalan: Knauf Profil CD 60x27 3m" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Kategoriya *</label>
+                            <select name="category_id" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Savdo Rejimi *</label>
+                            <select name="trade_mode" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <option value="both">Ulgurji va chakana (Ikkisi ham)</option>
+                                <option value="wholesale">Faqat ulgurji (Optom)</option>
+                                <option value="retail">Faqat chakana (Dona)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Birligi *</label>
+                            <select name="unit" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <option value="piece">Dona (piece)</option>
+                                <option value="box">Quti (box)</option>
+                                <option value="kg">Kg (kilogramm)</option>
+                                <option value="ton">Tonna (ton)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Min. Buyurtma (MOQ) *</label>
+                            <input type="number" step="0.001" name="min_order_quantity" value="1" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qadam (Step) *</label>
+                            <input type="number" step="0.001" name="unit_step" value="1" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qutida donasi</label>
+                            <input type="number" name="items_per_box" value="1" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                        <span class="block text-xs font-extrabold text-[#123C2F] uppercase tracking-wider mb-2">
+                            Pog'onali Narx Zinapoyasi (Tiered Pricing - UZS)
+                        </span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">1 - 299 birlik (Chakana) *</label>
+                                <input type="number" name="retail_price" required placeholder="Masalan: 45000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">300 - 999 birlik (Optom)</label>
+                                <input type="number" name="tier_300_price" placeholder="Masalan: 41000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-400">Bo'sh qolsa: -8% chegirma</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">1000+ birlik (Katta Optom)</label>
+                                <input type="number" name="tier_1000_price" placeholder="Masalan: 38000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-400">Bo'sh qolsa: -15% chegirma</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">SKU Kodi</label>
+                            <input type="text" name="sku" placeholder="Ixtiyoriy (avto yaratiladi)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qaysi Omborga</label>
+                            <select name="warehouse_id" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                @foreach($warehouses as $wh)
+                                    <option value="{{ $wh->id }}">{{ $wh->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Boshlang'ich Qoldiq *</label>
+                            <input type="number" step="0.001" name="stock_quantity" value="250" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mahsulot Haqida Tavsif</label>
+                        <textarea name="description" rows="2" placeholder="O'lchamlari, texnik xususiyatlari, sertifikatlari..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]"></textarea>
+                    </div>
+
+                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                        <button @click="showAddModal = false" type="button" class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#123C2F] hover:bg-[#0e2f25] text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+                            <span>Katalogga Qo'shish</span>
+                            <span class="text-[#C9F46B]">✓</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

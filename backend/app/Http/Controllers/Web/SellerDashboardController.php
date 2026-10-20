@@ -3,7 +3,13 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\InventoryBalance;
+use App\Models\InventoryMovement;
+use App\Models\PriceTier;
 use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\Category;
+use Illuminate\Support\Str;
 use App\Models\Rfq;
 use App\Models\Seller;
 use App\Models\SellerLedger;
@@ -67,6 +73,133 @@ class SellerDashboardController extends Controller
             'rating' => $seller->rating,
         ];
 
-        return view('seller.dashboard', compact('seller', 'products', 'suborders', 'warehouses', 'rfqs', 'ledgerEntries', 'stats'));
+        $categories = Category::where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('seller.dashboard', compact('seller', 'products', 'categories', 'suborders', 'warehouses', 'rfqs', 'ledgerEntries', 'stats'));
+    }
+
+    /**
+     * Store a newly created product in seller catalog.
+     */
+    public function storeProduct(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['seller_owner', 'seller_manager', 'seller_operator'])) {
+            abort(403, 'Faqat do\'kon xodimlari mahsulot qo\'shishi mumkin.');
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'trade_mode' => ['required', 'in:wholesale,retail,both'],
+            'unit' => ['required', 'in:piece,box,kg,ton'],
+            'min_order_quantity' => ['required', 'numeric', 'min:0.001'],
+            'unit_step' => ['required', 'numeric', 'min:0.001'],
+            'items_per_box' => ['nullable', 'integer', 'min:1'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'sku' => ['nullable', 'string', 'max:100', 'unique:product_variants,sku'],
+            'retail_price' => ['required', 'integer', 'min:100'],
+            'tier_300_price' => ['nullable', 'integer', 'min:100'],
+            'tier_1000_price' => ['nullable', 'integer', 'min:100'],
+            'stock_quantity' => ['required', 'numeric', 'min:0'],
+            'warehouse_id' => ['nullable', 'exists:warehouses,id'],
+        ]);
+
+        $seller = Seller::find($user->seller_id) ?: Seller::first();
+        if (!$seller) {
+            return back()->with('error', 'Sotuvchi do\'koni topilmadi.');
+        }
+
+        $warehouseId = $request->warehouse_id;
+        if (!$warehouseId) {
+            $warehouse = Warehouse::firstOrCreate(
+                ['seller_id' => $seller->id],
+                ['name' => 'Asosiy Ombor', 'code' => 'WH-' . $seller->id . '-01', 'address' => 'Toshkent sh.', 'is_active' => true]
+            );
+            $warehouseId = $warehouse->id;
+        }
+
+        $slug = Str::slug($validated['name']);
+        if (Product::where('slug', $slug)->exists()) {
+            $slug .= '-' . Str::lower(Str::random(5));
+        }
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'category_id' => $validated['category_id'],
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'description' => $validated['description'] ?? null,
+            'trade_mode' => $validated['trade_mode'],
+            'unit' => $validated['unit'],
+            'items_per_box' => $validated['items_per_box'] ?? 1,
+            'unit_step' => $validated['unit_step'],
+            'min_order_quantity' => $validated['min_order_quantity'],
+            'status' => 'approved',
+            'is_active' => true,
+        ]);
+
+        $sku = !empty($validated['sku']) ? $validated['sku'] : ('SKU-' . strtoupper(Str::random(8)));
+        $variant = ProductVariant::create([
+            'product_id' => $product->id,
+            'sku' => $sku,
+            'name' => 'Standart',
+            'is_active' => true,
+        ]);
+
+        $retailPrice = (int) $validated['retail_price'];
+        $tier300Price = !empty($validated['tier_300_price']) ? (int) $validated['tier_300_price'] : (int) round($retailPrice * 0.92);
+        $tier1000Price = !empty($validated['tier_1000_price']) ? (int) $validated['tier_1000_price'] : (int) round($retailPrice * 0.85);
+
+        // Tier 1: 1 - 299
+        PriceTier::create([
+            'product_variant_id' => $variant->id,
+            'min_quantity' => (float) $validated['min_order_quantity'],
+            'max_quantity' => 299.0,
+            'unit_price' => $retailPrice,
+            'currency' => 'UZS',
+        ]);
+
+        // Tier 2: 300 - 999
+        PriceTier::create([
+            'product_variant_id' => $variant->id,
+            'min_quantity' => 300.0,
+            'max_quantity' => 999.0,
+            'unit_price' => $tier300Price,
+            'currency' => 'UZS',
+        ]);
+
+        // Tier 3: 1000+
+        PriceTier::create([
+            'product_variant_id' => $variant->id,
+            'min_quantity' => 1000.0,
+            'max_quantity' => null,
+            'unit_price' => $tier1000Price,
+            'currency' => 'UZS',
+        ]);
+
+        $stock = (float) $validated['stock_quantity'];
+        InventoryBalance::create([
+            'warehouse_id' => $warehouseId,
+            'product_variant_id' => $variant->id,
+            'quantity' => $stock,
+            'reserved_quantity' => 0.0,
+        ]);
+
+        if ($stock > 0) {
+            InventoryMovement::create([
+                'warehouse_id' => $warehouseId,
+                'product_variant_id' => $variant->id,
+                'type' => 'inflow',
+                'quantity' => $stock,
+                'balance_before' => 0.0,
+                'balance_after' => $stock,
+                'reason' => 'Yangi tovar qo\'shildi va boshlang\'ich zaxira kiritildi',
+                'user_id' => $user->id,
+                'created_at' => now(),
+            ]);
+        }
+
+        return back()->with('success', "Yangi mahsulot '{$product->name}' muvaffaqiyatli saqlandi va katalogga qo'shildi!");
     }
 }

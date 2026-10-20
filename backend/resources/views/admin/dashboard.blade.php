@@ -84,6 +84,9 @@
             <button @click="currentTab = 'sellers'" :class="currentTab === 'sellers' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 Sotuvchilar & Do'konlar ({{ $sellers->count() }})
             </button>
+            <button @click="currentTab = 'products'" :class="currentTab === 'products' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                Mahsulotlar ({{ $products->total() }})
+            </button>
             <button @click="currentTab = 'users'" :class="currentTab === 'users' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 Foydalanuvchilar ({{ $users->total() }})
             </button>
@@ -166,7 +169,107 @@
             </div>
         </div>
 
-        <!-- TAB 2: USERS -->
+        <!-- TAB: PRODUCTS -->
+        <div x-show="currentTab === 'products'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-bold text-slate-900 text-sm">Barcha Mahsulotlar Moderatsiyasi va Nazorati</h3>
+                <span class="text-xs text-slate-500">Jami: {{ $products->total() }} ta mahsulot</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                        <tr>
+                            <th class="p-3.5">Mahsulot / Toifa</th>
+                            <th class="p-3.5">Sotuvchi Do'kon</th>
+                            <th class="p-3.5">Savdo Rejimi</th>
+                            <th class="p-3.5">Birligi & Qoldiq</th>
+                            <th class="p-3.5">Boshlang'ich Narx</th>
+                            <th class="p-3.5">Holati</th>
+                            <th class="p-3.5 text-right">Moderatsiya</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach($products as $prod)
+                            @php
+                                $firstVar = $prod->variants->first();
+                                $firstTier = $firstVar ? $firstVar->priceTiers->first() : null;
+                                $totalStock = $prod->variants->flatMap->inventoryBalances->sum('quantity');
+                            @endphp
+                            <tr class="hover:bg-slate-50/50">
+                                <td class="p-3.5 font-bold text-slate-900">
+                                    <a href="{{ route('product.show', $prod->slug) }}" target="_blank" class="hover:text-emerald-700 hover:underline">
+                                        {{ $prod->name }}
+                                    </a>
+                                    <span class="block text-[11px] text-slate-500 font-normal">Toifa: {{ $prod->category->name ?? '—' }}</span>
+                                </td>
+                                <td class="p-3.5">
+                                    <span class="font-semibold text-slate-800">{{ $prod->seller->name ?? '—' }}</span>
+                                    <span class="block text-[10px] text-slate-400">ID: {{ $prod->seller_id }}</span>
+                                </td>
+                                <td class="p-3.5">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $prod->trade_mode === 'both' ? 'bg-purple-100 text-purple-800' : ($prod->trade_mode === 'wholesale_only' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800') }}">
+                                        {{ $prod->trade_mode }}
+                                    </span>
+                                </td>
+                                <td class="p-3.5">
+                                    <span class="font-bold text-slate-900">{{ number_format($totalStock) }} {{ $prod->unit }}</span>
+                                    <span class="block text-[10px] text-slate-400">MOQ: {{ $prod->min_order_quantity }}</span>
+                                </td>
+                                <td class="p-3.5 font-bold text-slate-900">
+                                    @if($firstTier)
+                                        {{ number_format($firstTier->unit_price) }} UZS
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td class="p-3.5">
+                                    @if($prod->status === 'approved')
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">Tasdiqlangan</span>
+                                    @elseif($prod->status === 'pending')
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">Kutilmoqda</span>
+                                    @else
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 uppercase">Rad etilgan</span>
+                                    @endif
+                                    @if(!$prod->is_active)
+                                        <span class="block text-[10px] text-rose-500 font-bold mt-0.5">(Nofaol)</span>
+                                    @endif
+                                </td>
+                                <td class="p-3.5 text-right space-x-1">
+                                    @if($prod->status !== 'approved')
+                                        <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <input type="hidden" name="status" value="approved">
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px]">
+                                                Tasdiqlash
+                                            </button>
+                                        </form>
+                                    @endif
+                                    @if($prod->status !== 'rejected')
+                                        <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <input type="hidden" name="status" value="rejected">
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px]">
+                                                Rad etish
+                                            </button>
+                                        </form>
+                                    @endif
+                                    <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="is_active" value="{{ $prod->is_active ? 0 : 1 }}">
+                                        <button type="submit" class="px-2 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-[11px]">
+                                            {{ $prod->is_active ? 'Yashirish' : 'Ko\'rsatish' }}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-4 border-t border-slate-100">
+                {{ $products->links() }}
+            </div>
+        </div>
         <div x-show="currentTab === 'users'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div class="p-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="font-bold text-slate-900 text-sm">Foydalanuvchilar Ro'yxati</h3>

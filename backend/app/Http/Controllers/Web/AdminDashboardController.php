@@ -37,11 +37,40 @@ class AdminDashboardController extends Controller
 
         $sellers = Seller::with('members.user')->latest()->get();
         $users = User::with('roles')->latest()->paginate(15);
+        $products = Product::with(['category', 'seller', 'variants.priceTiers', 'variants.inventoryBalances.warehouse'])->latest()->paginate(15);
         $recentOrders = Order::with('suborders.seller')->latest()->limit(10)->get();
         $auditLogs = AuditLog::with('user')->latest()->limit(15)->get();
         $payouts = SellerPayout::with('seller')->latest()->limit(10)->get();
 
-        return view('admin.dashboard', compact('stats', 'sellers', 'users', 'recentOrders', 'auditLogs', 'payouts'));
+        return view('admin.dashboard', compact('stats', 'sellers', 'users', 'products', 'recentOrders', 'auditLogs', 'payouts'));
+    }
+
+    /**
+     * Update product moderation status (approve / reject / toggle active).
+     */
+    public function updateProductStatus(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['admin', 'moderator'])) {
+            abort(403, 'Faqat moderator yoki administrator tovar holatini o\'zgartirishi mumkin.');
+        }
+
+        $validated = $request->validate([
+            'status' => ['nullable', 'in:pending,approved,rejected'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $product = Product::findOrFail($id);
+
+        if (isset($validated['status'])) {
+            $product->status = $validated['status'];
+        }
+        if (isset($validated['is_active'])) {
+            $product->is_active = $validated['is_active'];
+        }
+        $product->save();
+
+        return back()->with('success', "Mahsulot ({$product->name}) holati muvaffaqiyatli yangilandi.");
     }
 
     /**

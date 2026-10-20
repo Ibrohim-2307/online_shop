@@ -83,9 +83,15 @@
                         </div>
                     </a>
 
+                    <!-- Bosh sahifa Button (Desktop) -->
+                    <a href="{{ route('home') }}" class="hidden lg:flex items-center gap-1.5 px-4 py-2.5 rounded-2xl {{ request()->routeIs('home') ? 'bg-[#123C2F] text-white shadow-xs' : 'bg-[#FAFBF7] hover:bg-[#E8ECE4] text-[#172326]' }} font-bold text-xs transition-all border border-[#E8ECE4]" title="Bosh sahifa">
+                        <span>🏠</span>
+                        <span>Bosh sahifa</span>
+                    </a>
+
                     <!-- Category Catalog Button (Desktop) -->
-                    <a href="{{ route('catalog') }}" class="hidden lg:flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#C9F46B] text-[#123C2F] font-bold text-sm hover:bg-[#b8e855] transition-all duration-150 shadow-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="{{ route('catalog') }}" class="hidden lg:flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#C9F46B] text-[#123C2F] font-bold text-xs hover:bg-[#b8e855] transition-all duration-150 shadow-sm" title="Katalog">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                         <span>Katalog</span>
@@ -168,11 +174,11 @@
                                 </a>
                             @endif
 
-                            <a href="{{ route('profile') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#123C2F]/5 hover:bg-[#123C2F]/10 border border-[#123C2F]/10 transition-all text-xs font-bold text-[#123C2F]" title="Shaxsiy Kabinet / Profil">
-                                <span class="w-6 h-6 rounded-full bg-[#123C2F] text-[#C9F46B] flex items-center justify-center text-[10px] font-black">
-                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            <a href="{{ route('profile') }}" class="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] transition-all text-xs font-bold shadow-xs" title="Profil — Mening profilim">
+                                <span class="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-black">
+                                    👤
                                 </span>
-                                <span class="hidden md:inline">{{ auth()->user()->name }}</span>
+                                <span>Profil — Mening profilim</span>
                             </a>
 
                             <form action="{{ route('logout') }}" method="POST" class="inline">
@@ -182,9 +188,9 @@
                         </div>
                     @else
                         <div class="flex items-center gap-2">
-                            <a href="{{ route('profile') }}" class="px-3 py-2 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] flex items-center gap-1.5 transition-colors" title="Mening Profilim">
-                                <svg class="w-4 h-4 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                <span class="hidden sm:inline">Profil</span>
+                            <a href="{{ route('profile') }}" class="px-3.5 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] flex items-center gap-1.5 transition-colors" title="Profil — Mening profilim">
+                                <span>👤</span>
+                                <span>Profil — Mening profilim</span>
                             </a>
                             <a href="{{ route('login') }}" class="px-4 py-2.5 rounded-2xl bg-[#123C2F] text-white font-semibold text-sm hover:bg-[#0d2a21] transition-colors">
                                 Kirish
@@ -213,6 +219,41 @@
                     </button>
                 </form>
             </div>
+
+        </div>
+
+        <!-- Dedicated Navigation Strip (Bosh sahifa, Katalog, Buyurtmalarim, Xarita, Profil — Mening profilim) -->
+        <div class="border-t border-[#E8ECE4] bg-[#FAFBF7] hidden md:block">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-11 text-xs">
+                    <nav class="flex items-center gap-1 sm:gap-2">
+                        <a href="{{ route('home') }}" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition font-bold {{ request()->routeIs('home') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
+                            <span>🏠</span>
+                            <span>Bosh sahifa</span>
+                        </a>
+                        <a href="{{ route('catalog') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition font-semibold {{ request()->routeIs('catalog') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
+                            <span>🗂️</span>
+                            <span>Katalog</span>
+                        </a>
+                        <a href="{{ route('orders.hub') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition font-semibold {{ request()->routeIs('orders.*') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
+                            <span>📦</span>
+                            <span>Buyurtmalarim & Xaridlar</span>
+                        </a>
+                        <a href="{{ route('tracking') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition font-semibold {{ request()->routeIs('tracking') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                            <span>📍 Jonli Xarita</span>
+                        </a>
+                    </nav>
+
+                    <div class="flex items-center gap-2">
+                        <a href="{{ route('profile') }}" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition font-bold {{ request()->routeIs('profile*') ? 'bg-[#123C2F] text-white shadow-xs' : 'bg-white text-[#123C2F] hover:bg-[#123C2F] hover:text-white border border-[#E8ECE4]' }}" title="Shaxsiy Kabinet">
+                            <span>👤</span>
+                            <span>Profil — Mening profilim</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         </div>
     </header>
@@ -263,7 +304,7 @@
                 <svg class="w-6 h-6" fill="{{ request()->routeIs('profile*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span class="text-[11px]">{{ auth()->check() ? 'Profil' : 'Profil' }}</span>
+                <span class="text-[11px] font-bold">Mening profilim</span>
             </a>
         </div>
     </nav>

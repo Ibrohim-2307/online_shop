@@ -1,9 +1,22 @@
-<x-layouts.app title="Mening Profilim — Shaxsiy Kabinet">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24"
+<x-layouts.app title="Profil — Mening profilim">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24"
          x-data="{
              activeTab: '{{ $activeTab ?? 'orders' }}',
              showAddressModal: false,
          }">
+
+        <!-- Breadcrumbs Navigation (Bosh sahifa / Profil — Mening profilim) -->
+        <nav class="flex items-center gap-2 text-xs text-[#64748B] mb-5" aria-label="Breadcrumb">
+            <a href="{{ route('home') }}" class="flex items-center gap-1 hover:text-[#123C2F] font-bold">
+                <span>🏠</span>
+                <span>Bosh sahifa</span>
+            </a>
+            <span>/</span>
+            <span class="text-[#172326] font-extrabold flex items-center gap-1">
+                <span>👤</span>
+                <span>Profil — Mening profilim</span>
+            </span>
+        </nav>
 
         <!-- Demo Mode Notice -->
         @if($isDemo)
@@ -81,6 +94,10 @@
 
                 <!-- Action Shortcuts -->
                 <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <a href="{{ route('home') }}" class="px-4 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:bg-white text-[#172326] font-bold text-xs flex items-center gap-1.5 transition" title="Bosh sahifa">
+                        <span>🏠 Bosh sahifa</span>
+                    </a>
+
                     @if($user->hasRole(['seller_owner', 'seller_manager', 'seller_operator']))
                         <a href="{{ route('seller.dashboard') }}" class="px-4 py-2.5 rounded-2xl bg-[#C9F46B]/20 text-[#123C2F] border border-[#C9F46B]/50 hover:bg-[#C9F46B]/30 font-bold text-xs flex items-center gap-1.5 transition">
                             <span>💼 Do'kon Kabineti</span>

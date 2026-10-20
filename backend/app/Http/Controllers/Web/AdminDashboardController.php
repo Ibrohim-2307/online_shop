@@ -38,7 +38,7 @@ class AdminDashboardController extends Controller
         $sellers = Seller::with('members.user')->latest()->get();
         $users = User::with('roles')->latest()->paginate(15);
         $products = Product::with(['category', 'seller', 'variants.priceTiers', 'variants.inventoryBalances.warehouse'])->latest()->paginate(15);
-        $recentOrders = Order::with('suborders.seller')->latest()->limit(10)->get();
+        $recentOrders = Order::with(['suborders.seller', 'suborders.shipments'])->latest()->limit(10)->get();
         $auditLogs = AuditLog::with('user')->latest()->limit(15)->get();
         $payouts = SellerPayout::with('seller')->latest()->limit(10)->get();
 

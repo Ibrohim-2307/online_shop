@@ -51,6 +51,11 @@
                 <span class="hidden md:inline text-white/80">Chakana va ulgurji narxlar bitta platformada</span>
             </div>
             <div class="flex items-center gap-4 text-white/80">
+                <a href="{{ route('tracking') }}" class="flex items-center gap-1.5 text-[#C9F46B] font-bold hover:underline transition-colors">
+                    <span class="w-2 h-2 rounded-full bg-[#C9F46B] animate-ping"></span>
+                    <span>📍 Jonli Xarita (Kuzatuv)</span>
+                </a>
+                <span class="text-white/40">|</span>
                 <a href="tel:+998712000000" class="hover:text-[#C9F46B] transition-colors">Yordam: +998 (71) 200-00-00</a>
                 <span class="text-white/40">|</span>
                 <span class="font-medium text-[#C9F46B]">UZS</span>
@@ -271,7 +276,7 @@
                         <li><a href="{{ route('catalog') }}" class="hover:text-[#123C2F] transition-colors">Barcha mahsulotlar</a></li>
                         <li><a href="{{ route('catalog', ['trade_mode' => 'wholesale_only']) }}" class="hover:text-[#123C2F] transition-colors">Optom savdo</a></li>
                         <li><a href="{{ route('wishlist') }}" class="hover:text-[#123C2F] transition-colors">Sevimlilar</a></li>
-                        <li><a href="#" @click.prevent="alert('Yetkazib berish bo\'limi 08-bosqichda to\'liq ishga tushadi')" class="hover:text-[#123C2F] transition-colors">Yetkazib berish</a></li>
+                        <li><a href="{{ route('tracking') }}" class="hover:text-[#123C2F] transition-colors font-medium text-[#123C2F] flex items-center gap-1.5"><span>📍</span> Jonli yetkazib berish xaritasi</a></li>
                     </ul>
                 </div>
 

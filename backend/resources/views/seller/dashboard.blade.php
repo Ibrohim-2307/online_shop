@@ -246,9 +246,16 @@
                                 <td class="p-3.5 font-bold text-slate-900 font-mono">{{ $sub->suborder_number }}</td>
                                 <td class="p-3.5 font-mono text-slate-500">{{ $sub->order->order_number ?? '—' }}</td>
                                 <td class="p-3.5">
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-800">
-                                        {{ $sub->shipment->status ?? $sub->status }}
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-800">
+                                            {{ $sub->shipments->first()?->status ?? $sub->status }}
+                                        </span>
+                                        @if($s = $sub->shipments->first())
+                                            <a href="{{ route('tracking', ['trackingNumber' => $s->tracking_number]) }}" target="_blank" class="px-2 py-0.5 rounded bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition flex items-center gap-0.5" title="Xaritada jonli kuzatish">
+                                                <span>📍</span> Xarita
+                                            </a>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="p-3.5 font-bold text-slate-900">{{ number_format($sub->total_amount) }} UZS</td>
                                 <td class="p-3.5 text-slate-500">{{ number_format($sub->commission_amount) }} UZS</td>

@@ -57,9 +57,15 @@
 
                         <!-- Shipment Tracking -->
                         @foreach($suborder->shipments as $shipment)
-                            <div class="pt-3 border-t border-[#E8ECE4] flex items-center justify-between text-xs">
-                                <span class="text-[#64748B]">Kuzatuv (Tracking):</span>
-                                <span class="font-mono font-bold text-[#123C2F]">{{ $shipment->tracking_number }}</span>
+                            <div class="pt-3 border-t border-[#E8ECE4] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div>
+                                    <span class="text-[#64748B]">Kuzatuv (Tracking):</span>
+                                    <span class="font-mono font-bold text-[#123C2F]">{{ $shipment->tracking_number }}</span>
+                                </div>
+                                <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#123C2F] text-[#C9F46B] font-bold text-xs hover:bg-[#0d2a21] transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>📍 Xaritada jonli kuzatish</span>
+                                </a>
                             </div>
                         @endforeach
                     </div>

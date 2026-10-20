@@ -10,6 +10,7 @@ use App\Models\Seller;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Services\Cart\CartService;
 use App\Services\Checkout\CheckoutService;
 use Illuminate\Http\RedirectResponse;
@@ -280,5 +281,95 @@ class StorefrontController extends Controller
             ->firstOrFail();
 
         return view('storefront.order_success', compact('order'));
+    }
+
+    /**
+     * Live GPS tracking view with interactive Leaflet map.
+     */
+    public function tracking(Request $request, ?string $trackingNumber = null)
+    {
+        $query = Shipment::with([
+            'suborder.order.user',
+            'suborder.seller',
+            'suborder.items',
+            'courier',
+            'courierLocations' => fn($q) => $q->orderBy('recorded_at', 'asc'),
+            'events' => fn($q) => $q->orderBy('created_at', 'desc'),
+        ]);
+
+        if ($trackingNumber) {
+            $shipment = $query->where('tracking_number', $trackingNumber)->first();
+        } else {
+            $shipment = $query->where('tracking_number', 'TRK-UZ-778899')->first()
+                     ?? $query->where('status', 'in_transit')->latest()->first()
+                     ?? $query->latest()->first();
+        }
+
+        if (!$shipment) {
+            return view('storefront.tracking_empty', ['trackingNumber' => $trackingNumber]);
+        }
+
+        // Warehouse / Origin
+        $warehouse = [
+            'name' => $shipment->pickup_address['title'] ?? ($shipment->suborder?->seller?->name . ' Ombori'),
+            'address' => $shipment->pickup_address['address'] ?? 'Toshkent sh., Sergeli sanoat zonasi, 14-bino',
+            'lat' => (float) ($shipment->pickup_address['latitude'] ?? 41.2285),
+            'lng' => (float) ($shipment->pickup_address['longitude'] ?? 69.2155),
+        ];
+
+        // Customer / Destination
+        $destination = [
+            'recipient' => $shipment->delivery_address['recipient'] ?? ($shipment->suborder?->order?->shipping_address['recipient_name'] ?? 'Mijoz'),
+            'phone' => $shipment->delivery_address['phone'] ?? ($shipment->suborder?->order?->shipping_address['phone'] ?? '+998 90 987 65 43'),
+            'address' => $shipment->delivery_address['address'] ?? ($shipment->suborder?->order?->shipping_address['address_line'] ?? 'Mustaqillik shoh ko\'chasi, 105-uy'),
+            'lat' => (float) ($shipment->delivery_address['latitude'] ?? ($shipment->suborder?->order?->shipping_address['latitude'] ?? 41.3111)),
+            'lng' => (float) ($shipment->delivery_address['longitude'] ?? ($shipment->suborder?->order?->shipping_address['longitude'] ?? 69.2797)),
+        ];
+
+        // Courier locations path
+        $locations = $shipment->courierLocations->map(fn($loc) => [
+            'id' => $loc->id,
+            'lat' => (float) $loc->latitude,
+            'lng' => (float) $loc->longitude,
+            'speed' => (float) ($loc->speed ?? 0),
+            'heading' => (float) ($loc->heading ?? 0),
+            'recorded_at' => $loc->recorded_at?->format('H:i') ?? '',
+            'recorded_iso' => $loc->recorded_at?->toIso8601String() ?? '',
+        ])->values()->all();
+
+        // Current / Latest location
+        $latest = !empty($locations) ? end($locations) : [
+            'lat' => 41.2995,
+            'lng' => 69.2725,
+            'speed' => 35,
+            'heading' => 20,
+            'recorded_at' => now()->format('H:i'),
+        ];
+
+        // Return JSON for client polling
+        if ($request->wantsJson() || $request->has('json')) {
+            return response()->json([
+                'tracking_number' => $shipment->tracking_number,
+                'status' => $shipment->status,
+                'courier' => [
+                    'name' => $shipment->courier?->name ?? 'Rustam Kuryer',
+                    'phone' => '+998 97 123 45 67',
+                    'vehicle' => 'Labo / Damas (Kamyon)',
+                    'plate' => '01 A 777 AA',
+                ],
+                'warehouse' => $warehouse,
+                'destination' => $destination,
+                'latest' => $latest,
+                'locations' => $locations,
+                'eta' => '10-15 daqiqa',
+            ]);
+        }
+
+        $allShipments = Shipment::select('tracking_number', 'status', 'created_at')
+            ->orderBy('id', 'desc')
+            ->take(8)
+            ->get();
+
+        return view('storefront.tracking', compact('shipment', 'warehouse', 'destination', 'locations', 'latest', 'allShipments'));
     }
 }

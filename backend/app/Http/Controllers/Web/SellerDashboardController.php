@@ -44,7 +44,7 @@ class SellerDashboardController extends Controller
             ->latest()
             ->get();
 
-        $suborders = Suborder::with(['order', 'items', 'shipment'])
+        $suborders = Suborder::with(['order', 'items', 'shipments'])
             ->where('seller_id', $seller->id)
             ->latest()
             ->limit(15)

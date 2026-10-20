@@ -15,6 +15,7 @@ Route::get('/cart', [StorefrontController::class, 'cart'])->name('cart');
 Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
 Route::post('/checkout', [StorefrontController::class, 'processCheckout'])->name('checkout.post');
 Route::get('/orders/{orderNumber}/success', [StorefrontController::class, 'orderSuccess'])->name('order.success');
+Route::get('/tracking/{trackingNumber?}', [StorefrontController::class, 'tracking'])->name('tracking');
 
 Route::get('/login', [WebAuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');

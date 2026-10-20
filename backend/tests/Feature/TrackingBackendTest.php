@@ -304,4 +304,40 @@ class TrackingBackendTest extends TestCase
         $res->assertStatus(422)
             ->assertJsonPath('error.code', 'INVALID_LOCATION_BATCH');
     }
+
+    public function test_web_tracking_page_renders_successfully(): void
+    {
+        $customer = $this->setupUserWithRole('customer', 'cust_map@example.uz');
+        $courier = $this->setupUserWithRole('courier', 'courier_map@example.uz');
+        $setup = $this->setupShipment($customer, $courier);
+        $shipment = $setup['shipment'];
+
+        $res = $this->get("/tracking/{$shipment->tracking_number}");
+        $res->assertStatus(200)
+            ->assertSee($shipment->tracking_number)
+            ->assertSee('liveMap')
+            ->assertSee('Yetkazib berish xaritasi');
+    }
+
+    public function test_web_tracking_json_polling_endpoint(): void
+    {
+        $customer = $this->setupUserWithRole('customer', 'cust_json@example.uz');
+        $courier = $this->setupUserWithRole('courier', 'courier_json@example.uz');
+        $setup = $this->setupShipment($customer, $courier);
+        $shipment = $setup['shipment'];
+
+        $res = $this->getJson("/tracking/{$shipment->tracking_number}?json=1");
+        $res->assertStatus(200)
+            ->assertJsonPath('tracking_number', $shipment->tracking_number)
+            ->assertJsonStructure([
+                'tracking_number',
+                'status',
+                'courier' => ['name', 'phone', 'vehicle', 'plate'],
+                'warehouse' => ['name', 'address', 'lat', 'lng'],
+                'destination' => ['recipient', 'phone', 'address', 'lat', 'lng'],
+                'latest',
+                'locations',
+                'eta',
+            ]);
+    }
 }

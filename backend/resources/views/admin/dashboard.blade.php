@@ -352,6 +352,7 @@
                             <th class="p-3.5">Sotuvchilar</th>
                             <th class="p-3.5">Jami Summa</th>
                             <th class="p-3.5">Sana</th>
+                            <th class="p-3.5 text-right">Kuzatuv</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -372,10 +373,24 @@
                                 </td>
                                 <td class="p-3.5 font-black text-slate-900">{{ number_format($order->grand_total) }} UZS</td>
                                 <td class="p-3.5 text-slate-400">{{ $order->created_at->format('Y-m-d H:i') }}</td>
+                                <td class="p-3.5 text-right">
+                                    @php
+                                        $shipment = $order->suborders->flatMap->shipments->first();
+                                    @endphp
+                                    @if($shipment)
+                                        <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] transition">
+                                            <span>📍</span> Jonli Xarita
+                                        </a>
+                                    @else
+                                        <a href="{{ route('tracking') }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-[11px] transition">
+                                            <span>📍</span> Xarita
+                                        </a>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="p-8 text-center text-slate-400">Hozircha buyurtmalar mavjud emas</td>
+                                <td colspan="6" class="p-8 text-center text-slate-400">Hozircha buyurtmalar mavjud emas</td>
                             </tr>
                         @endforelse
                     </tbody>

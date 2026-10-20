@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\RefundController;
 use App\Http\Controllers\Api\V1\SellerCatalogController;
 use App\Http\Controllers\Api\V1\SellerController;
 use App\Http\Controllers\Api\V1\SellerInventoryController;
@@ -28,6 +30,9 @@ Route::prefix('v1')->group(function () {
     Route::put('/cart/items/{id}', [CartController::class, 'updateItem']);
     Route::delete('/cart/items/{id}', [CartController::class, 'removeItem']);
     Route::post('/checkout/quote', [CheckoutController::class, 'quote']);
+
+    // Payments public webhook (HMAC signature validated inside controller/adapter)
+    Route::post('/payments/webhook', [PaymentController::class, 'webhook']);
 
     // Public authentication routes (with rate limiting)
     Route::prefix('auth')->group(function () {
@@ -58,6 +63,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/checkout', [CheckoutController::class, 'checkout']);
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/orders/{orderNumber}', [OrderController::class, 'show']);
+
+        // Payments
+        Route::post('/payments/initiate', [PaymentController::class, 'initiate']);
+        Route::get('/payments/status/{orderId}', [PaymentController::class, 'status']);
+
+        // Refunds
+        Route::get('/refunds', [RefundController::class, 'index']);
+        Route::post('/refunds', [RefundController::class, 'store']);
+        Route::post('/refunds/{id}/review', [RefundController::class, 'review']);
+        Route::post('/refunds/{id}/restock', [RefundController::class, 'restock']);
 
         // Multi-tenant Seller routes (strictly isolated per seller store)
         Route::prefix('seller')->middleware('role:seller_owner,seller_manager,seller_operator,admin')->group(function () {

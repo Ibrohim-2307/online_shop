@@ -1,8 +1,8 @@
 # Loyiha Rivojlanish Holati (PROGRESS.md)
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
-Sana: 19-oktabr, 2026  
-Joriy holat: **01, 02, 03, 04 va 05-bosqichlar (Savatcha, ko'p sotuvchili buyurtma, atomar zaxira rezervatsiyasi, idempotency va outbox) to'liq bajarildi va alohida MySQL test bazasida 54 ta test bilan tasdiqlandi.** 06-bosqichga (To'lov, qaytarish va sotuvchi hisob-kitobi) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
+Sana: 20-oktabr, 2026  
+Joriy holat: **01, 02, 03, 04, 05 va 06-bosqichlar (To'lov, qaytarish, sotuvchi hisob-kitobi va ikki yoqlama ledger) to'liq bajarildi va alohida MySQL test bazasida 63 ta test bilan tasdiqlandi.** 07-bosqichga (Seller, admin va logistika panellari) o'tilmoqda. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 
 ---
 
@@ -51,7 +51,7 @@ Joriy holat: **01, 02, 03, 04 va 05-bosqichlar (Savatcha, ko'p sotuvchili buyurt
 - [x] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService (float ishlatilmaydi), ombor balansi, rezervatsiya va harakatlar auditi (`inventory_movements`), multi-tenant sotuvchi izolyatsiyasi to'liq yakunlandi va alohida MySQL test bazasida testlandi (42 test, 270 assertion). Tayyor `demo_seed.sql` eksport qilindi.
 - [x] **04 — Dizayn tizimi va xaridor veb-sayti:** `preview.mp4` asosidagi zamonaviy dizayn tizimi, Tailwind v4 tokenlari, Plus Jakarta Sans, Blade layouts va komponentlari, Bosh sahifa, qidiruvli Katalog, reaktiv all-units narx kalkulyatorli Mahsulot sahifasi, Sotuvchi profili, Sevimlilar; responsivlik (1440px, 768px, 390px, 360px) skrinshotlar bilan tasdiqlandi (47 test, 296 assertion).
 - [x] **05 — Savatcha va ishonchli checkout:** Multi-vendor cart, server quote, race condition zaxira rezervatsiyasi, idempotency key, outbox, 299 vs 300 narx yangilanishi va suborderlarga ajratish (54 test, 343 assertion).
-- [ ] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi:** Payment adapter, demo to'lov oqimi, webhook signature tekshiruvi, immutable ledger, refund & dispute.
+- [x] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi (Ledger):** Kriptografik HMAC-SHA256 imzoli to'lov webhooki, takroriy callback idempotensiyasi, xaridor to'lagan mablag' va sotuvchilar tushumi o'rtasidagi qat'iy balans tengligi, ikki yoqlama append-only `seller_ledgers`, 7 kunlik hold davri, nizoli arizalar (dispute) bloki, qaytarilgan jismoniy tovarlarni omborga kirim qilish (inflow) va audit harakati (9 test, 48 assertion). Jami: **63 test, 391 assertion**.
 - [ ] **07 — Seller, admin va logistika panellari:** Sotuvchi kabineti, admin boshqaruvi, logistika operatori, RFQ takliflari, ma'lumotlar izolyatsiyasi.
 - [ ] **08 — Haqiqiy tracking backend:** Location batch API, koordinata va sakrash validationi, WebSocket va polling fallback, tracking timeline.
 - [ ] **09 — Flutter xaridor ilovasi:** Native Flutter UI, Riverpod, typed API client, offline kesh, Android build sinovi.

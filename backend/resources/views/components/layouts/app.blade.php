@@ -65,11 +65,13 @@
 
     <!-- Desktop & Tablet Header -->
     <header class="bg-white border-b border-[#E8ECE4] sticky top-0 z-40 transition-shadow duration-200">
+        
+        <!-- TOP MAIN BAR: Logo, Catalog, Search, and Action Icons -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20 gap-4">
+            <div class="flex items-center justify-between h-20 gap-3 sm:gap-4">
                 
-                <!-- Brand Logo -->
-                <div class="flex items-center gap-6">
+                <!-- Brand Logo & Catalog Button -->
+                <div class="flex items-center gap-3 sm:gap-4 shrink-0">
                     <a href="{{ route('home') }}" class="flex items-center gap-2.5 group">
                         <div class="w-11 h-11 rounded-2xl bg-[#123C2F] flex items-center justify-center text-white font-extrabold text-xl shadow-sm group-hover:bg-[#C9F46B] group-hover:text-[#123C2F] transition-all duration-200">
                             M
@@ -83,14 +85,8 @@
                         </div>
                     </a>
 
-                    <!-- Bosh sahifa Button (Desktop) -->
-                    <a href="{{ route('home') }}" class="hidden lg:flex items-center gap-1.5 px-4 py-2.5 rounded-2xl {{ request()->routeIs('home') ? 'bg-[#123C2F] text-white shadow-xs' : 'bg-[#FAFBF7] hover:bg-[#E8ECE4] text-[#172326]' }} font-bold text-xs transition-all border border-[#E8ECE4]" title="Bosh sahifa">
-                        <span>🏠</span>
-                        <span>Bosh sahifa</span>
-                    </a>
-
                     <!-- Category Catalog Button (Desktop) -->
-                    <a href="{{ route('catalog') }}" class="hidden lg:flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#C9F46B] text-[#123C2F] font-bold text-xs hover:bg-[#b8e855] transition-all duration-150 shadow-sm" title="Katalog">
+                    <a href="{{ route('catalog') }}" class="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#C9F46B] text-[#123C2F] font-extrabold text-xs hover:bg-[#b8e855] transition-all shadow-xs whitespace-nowrap" title="Katalog">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
@@ -98,101 +94,90 @@
                     </a>
                 </div>
 
-                <!-- Central Search Bar -->
-                <div class="flex-1 max-w-2xl hidden md:block">
+                <!-- Central Search Bar (Expanded Width & Clean Layout) -->
+                <div class="flex-1 max-w-2xl xl:max-w-3xl hidden md:block mx-2">
                     <form action="{{ route('catalog') }}" method="GET" class="relative">
                         @if(request('trade_mode'))
                             <input type="hidden" name="trade_mode" value="{{ request('trade_mode') }}">
                         @endif
+                        @if(request('category'))
+                            <input type="hidden" name="category" value="{{ request('category') }}">
+                        @endif
                         <input type="search" 
                                name="q" 
                                value="{{ request('q') }}"
-                               placeholder="Mahsulot, SKU yoki toifani qidiring (masalan: sement, generator)..." 
-                               class="w-full h-12 pl-12 pr-28 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-sm text-[#172326] placeholder-[#64748B] focus:bg-white focus:border-[#123C2F] focus:ring-2 focus:ring-[#123C2F]/10 transition-all outline-none">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#64748B]">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               placeholder="Mahsulot, SKU yoki toifani qidiring (masalan: sement, gipsokarton, profil)..." 
+                               class="w-full h-11 pl-11 pr-24 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs font-medium text-[#172326] placeholder-[#64748B] focus:bg-white focus:border-[#123C2F] focus:ring-2 focus:ring-[#123C2F]/10 transition-all outline-none">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#64748B]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
-                        <button type="submit" class="absolute inset-y-1.5 right-1.5 px-4 rounded-xl bg-[#123C2F] text-white font-semibold text-xs hover:bg-[#0d2a21] transition-colors flex items-center gap-1.5">
+                        <button type="submit" class="absolute inset-y-1 right-1 px-4 rounded-xl bg-[#123C2F] text-white font-bold text-xs hover:bg-[#0d2a21] transition-colors flex items-center gap-1">
                             Qidirish
                         </button>
                     </form>
                 </div>
 
-                <!-- Right Nav Actions -->
-                <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Right Nav Actions (Single Row, Matched 40px Height, Whitespace-Nowrap) -->
+                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     
-                    <!-- Trade Mode Filter Badge -->
-                    <div class="hidden xl:flex items-center p-1 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs font-semibold">
-                        <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'all'])) }}" 
-                           class="px-3 py-1.5 rounded-xl transition-all {{ request('trade_mode', 'all') === 'all' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
-                            Barchasi
-                        </a>
-                        <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'retail_only'])) }}" 
-                           class="px-3 py-1.5 rounded-xl transition-all {{ request('trade_mode') === 'retail_only' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
-                            Chakana
-                        </a>
-                        <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'wholesale_only'])) }}" 
-                           class="px-3 py-1.5 rounded-xl transition-all {{ request('trade_mode') === 'wholesale_only' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
-                            Optom
-                        </a>
-                    </div>
-
                     <!-- Wishlist (Sevimlilar) -->
-                    <a href="{{ route('wishlist') }}" class="relative p-2.5 rounded-2xl hover:bg-[#FAFBF7] text-[#172326] transition-colors" title="Sevimlilar">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="{{ route('wishlist') }}" class="relative p-2.5 rounded-2xl bg-[#FAFBF7] hover:bg-white border border-[#E8ECE4] hover:border-[#123C2F] text-[#172326] transition-all" title="Sevimlilar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
-                        <span x-data x-show="$store.wishlist.count() > 0" x-text="$store.wishlist.count()" class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#123C2F] text-white font-bold text-[10px] flex items-center justify-center">0</span>
+                        <span x-data x-show="$store.wishlist.count() > 0" x-text="$store.wishlist.count()" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#123C2F] text-white font-black text-[9px] flex items-center justify-center">0</span>
                     </a>
 
                     <!-- Cart (Savatcha) -->
-                    <a href="{{ route('cart') }}" class="relative flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] transition-colors text-sm font-semibold" title="Savatcha">
-                        <svg class="w-5 h-5 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="{{ route('cart') }}" class="relative flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-[#FAFBF7] hover:bg-white border border-[#E8ECE4] hover:border-[#123C2F] transition-all text-xs font-bold text-[#172326] whitespace-nowrap" title="Savatcha">
+                        <svg class="w-4 h-4 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
-                        <span class="hidden sm:inline">Savatcha</span>
+                        <span class="hidden xl:inline">Savatcha</span>
                     </a>
 
                     <!-- Orders Hub Link (Buyurtmalar & Xaridlar) -->
-                    <a href="{{ route('orders.hub') }}" class="relative flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] transition-colors" title="Buyurtmalar va Yetkazib Berishlar">
+                    <a href="{{ route('orders.hub') }}" class="relative flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-[#FAFBF7] hover:bg-white border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] transition-all whitespace-nowrap" title="Buyurtmalar va Yetkazib Berishlar">
                         <span class="text-sm">📦</span>
-                        <span class="hidden md:inline">Buyurtmalar</span>
+                        <span class="hidden xl:inline">Buyurtmalar</span>
                     </a>
 
-                    <!-- Account / Auth -->
+                    <!-- Account / Auth / Profil - Mening profilim -->
                     @auth
-                        <div class="flex items-center gap-2 pl-1">
+                        <div class="flex items-center gap-1.5 pl-1">
                             @if(auth()->user()->hasRole(['admin', 'moderator']))
-                                <a href="{{ route('admin.dashboard') }}" class="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-700 border border-rose-500/20 text-xs font-bold hover:bg-rose-500/20 transition">
-                                    Admin Panel
+                                <a href="{{ route('admin.dashboard') }}" class="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold hover:bg-rose-100 transition whitespace-nowrap">
+                                    Admin
                                 </a>
                             @elseif(auth()->user()->hasRole(['seller_owner', 'seller_manager', 'seller_operator']))
-                                <a href="{{ route('seller.dashboard') }}" class="px-3 py-1.5 rounded-xl bg-[#C9F46B]/20 text-[#123C2F] border border-[#C9F46B]/40 text-xs font-bold hover:bg-[#C9F46B]/30 transition">
-                                    Do'kon Kabineti
+                                <a href="{{ route('seller.dashboard') }}" class="px-2.5 py-1.5 rounded-xl bg-[#C9F46B]/20 text-[#123C2F] border border-[#C9F46B]/40 text-xs font-bold hover:bg-[#C9F46B]/30 transition whitespace-nowrap">
+                                    Do'kon
                                 </a>
                             @endif
 
-                            <a href="{{ route('profile') }}" class="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] transition-all text-xs font-bold shadow-xs" title="Profil — Mening profilim">
+                            <a href="{{ route('profile') }}" class="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] transition-all text-xs font-bold shadow-xs whitespace-nowrap" title="Profil — Mening profilim">
                                 <span class="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-black">
                                     👤
                                 </span>
-                                <span>Profil — Mening profilim</span>
+                                <span>Profil</span>
                             </a>
 
                             <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
-                                <button type="submit" class="px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition" title="Tizimdan chiqish">Chiqish</button>
+                                <button type="submit" class="p-2 rounded-2xl bg-[#FAFBF7] hover:bg-red-50 text-[#64748B] hover:text-red-600 border border-[#E8ECE4] transition" title="Tizimdan chiqish">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                </button>
                             </form>
                         </div>
                     @else
-                        <div class="flex items-center gap-2">
-                            <a href="{{ route('profile') }}" class="px-3.5 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] flex items-center gap-1.5 transition-colors" title="Profil — Mening profilim">
+                        <div class="flex items-center gap-1.5">
+                            <a href="{{ route('profile') }}" class="px-3 py-2 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] flex items-center gap-1.5 transition whitespace-nowrap" title="Profil — Mening profilim">
                                 <span>👤</span>
-                                <span>Profil — Mening profilim</span>
+                                <span>Profil</span>
                             </a>
-                            <a href="{{ route('login') }}" class="px-4 py-2.5 rounded-2xl bg-[#123C2F] text-white font-semibold text-sm hover:bg-[#0d2a21] transition-colors">
+                            <a href="{{ route('login') }}" class="px-3.5 py-2 rounded-2xl bg-[#123C2F] text-white font-bold text-xs hover:bg-[#0d2a21] transition whitespace-nowrap">
                                 Kirish
                             </a>
                         </div>
@@ -202,19 +187,19 @@
             </div>
 
             <!-- Mobile Search Bar (under top bar) -->
-            <div class="py-3 md:hidden">
+            <div class="py-2.5 md:hidden">
                 <form action="{{ route('catalog') }}" method="GET" class="relative">
                     <input type="search" 
                            name="q" 
                            value="{{ request('q') }}"
                            placeholder="Mahsulot yoki toifani qidiring..." 
-                           class="w-full h-11 pl-11 pr-24 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-sm text-[#172326] placeholder-[#64748B] focus:bg-white focus:border-[#123C2F] outline-none">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#64748B]">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="w-full h-10 pl-10 pr-20 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs text-[#172326] placeholder-[#64748B] focus:bg-white focus:border-[#123C2F] outline-none">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#64748B]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </div>
-                    <button type="submit" class="absolute inset-y-1 right-1 px-3.5 rounded-xl bg-[#123C2F] text-white font-semibold text-xs">
+                    <button type="submit" class="absolute inset-y-1 right-1 px-3 rounded-lg bg-[#123C2F] text-white font-bold text-xs">
                         Topish
                     </button>
                 </form>
@@ -222,35 +207,82 @@
 
         </div>
 
-        <!-- Dedicated Navigation Strip (Bosh sahifa, Katalog, Buyurtmalarim, Xarita, Profil — Mening profilim) -->
-        <div class="border-t border-[#E8ECE4] bg-[#FAFBF7] hidden md:block">
+        <!-- TIER 2: DEDICATED CATEGORIES & NAVIGATION RIBBON -->
+        <div class="border-t border-[#E8ECE4] bg-white hidden md:block">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-11 text-xs">
-                    <nav class="flex items-center gap-1 sm:gap-2">
-                        <a href="{{ route('home') }}" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition font-bold {{ request()->routeIs('home') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
+                <div class="flex items-center justify-between h-12 text-xs">
+                    
+                    <!-- Left: Bosh sahifa + Main Category Pills -->
+                    <nav class="flex items-center gap-1 overflow-x-auto no-scrollbar py-1">
+                        
+                        <!-- Bosh sahifa Tab -->
+                        <a href="{{ route('home') }}" 
+                           class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition font-extrabold whitespace-nowrap {{ request()->routeIs('home') ? 'bg-[#123C2F] text-white shadow-xs' : 'bg-[#FAFBF7] text-[#172326] hover:bg-[#E8ECE4] border border-[#E8ECE4]' }}">
                             <span>🏠</span>
                             <span>Bosh sahifa</span>
                         </a>
-                        <a href="{{ route('catalog') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition font-semibold {{ request()->routeIs('catalog') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
-                            <span>🗂️</span>
-                            <span>Katalog</span>
+
+                        <div class="h-4 w-px bg-[#E8ECE4] mx-1"></div>
+
+                        <!-- Real Catalog Categories -->
+                        <a href="{{ route('catalog', ['category' => 'qurilish-materiallari']) }}" 
+                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'qurilish-materiallari' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
+                            🧱 Qurilish mollari
                         </a>
-                        <a href="{{ route('orders.hub') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition font-semibold {{ request()->routeIs('orders.*') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
-                            <span>📦</span>
-                            <span>Buyurtmalarim & Xaridlar</span>
+
+                        <a href="{{ route('catalog', ['category' => 'sanoat-uskunalari']) }}" 
+                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'sanoat-uskunalari' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
+                            ⚙️ Sanoat uskunalari
                         </a>
-                        <a href="{{ route('tracking') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition font-semibold {{ request()->routeIs('tracking') ? 'bg-white text-[#123C2F] shadow-xs border border-[#E8ECE4]' : 'text-[#64748B] hover:text-[#172326]' }}">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                            <span>📍 Jonli Xarita</span>
+
+                        <a href="{{ route('catalog', ['category' => 'elektr-jihozlari']) }}" 
+                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'elektr-jihozlari' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
+                            ⚡ Elektr & Yoritish
+                        </a>
+
+                        <a href="{{ route('catalog', ['category' => 'santexnika-va-quvurlar']) }}" 
+                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'santexnika-va-quvurlar' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
+                            🚰 Santexnika
+                        </a>
+
+                        <a href="{{ route('catalog', ['category' => 'boyoqlar-va-kimyo']) }}" 
+                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'boyoqlar-va-kimyo' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
+                            🎨 Bo'yoqlar
+                        </a>
+
+                        <a href="{{ route('catalog', ['category' => 'asbob-uskunalar']) }}" 
+                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'asbob-uskunalar' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
+                            🔧 Asbob-uskunalar
                         </a>
                     </nav>
 
-                    <div class="flex items-center gap-2">
-                        <a href="{{ route('profile') }}" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition font-bold {{ request()->routeIs('profile*') ? 'bg-[#123C2F] text-white shadow-xs' : 'bg-white text-[#123C2F] hover:bg-[#123C2F] hover:text-white border border-[#E8ECE4]' }}" title="Shaxsiy Kabinet">
-                            <span>👤</span>
-                            <span>Profil — Mening profilim</span>
+                    <!-- Right: Trade Mode Filter (Chakana / Optom) & Live Map Link -->
+                    <div class="flex items-center gap-3 shrink-0 pl-3">
+                        
+                        <!-- Trade Mode Segmented Badge -->
+                        <div class="flex items-center p-0.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-[11px] font-bold">
+                            <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'all'])) }}" 
+                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode', 'all') === 'all' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
+                                Barchasi
+                            </a>
+                            <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'retail_only'])) }}" 
+                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode') === 'retail_only' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
+                                Chakana
+                            </a>
+                            <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'wholesale_only'])) }}" 
+                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode') === 'wholesale_only' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
+                                Optom
+                            </a>
+                        </div>
+
+                        <!-- Live Map Link -->
+                        <a href="{{ route('tracking') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-bold text-[11px] transition whitespace-nowrap">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                            <span>📍 Xarita</span>
                         </a>
+
                     </div>
+
                 </div>
             </div>
         </div>

@@ -42,6 +42,7 @@ yarn-error.log
 dist/*.zip
 dist/staging_hosting/
 storage/installed.lock
+cloudflared.exe
 .idea/
 .vscode/
 *.swp

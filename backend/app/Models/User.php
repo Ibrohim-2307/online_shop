@@ -44,6 +44,14 @@ class User extends Authenticatable
         ];
     }
 
+    public function getSellerIdAttribute(): ?int
+    {
+        if (isset($this->attributes['seller_id']) && $this->attributes['seller_id'] !== null) {
+            return (int) $this->attributes['seller_id'];
+        }
+        return $this->sellerMemberships()->where('is_active', true)->value('seller_id');
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_roles')->withTimestamps();

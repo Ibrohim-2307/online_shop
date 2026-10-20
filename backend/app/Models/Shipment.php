@@ -15,6 +15,7 @@ class Shipment extends Model
         'tracking_number',
         'courier_id',
         'status',
+        'delay_reason',
         'shipping_method',
         'shipping_cost',
         'pickup_address',

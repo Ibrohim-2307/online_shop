@@ -2,17 +2,21 @@
 
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\AdminController;
+use App\Http\Controllers\Api\V1\AdminPanelController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\LogisticsPanelController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\RefundController;
+use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SellerCatalogController;
 use App\Http\Controllers\Api\V1\SellerController;
 use App\Http\Controllers\Api\V1\SellerInventoryController;
+use App\Http\Controllers\Api\V1\SellerPanelController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -74,6 +78,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/refunds/{id}/review', [RefundController::class, 'review']);
         Route::post('/refunds/{id}/restock', [RefundController::class, 'restock']);
 
+        // RFQs (Customer side)
+        Route::post('/rfqs', [RfqController::class, 'store']);
+        Route::post('/rfqs/quotations/{quotationId}/accept', [RfqController::class, 'acceptQuotation']);
+
         // Multi-tenant Seller routes (strictly isolated per seller store)
         Route::prefix('seller')->middleware('role:seller_owner,seller_manager,seller_operator,admin')->group(function () {
             // Profile & members
@@ -106,6 +114,15 @@ Route::prefix('v1')->group(function () {
             Route::put('/warehouses/{id}', [SellerInventoryController::class, 'updateWarehouse']);
             Route::post('/inventory/adjust', [SellerInventoryController::class, 'adjustStock']);
             Route::get('/inventory/movements', [SellerInventoryController::class, 'movements']);
+
+            // Orders, RFQs, Ledger & Payouts (Seller operations)
+            Route::get('/orders', [SellerPanelController::class, 'orders']);
+            Route::put('/orders/{id}/status', [SellerPanelController::class, 'updateOrderStatus']);
+            Route::get('/rfqs', [SellerPanelController::class, 'rfqs']);
+            Route::post('/rfqs/{id}/quote', [SellerPanelController::class, 'submitQuotation']);
+            Route::get('/ledger', [SellerPanelController::class, 'ledger']);
+            Route::post('/payouts', [SellerPanelController::class, 'requestPayout']);
+            Route::get('/export/{type}', [SellerPanelController::class, 'export']);
         });
 
         // Administrator and Moderator routes
@@ -114,6 +131,20 @@ Route::prefix('v1')->group(function () {
             Route::put('/users/{id}/status', [AdminController::class, 'updateUserStatus'])->middleware('role:admin');
             Route::get('/sellers', [AdminController::class, 'sellers']);
             Route::put('/sellers/{id}/status', [AdminController::class, 'updateSellerStatus'])->middleware('role:admin');
+
+            // Admin panel operations
+            Route::post('/payouts/{id}/review', [AdminPanelController::class, 'reviewPayout']);
+            Route::get('/banners', [AdminPanelController::class, 'banners']);
+            Route::post('/banners', [AdminPanelController::class, 'storeBanner'])->middleware('role:admin');
+            Route::get('/disputes', [AdminPanelController::class, 'disputes']);
+            Route::get('/audit-logs', [AdminPanelController::class, 'auditLogs'])->middleware('role:admin');
+        });
+
+        // Logistics Operator routes
+        Route::prefix('logistics')->middleware('role:logistics_operator,admin')->group(function () {
+            Route::get('/shipments', [LogisticsPanelController::class, 'shipments']);
+            Route::post('/shipments/{id}/assign', [LogisticsPanelController::class, 'assignCourier']);
+            Route::post('/shipments/{id}/status', [LogisticsPanelController::class, 'updateStatus']);
         });
     });
 });

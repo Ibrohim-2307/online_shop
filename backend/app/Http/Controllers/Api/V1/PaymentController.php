@@ -43,6 +43,13 @@ class PaymentController extends Controller
             );
         }
 
+        // Ton freight shipping negotiation check
+        try {
+            app(\App\Services\Rfq\RfqService::class)->validateFreightShippingForPayment($order);
+        } catch (InvalidArgumentException $e) {
+            return ApiResponse::error($e->getMessage(), 'TON_FREIGHT_SHIPPING_REQUIRED', [], 422);
+        }
+
         $session = $this->paymentAdapter->initializePayment($order, [
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),

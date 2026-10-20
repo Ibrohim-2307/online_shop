@@ -2,7 +2,7 @@
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
 Sana: 20-oktabr, 2026  
-Joriy holat: **01, 02, 03, 04, 05 va 06-bosqichlar (To'lov, qaytarish, sotuvchi hisob-kitobi va ikki yoqlama ledger) to'liq bajarildi va alohida MySQL test bazasida 63 ta test bilan tasdiqlandi.** 07-bosqichga (Seller, admin va logistika panellari) o'tilmoqda. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
+Joriy holat: **01–07 bosqichlar (Seller, admin va logistika panellari, RFQ & kotirovkalar, multi-tenant eksport daxlsizligi, status mashinasi va tonnalik yuk nazorati) to'liq bajarildi va alohida MySQL test bazasida 69 ta test bilan tasdiqlandi.** 08-bosqichga (Haqiqiy tracking backend) o'tilmoqda. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 
 ---
 
@@ -51,8 +51,9 @@ Joriy holat: **01, 02, 03, 04, 05 va 06-bosqichlar (To'lov, qaytarish, sotuvchi 
 - [x] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService (float ishlatilmaydi), ombor balansi, rezervatsiya va harakatlar auditi (`inventory_movements`), multi-tenant sotuvchi izolyatsiyasi to'liq yakunlandi va alohida MySQL test bazasida testlandi (42 test, 270 assertion). Tayyor `demo_seed.sql` eksport qilindi.
 - [x] **04 — Dizayn tizimi va xaridor veb-sayti:** `preview.mp4` asosidagi zamonaviy dizayn tizimi, Tailwind v4 tokenlari, Plus Jakarta Sans, Blade layouts va komponentlari, Bosh sahifa, qidiruvli Katalog, reaktiv all-units narx kalkulyatorli Mahsulot sahifasi, Sotuvchi profili, Sevimlilar; responsivlik (1440px, 768px, 390px, 360px) skrinshotlar bilan tasdiqlandi (47 test, 296 assertion).
 - [x] **05 — Savatcha va ishonchli checkout:** Multi-vendor cart, server quote, race condition zaxira rezervatsiyasi, idempotency key, outbox, 299 vs 300 narx yangilanishi va suborderlarga ajratish (54 test, 343 assertion).
-- [x] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi (Ledger):** Kriptografik HMAC-SHA256 imzoli to'lov webhooki, takroriy callback idempotensiyasi, xaridor to'lagan mablag' va sotuvchilar tushumi o'rtasidagi qat'iy balans tengligi, ikki yoqlama append-only `seller_ledgers`, 7 kunlik hold davri, nizoli arizalar (dispute) bloki, qaytarilgan jismoniy tovarlarni omborga kirim qilish (inflow) va audit harakati (9 test, 48 assertion). Jami: **63 test, 391 assertion**.
-- [ ] **07 — Seller, admin va logistika panellari:** Sotuvchi kabineti, admin boshqaruvi, logistika operatori, RFQ takliflari, ma'lumotlar izolyatsiyasi.
+- [x] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi (Ledger):** Kriptografik HMAC-SHA256 imzoli to'lov webhooki, takroriy callback idempotensiyasi, xaridor to'lagan mablag' va sotuvchilar tushumi o'rtasidagi qat'iy balans tengligi, ikki yoqlama append-only `seller_ledgers`, 7 kunlik hold davri, nizoli arizalar (dispute) bloki, qaytarilgan jismoniy tovarlarni omborga kirim qilish (inflow) va audit harakati (9 test, 48 assertion).
+- [x] **07 — Seller, admin va logistika panellari:** RFQ va tijoriy kotirovka tizimi, qabulda atomar zaxirani qayta tekshirish, tonnalik yuklarda yetkazish kelishilmagan bo'lsa to'lovni bloklash, multi-tenant ma'lumotlar eksporti izolyatsiyasi (Seller A hech qachon Seller B ni eksport qilolmaydi), support/moderator roli payout tasdiqlay olmasligi (faqat admin), jo'natma holatlarining qat'iy holat mashinasi (delay_reason majburiyligi) va qisman jo'natma parent orderni erta completed qilmasligi (6 test, 42 assertion). Jami: **69 test, 433 assertion**.
+- [ ] **08 — Haqiqiy tracking backend:** Location batch API, koordinata va sakrash validationi, WebSocket va polling fallback, tracking timeline.
 - [ ] **08 — Haqiqiy tracking backend:** Location batch API, koordinata va sakrash validationi, WebSocket va polling fallback, tracking timeline.
 - [ ] **09 — Flutter xaridor ilovasi:** Native Flutter UI, Riverpod, typed API client, offline kesh, Android build sinovi.
 - [ ] **10 — Flutter kuryer va real GPS tekshiruvi:** Alohida kuryer ilovasi, aktiv safar GPS tracking, fon rejimi, topshirish OTP/foto isboti.

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleAndPermissionSeeder::class,
             DemoCatalogSeeder::class,
+            ExpandedCatalogSeeder::class,
         ]);
 
         // Demo Customer

@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:courier_flutter/main.dart';
 
 void main() {
-  testWidgets('CourierApp renders health screen without crash', (WidgetTester tester) async {
+  testWidgets('CourierApp renders deliveries list and navigation', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: CourierApp()));
-    expect(find.text('Kuryer Ilovasi — Tizim Holati'), findsOneWidget);
-    expect(find.text('Logistika API Bog\'lanishi'), findsOneWidget);
+    await tester.pump();
+
+    expect(find.text('Kuryer Yetkazmalari'), findsOneWidget);
+    expect(find.text('Yetkazmalar'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
   });
 }

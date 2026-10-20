@@ -3,8 +3,11 @@
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CatalogController;
+use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\SellerCatalogController;
 use App\Http\Controllers\Api\V1\SellerController;
 use App\Http\Controllers\Api\V1\SellerInventoryController;
@@ -18,6 +21,13 @@ Route::prefix('v1')->group(function () {
     Route::get('/products', [CatalogController::class, 'products']);
     Route::get('/products/{slugOrId}', [CatalogController::class, 'show']);
     Route::post('/products/{variantId}/quote', [CatalogController::class, 'calculateQuote']);
+
+    // Public / Session-based Cart & Quote
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/items', [CartController::class, 'addItem']);
+    Route::put('/cart/items/{id}', [CartController::class, 'updateItem']);
+    Route::delete('/cart/items/{id}', [CartController::class, 'removeItem']);
+    Route::post('/checkout/quote', [CheckoutController::class, 'quote']);
 
     // Public authentication routes (with rate limiting)
     Route::prefix('auth')->group(function () {
@@ -43,6 +53,11 @@ Route::prefix('v1')->group(function () {
 
         // Addresses CRUD (ownership strictly enforced by AddressPolicy)
         Route::apiResource('addresses', AddressController::class);
+
+        // Checkout & Orders
+        Route::post('/checkout', [CheckoutController::class, 'checkout']);
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{orderNumber}', [OrderController::class, 'show']);
 
         // Multi-tenant Seller routes (strictly isolated per seller store)
         Route::prefix('seller')->middleware('role:seller_owner,seller_manager,seller_operator,admin')->group(function () {

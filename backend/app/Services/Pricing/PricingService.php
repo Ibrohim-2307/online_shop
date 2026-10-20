@@ -155,6 +155,25 @@ class PricingService
         $tier = $this->matchTier($variant, $quantity);
 
         if (!$tier) {
+            if ($variant->price !== null && (float) $variant->price > 0) {
+                $unitPrice = (string) (int) $variant->price;
+                $totalPrice = bcmul((string) $quantity, $unitPrice, 0);
+
+                return [
+                    'variant_id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'quantity' => (string) $quantity,
+                    'unit' => $product->unit,
+                    'base_unit_price' => $unitPrice,
+                    'unit_price' => $unitPrice,
+                    'total_price' => $totalPrice,
+                    'currency' => $variant->currency ?? 'UZS',
+                    'tier_id' => null,
+                    'min_quantity' => (string) ($product->min_order_quantity ?? '1'),
+                    'max_quantity' => null,
+                ];
+            }
+
             throw new InvalidArgumentException("Ushbu miqdor ({$quantity}) uchun narx pog'onasi belgilanmagan");
         }
 

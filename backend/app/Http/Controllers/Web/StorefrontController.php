@@ -7,11 +7,22 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Seller;
+use App\Models\Address;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Services\Cart\CartService;
+use App\Services\Checkout\CheckoutService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class StorefrontController extends Controller
 {
+    public function __construct(
+        protected CartService $cartService,
+        protected CheckoutService $checkoutService
+    ) {}
     /**
      * Home page with hero banner, categories, featured products, and verified sellers.
      */
@@ -164,5 +175,110 @@ class StorefrontController extends Controller
     public function wishlist(): View
     {
         return view('storefront.wishlist');
+    }
+
+    /**
+     * Customer cart view with live multi-vendor quote.
+     */
+    public function cart(Request $request): View
+    {
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+
+        $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
+        $quote = $this->cartService->getCartQuote($cart);
+
+        return view('storefront.cart', compact('cart', 'quote'));
+    }
+
+    /**
+     * Checkout page.
+     */
+    public function checkout(Request $request): View|RedirectResponse
+    {
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+
+        $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
+        $quote = $this->cartService->getCartQuote($cart);
+
+        if ($quote['is_empty'] || empty($quote['sellers'])) {
+            return redirect()->route('cart')->with('error', "Savatchangiz bo'sh. Buyurtma berish uchun mahsulot tanlang.");
+        }
+
+        $idempotencyKey = (string) Str::uuid();
+
+        return view('storefront.checkout', compact('cart', 'quote', 'idempotencyKey', 'user'));
+    }
+
+    /**
+     * Process web checkout.
+     */
+    public function processCheckout(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'recipient_name' => 'required|string|max:100',
+            'phone' => 'required|string|max:20',
+            'region' => 'required|string|max:50',
+            'city' => 'required|string|max:50',
+            'address_line' => 'required|string|max:255',
+            'notes' => 'nullable|string|max:500',
+            'idempotency_key' => 'nullable|string|max:100',
+        ]);
+
+        $user = $request->user();
+        if (!$user) {
+            // Find or create guest customer user
+            $phone = preg_replace('/[^\d+]/', '', $validated['phone']);
+            $user = \App\Models\User::firstOrCreate(
+                ['phone' => $phone],
+                [
+                    'name' => $validated['recipient_name'],
+                    'email' => 'guest_' . uniqid() . '@example.uz',
+                    'password' => bcrypt(Str::random(16)),
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        $sessionId = $request->session()->getId();
+        $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
+
+        $payload = [
+            'shipping_address' => [
+                'recipient_name' => $validated['recipient_name'],
+                'phone' => $validated['phone'],
+                'region' => $validated['region'],
+                'city' => $validated['city'],
+                'address_line' => $validated['address_line'],
+            ],
+            'notes' => $validated['notes'] ?? null,
+        ];
+
+        try {
+            $result = $this->checkoutService->processCheckout(
+                $user,
+                $payload,
+                $validated['idempotency_key'] ?? (string) Str::uuid()
+            );
+
+            $order = $result['order'];
+
+            return redirect()->route('order.success', ['orderNumber' => $order->order_number]);
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Order confirmation and success view.
+     */
+    public function orderSuccess(string $orderNumber): View
+    {
+        $order = Order::where('order_number', $orderNumber)
+            ->with(['suborders.items', 'suborders.seller', 'suborders.shipments'])
+            ->firstOrFail();
+
+        return view('storefront.order_success', compact('order'));
     }
 }

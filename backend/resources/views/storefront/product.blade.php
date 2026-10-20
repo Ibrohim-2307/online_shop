@@ -21,6 +21,37 @@
             tier_id: null
         },
         activeTiers: [],
+        addingToCart: false,
+        addedSuccess: false,
+
+        async addToCart() {
+            this.addingToCart = true;
+            try {
+                const res = await fetch('/api/v1/cart/items', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        variant_id: this.selectedVariantId,
+                        quantity: this.quantity
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    this.addedSuccess = true;
+                    setTimeout(() => { window.location.href = '/cart'; }, 500);
+                } else {
+                    alert(data.message || 'Xatolik yuz berdi');
+                }
+            } catch (e) {
+                alert('Serverga ulanishda xatolik yuz berdi');
+            } finally {
+                this.addingToCart = false;
+            }
+        },
 
         init() {
             this.updateActiveTiers();
@@ -343,15 +374,16 @@
                 <!-- Add to Cart CTA -->
                 <div class="pt-2">
                     <button type="button" 
-                            @click="$store.cart.notify()" 
+                            @click="addToCart()" 
+                            :disabled="addingToCart"
                             class="w-full h-14 rounded-2xl bg-[#123C2F] text-white hover:bg-[#0d2a21] font-bold text-base transition-all shadow-md flex items-center justify-center gap-3">
                         <svg class="w-6 h-6 text-[#C9F46B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
-                        <span>Savatchaga qo'shish (<span x-text="quantity"></span> <span x-text="unit"></span>)</span>
+                        <span x-text="addingToCart ? 'Savatchaga qo\'shilmoqda...' : (addedSuccess ? '✓ Savatchaga qo\'shildi!' : `Savatchaga qo'shish (${quantity} ${unit})`)"></span>
                     </button>
                     <p class="text-center text-[11px] text-[#64748B] mt-2">
-                        * Savatcha va ko'p sotuvchili checkout 05-bosqichda to'liq ulanadi.
+                        🔒 Xavfsiz ko'p sotuvchili buyurtma va avtomatik zaxira band qilish
                     </p>
                 </div>
 

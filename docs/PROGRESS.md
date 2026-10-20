@@ -2,7 +2,7 @@
 
 Loyiha: **Marketplace — Ko'p sotuvchili Chakana va Ulgurji Savdo Platformasi**  
 Sana: 19-oktabr, 2026  
-Joriy holat: **01, 02, 03 va 04-bosqichlar (Dizayn tizimi, xaridor veb-sayti, optom narx kalkulyatori, to'liq responsiv veb-do'kon va skrinshotlar) to'liq bajarildi va alohida MySQL test bazasida 47 ta test bilan tasdiqlandi.** 05-bosqichga (Savatcha va ishonchli checkout) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
+Joriy holat: **01, 02, 03, 04 va 05-bosqichlar (Savatcha, ko'p sotuvchili buyurtma, atomar zaxira rezervatsiyasi, idempotency va outbox) to'liq bajarildi va alohida MySQL test bazasida 54 ta test bilan tasdiqlandi.** 06-bosqichga (To'lov, qaytarish va sotuvchi hisob-kitobi) tayyor. *(Jismoniy telefon sinovi `unauthorized` sababli alohida kutilmoqda)*.
 
 ---
 
@@ -39,7 +39,7 @@ Joriy holat: **01, 02, 03 va 04-bosqichlar (Dizayn tizimi, xaridor veb-sayti, op
 | **Xaridor Veb-Sayti** | Bosh sahifa, Katalog, Mahsulot (reaktiv narx kalkulyatori), Sotuvchi do'koni, Sevimlilar | To'liq backend ma'lumotlari bilan |
 | **Xaridor Mobil Ilova** | `apps/customer_flutter` (Flutter 3.47.2, Riverpod, HealthScreen) | Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
 | **Kuryer Mobil Ilova** | `apps/courier_flutter` (Flutter 3.47.2, Riverpod, CourierHealthScreen)| Emulyatorda sinovdan o'tdi (Jismoniy telefon kutilmoqda) |
-| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | **47 test o'tdi (296 ta assertion)** |
+| **CI / Sifat Nazorati** | `.github/workflows/ci.yml`, OpenAPI `docs/openapi.yaml`, PHPUnit testlar | **54 test o'tdi (343 ta assertion)** |
 
 ---
 
@@ -50,7 +50,7 @@ Joriy holat: **01, 02, 03 va 04-bosqichlar (Dizayn tizimi, xaridor veb-sayti, op
 - [x] **02 — Baza, foydalanuvchi, xavfsizlik va ruxsatlar:** Baza jadvallari, rollar, sotuvchi xodimlari, multi-tenant izolyatsiyasi, Sanctum auth, bir martalik parolni tiklash, web sessiya va CSRF, Admin MFA, OTP cheklovlari va demo himoyasi, bloklangan tokenlar nazorati, audit log tizimi to'liq yakunlandi (33 test, 201 assertion).
 - [x] **03 — Katalog, ombor va optom narxlar:** Mahsulotlar, SKU variantlar, narx pog'onalari (all-units), PricingService (float ishlatilmaydi), ombor balansi, rezervatsiya va harakatlar auditi (`inventory_movements`), multi-tenant sotuvchi izolyatsiyasi to'liq yakunlandi va alohida MySQL test bazasida testlandi (42 test, 270 assertion). Tayyor `demo_seed.sql` eksport qilindi.
 - [x] **04 — Dizayn tizimi va xaridor veb-sayti:** `preview.mp4` asosidagi zamonaviy dizayn tizimi, Tailwind v4 tokenlari, Plus Jakarta Sans, Blade layouts va komponentlari, Bosh sahifa, qidiruvli Katalog, reaktiv all-units narx kalkulyatorli Mahsulot sahifasi, Sotuvchi profili, Sevimlilar; responsivlik (1440px, 768px, 390px, 360px) skrinshotlar bilan tasdiqlandi (47 test, 296 assertion).
-- [ ] **05 — Savatcha va ishonchli checkout:** Multi-vendor cart, server quote, race condition zaxira rezervatsiyasi, idempotency key, outbox.
+- [x] **05 — Savatcha va ishonchli checkout:** Multi-vendor cart, server quote, race condition zaxira rezervatsiyasi, idempotency key, outbox, 299 vs 300 narx yangilanishi va suborderlarga ajratish (54 test, 343 assertion).
 - [ ] **06 — To'lov, qaytarish va sotuvchi hisob-kitobi:** Payment adapter, demo to'lov oqimi, webhook signature tekshiruvi, immutable ledger, refund & dispute.
 - [ ] **07 — Seller, admin va logistika panellari:** Sotuvchi kabineti, admin boshqaruvi, logistika operatori, RFQ takliflari, ma'lumotlar izolyatsiyasi.
 - [ ] **08 — Haqiqiy tracking backend:** Location batch API, koordinata va sakrash validationi, WebSocket va polling fallback, tracking timeline.
@@ -320,5 +320,53 @@ Barcha ko'rinishlarda gorizontal siljish (horizontal scroll/overflow) 0 ekanligi
 
   Tests:    47 passed (296 assertions)
   Duration: 17.52s
+```
+
+---
+
+## 7. 05-Bosqich Amaliy Natijalari (Savatcha va Ishonchli Checkout)
+
+### A. Ma'lumotlar Bazasi va Arxitektura:
+- `carts` va `cart_items`: Foydalanuvchi yoki sessiya asosidagi savatcha (MOQ va qadam validationi).
+- `orders`: Asosiy ota buyurtma (`order_number`, `user_id`, `status` [pending_payment], `currency`, `grand_total`, `shipping_address` JSON snapshot, `idempotency_key`).
+- `suborders`: Sotuvchilar bo'yicha ajratilgan ichki buyurtmalar (`seller_id`, `suborder_number`, `items_subtotal`, `shipping_cost`, `total_amount`, `commission_amount`).
+- `order_items`: Sotib olingan mahsulotlarning narx, SKU, atributlar va toifasi bilan muzlatilgan snapshot nusxasi.
+- `shipments`: Har bir suborder uchun avtomatik yaratilgan logistika kuzatuv yozuvi (`tracking_number`, `status` [pending], `pickup_address`, `delivery_address`).
+- `inventory_reservations`: Buyurtma vaqtidagi zaxirani band qilish (TTL = 15 daqiqa, status: reserved/committed/released/expired).
+- `idempotency_keys`: Qayta takroriy so'rovlar nazorati (hash tekshiruvi, replay kesh, payload mismatch blokirovkasi).
+- `outbox_events`: Tranzaksion outbox xabarlar jurnali (`OrderCreated`).
+
+### B. Biznes Mantiqi va Xizmatlar:
+- `CartService`: Ko'p sotuvchili savatcha hisobi, PricingService orqali live quote, alohida yetkazish hisobi.
+- `InventoryReservationService`: Row lock (`lockForUpdate`) va BCMath orqali atomar zaxira band qilish; muddati o'tgan rezervatsiyalarni bir marta va xatosiz qaytarish (`releaseExpiredReservations`).
+- `CheckoutService`: Klient narxiga ishonmasdan server narxini qayta hisoblash, 299 vs 300 dona narx yangilanishi, Idempotency-Key nazorati, tranzaksiyada xatolik bo'lsa to'liq rollback.
+- `PaymentAdapterInterface`: 06-bosqich uchun unifikatsiyalangan to'lov adapteri interfeysi.
+
+### C. Veb Do'kon Oqimi:
+- `/cart`: Ko'p sotuvchili savatcha ko'rinishi, optom chegirmalar ko'rsatkichi, do'konlar bo'yicha alohida yetkazish narxi.
+- `/checkout`: Qabul qiluvchi manzili, 15 daqiqali zaxira taymeri, buyurtma tarkibi va tasdiqlash tugmasi.
+- `/orders/{orderNumber}/success`: Buyurtma qabul qilinganligi tasdig'i, suborderlar va TRK kuzatuv raqamlari.
+
+### D. PHPUnit Test Natijalari (01–05 Bosqichlar):
+```text
+   PASS  Tests\Unit\ExampleTest
+   PASS  Tests\Feature\AuthAndPermissionTest (15 tests)
+   PASS  Tests\Feature\AuthSecurityHardeningTest (12 tests)
+   PASS  Tests\Feature\CatalogAndPricingTest (9 tests)
+   PASS  Tests\Feature\ExampleTest (1 test)
+   PASS  Tests\Feature\HealthCheckTest (4 tests)
+   PASS  Tests\Feature\StorefrontWebTest (5 tests)
+
+   PASS  Tests\Feature\CartAndCheckoutTest
+  ✓ two parallel checkouts cannot double sell last sku
+  ✓ idempotency key replay returns same order
+  ✓ idempotency key mismatch payload is rejected
+  ✓ multi seller order splits into suborders with individual shipping
+  ✓ tiered pricing recalculated at 299 vs 300 boundary
+  ✓ expired reservation releases stock back to available balance
+  ✓ web cart and checkout flow
+
+  Tests:    54 passed (343 assertions)
+  Duration: 17.20s
 ```
 

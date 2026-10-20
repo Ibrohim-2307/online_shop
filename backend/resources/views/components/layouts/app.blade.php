@@ -132,13 +132,12 @@
                     </a>
 
                     <!-- Cart (Savatcha) -->
-                    <button type="button" @click="$store.cart.notify()" class="relative flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] transition-colors text-sm font-semibold">
+                    <a href="{{ route('cart') }}" class="relative flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] transition-colors text-sm font-semibold" title="Savatcha">
                         <svg class="w-5 h-5 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
                         <span class="hidden sm:inline">Savatcha</span>
-                        <span class="px-2 py-0.5 rounded-full bg-[#C9F46B] text-[#123C2F] font-bold text-xs">0</span>
-                    </button>
+                    </a>
 
                     <!-- Account / Auth -->
                     @auth
@@ -210,12 +209,12 @@
                 <span x-data x-show="$store.wishlist.count() > 0" x-text="$store.wishlist.count()" class="absolute top-0 right-2 w-4 h-4 rounded-full bg-[#123C2F] text-white font-bold text-[9px] flex items-center justify-center">0</span>
             </a>
 
-            <button type="button" @click="$store.cart.notify()" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-[#64748B]">
+            <a href="{{ route('cart') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-[#64748B]">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 <span class="text-[11px]">Savatcha</span>
-            </button>
+            </a>
 
             <a href="{{ auth()->check() ? route('home') : route('login') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-[#64748B]">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

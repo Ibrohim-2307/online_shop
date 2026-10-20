@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\SellerCatalogController;
 use App\Http\Controllers\Api\V1\SellerController;
 use App\Http\Controllers\Api\V1\SellerInventoryController;
 use App\Http\Controllers\Api\V1\SellerPanelController;
+use App\Http\Controllers\Api\V1\TrackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -146,5 +147,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/shipments/{id}/assign', [LogisticsPanelController::class, 'assignCourier']);
             Route::post('/shipments/{id}/status', [LogisticsPanelController::class, 'updateStatus']);
         });
+
+        // Courier routes
+        Route::prefix('courier')->middleware('role:courier,admin')->group(function () {
+            Route::post('/location/batch', [TrackingController::class, 'recordBatch']);
+        });
+
+        // Real-time Shipment Tracking & Polling Fallback (authenticated customer or staff)
+        Route::get('/tracking/{trackingNumber}', [TrackingController::class, 'track']);
+        Route::get('/tracking/{trackingNumber}/poll', [TrackingController::class, 'poll']);
     });
 });

@@ -131,6 +131,65 @@ function productDetails() {
         }
     };
 }
+
+function imageMagnifier(imgUrl) {
+    return {
+        imgUrl: imgUrl || '',
+        isZooming: false,
+        lensSize: 190,
+        zoom: 2.6,
+        lensX: 0,
+        lensY: 0,
+        bgX: 0,
+        bgY: 0,
+        bgW: 0,
+        bgH: 0,
+        isTouch: false,
+
+        handleMove(e) {
+            if (!this.imgUrl || !this.$refs.container) return;
+            const rect = this.$refs.container.getBoundingClientRect();
+            
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                this.isTouch = true;
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                this.isTouch = false;
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            let x = clientX - rect.left;
+            let y = clientY - rect.top;
+
+            if (x < -20 || x > rect.width + 20 || y < -20 || y > rect.height + 20) {
+                this.isZooming = false;
+                return;
+            }
+
+            x = Math.max(0, Math.min(rect.width, x));
+            y = Math.max(0, Math.min(rect.height, y));
+
+            this.isZooming = true;
+            const r = this.lensSize / 2;
+            const touchOffset = this.isTouch ? 70 : 0;
+
+            this.lensX = Math.round(x - r);
+            this.lensY = Math.round(y - r - touchOffset);
+
+            this.bgW = Math.round(rect.width * this.zoom);
+            this.bgH = Math.round(rect.height * this.zoom);
+            this.bgX = Math.round(r - (x * this.zoom));
+            this.bgY = Math.round(r - (y * this.zoom));
+        },
+
+        handleLeave() {
+            this.isZooming = false;
+        }
+    };
+}
 </script>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16" x-data="productDetails()">
@@ -152,9 +211,19 @@ function productDetails() {
         
         <!-- Left: Product Image / Visual Showcase (5 cols) -->
         <div class="lg:col-span-5 space-y-4">
-            <div class="aspect-square bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden flex items-center justify-center relative shadow-xs">
+            <div class="aspect-square bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden flex items-center justify-center relative shadow-xs cursor-crosshair select-none touch-none"
+                 x-data="imageMagnifier('{{ $product->image_url }}')"
+                 x-ref="container"
+                 @mouseenter="handleMove($event)"
+                 @mousemove="handleMove($event)"
+                 @mouseleave="handleLeave()"
+                 @touchstart.passive="handleMove($event)"
+                 @touchmove.prevent="handleMove($event)"
+                 @touchend="handleLeave()"
+                 @touchcancel="handleLeave()">
+
                 <!-- Badges -->
-                <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+                <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10 pointer-events-none">
                     @if($product->trade_mode === 'wholesale_only')
                         <span class="px-3 py-1 rounded-xl bg-[#123C2F] text-[#C9F46B] text-xs font-black uppercase tracking-wider shadow-sm">
                             Ulgurji Savdo (Optom)
@@ -171,9 +240,44 @@ function productDetails() {
                 </div>
 
                 @if($product->image_url)
+                    <!-- Zoom Hint Badge -->
+                    <div class="absolute bottom-3 right-3 z-10 pointer-events-none transition-opacity duration-200"
+                         :class="isZooming ? 'opacity-0' : 'opacity-100'">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md border border-[#E8ECE4] text-[#172326] text-[11px] font-bold shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                            </svg>
+                            <span>🔍 Yaqinlashtirish (Lupa)</span>
+                        </span>
+                    </div>
+
+                    <!-- Base Product Image -->
                     <img src="{{ $product->image_url }}" 
                          alt="{{ $product->name }}" 
-                         class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                         draggable="false"
+                         class="w-full h-full object-cover select-none pointer-events-none">
+
+                    <!-- Interactive Magnifying Glass Loupe (Radiusli Lupa) -->
+                    <div x-show="isZooming"
+                         x-cloak
+                         x-transition.opacity.duration.150ms
+                         class="pointer-events-none absolute rounded-full overflow-hidden border-[3px] border-[#123C2F] shadow-[0_16px_40px_rgba(0,0,0,0.35),0_0_0_2px_#C9F46B] z-30"
+                         :style="`width: ${lensSize}px; height: ${lensSize}px; left: ${lensX}px; top: ${lensY}px; background-image: url('${imgUrl}'); background-size: ${bgW}px ${bgH}px; background-position: ${bgX}px ${bgY}px; background-repeat: no-repeat;`">
+                        <!-- Glass shine / reflection highlight -->
+                        <div class="absolute inset-0 rounded-full pointer-events-none ring-1 ring-inset ring-white/40"
+                             style="background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 65%);">
+                        </div>
+                        <!-- Optical Center Crosshair / Focal dot -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="w-3.5 h-3.5 rounded-full border-2 border-white/90 bg-[#123C2F]/50 shadow-sm backdrop-blur-xs flex items-center justify-center">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#C9F46B]"></span>
+                            </div>
+                        </div>
+                        <!-- Zoom factor pill inside lens -->
+                        <div class="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-[#123C2F]/90 text-[#C9F46B] text-[10px] font-black tracking-wider uppercase backdrop-blur-sm shadow-md border border-white/20 whitespace-nowrap">
+                            2.6x lupa
+                        </div>
+                    </div>
                 @else
                     <!-- Product SVG Representation -->
                     <div class="w-40 h-40 rounded-3xl bg-[#FAFBF7] border border-[#E8ECE4] flex items-center justify-center text-[#123C2F] shadow-sm">

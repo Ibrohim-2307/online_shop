@@ -500,127 +500,276 @@
         <!-- Modal: Add New Product -->
         <div x-show="showAddModal" 
              style="display: none;"
+             x-cloak
              class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div @click.away="showAddModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8">
-                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+            <div @click.away="showAddModal = false" class="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6 sticky top-0 bg-white z-10">
                     <div>
                         <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Katalog Boshqaruvi</span>
                         <h3 class="text-xl font-black text-slate-900">Yangi Mahsulot Qo'shish</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Katalogga tovar qo'shish va pog'onali B2B narxlarni sozlash</p>
                     </div>
-                    <button @click="showAddModal = false" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+                    <button @click="showAddModal = false" type="button" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
                         ✕
                     </button>
                 </div>
 
-                <form action="{{ route('seller.products.store') }}" method="POST" class="space-y-4">
+                <form action="{{ route('seller.products.store') }}" 
+                      method="POST" 
+                      enctype="multipart/form-data" 
+                      class="space-y-5"
+                      x-data="productAddForm()">
                     @csrf
 
+                    <!-- 1. Mahsulot Nomi -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mahsulot Nomi *</label>
-                        <input type="text" name="name" required placeholder="Masalan: Knauf Profil CD 60x27 3m" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Mahsulot Nomi *</label>
+                            <span class="text-[11px] text-slate-400">Vitrinalarda va qidiruvda ko'rinadi</span>
+                        </div>
+                        <input type="text" 
+                               name="name" 
+                               required 
+                               placeholder="Masalan: Knauf Profil CD 60x27 3m yoki Qurilish Sementi M-500" 
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F] focus:border-[#123C2F]">
+                        <p class="text-[11px] text-slate-500 mt-1">Xaridor darhol tushunishi uchun brend, model va asosiy o'lchamlarni kiriting.</p>
                     </div>
 
+                    <!-- 2. Kategoriya & Savdo Rejimi -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Kategoriya *</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Kategoriya (Toifa) *</label>
+                            </div>
                             <select name="category_id" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
                                 @foreach($categories as $cat)
                                     <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                                 @endforeach
                             </select>
+                            <p class="text-[11px] text-slate-500 mt-1">Mahsulot katalogda qaysi bo'lim va filtrlarda aks etishi.</p>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Savdo Rejimi *</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Savdo Rejimi (Formati) *</label>
+                            </div>
                             <select name="trade_mode" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
-                                <option value="both">Ulgurji va chakana (Ikkisi ham)</option>
-                                <option value="wholesale">Faqat ulgurji (Optom)</option>
-                                <option value="retail">Faqat chakana (Dona)</option>
+                                <option value="both">Ulgurji va chakana (Ikkisi ham — donalab ham, optom ham)</option>
+                                <option value="wholesale">Faqat ulgurji (Faqat yirik hajmda, MOQ bo'yicha)</option>
+                                <option value="retail">Faqat chakana (Oddiy do'kondagi kabi donalab)</option>
                             </select>
+                            <p class="text-[11px] text-slate-500 mt-1">Chakana va ulgurji xaridorlar o'rtasida to'g'ri taqsimlash.</p>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Birligi *</label>
-                            <select name="unit" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
-                                <option value="piece">Dona (piece)</option>
-                                <option value="box">Quti (box)</option>
-                                <option value="kg">Kg (kilogramm)</option>
-                                <option value="ton">Tonna (ton)</option>
-                            </select>
+                    <!-- 3. O'lchov va Buyurtma Qoidalari (Birligi, MOQ, Qadam, Qutida) -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>📐</span> O'lchov Va Buyurtma Qoidalari
+                            </span>
+                            <span class="text-[11px] text-slate-400">Savatcha va hisob-kitob uchun</span>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Min. Buyurtma (MOQ) *</label>
-                            <input type="number" step="0.001" name="min_order_quantity" value="1" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qadam (Step) *</label>
-                            <input type="number" step="0.001" name="unit_step" value="1" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qutida donasi</label>
-                            <input type="number" name="items_per_box" value="1" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Birligi *</label>
+                                <select name="unit" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                    <option value="piece">Dona (piece)</option>
+                                    <option value="box">Quti (box)</option>
+                                    <option value="kg">Kg (kilogramm)</option>
+                                    <option value="ton">Tonna (ton)</option>
+                                </select>
+                                <span class="text-[10px] text-slate-500 block mt-1">Baza o'lchovi</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1" title="Minimum Order Quantity">Min. Buyurtma (MOQ) *</label>
+                                <input type="number" step="0.001" name="min_order_quantity" value="1" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-500 block mt-1">Kamida sotiladi</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Qadam (Step) *</label>
+                                <input type="number" step="0.001" name="unit_step" value="1" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-500 block mt-1">Savatda oshish</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Qutida donasi</label>
+                                <input type="number" name="items_per_box" value="1" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-500 block mt-1">1 qutida/pachkada</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
-                        <span class="block text-xs font-extrabold text-[#123C2F] uppercase tracking-wider mb-2">
-                            Pog'onali Narx Zinapoyasi (Tiered Pricing - UZS)
-                        </span>
+                    <!-- 4. Pog'onali Narx Zinapoyasi (Tiered Pricing - UZS) -->
+                    <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="block text-xs font-black text-[#123C2F] uppercase tracking-wider flex items-center gap-1.5">
+                                <span>⚡</span> Pog'onali Narx Zinapoyasi (Tiered Pricing - UZS)
+                            </span>
+                            <span class="text-[11px] font-bold text-emerald-800">Avtomat chegirma</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 mb-3">
+                            Xaridor qancha ko'p birlik xarid qilsa, har bir dona narxi shuncha arzonlashadi (B2B savdo modeli):
+                        </p>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-700 mb-1">1 - 299 birlik (Chakana) *</label>
-                                <input type="number" name="retail_price" required placeholder="Masalan: 45000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <input type="number" name="retail_price" required placeholder="Masalan: 45000" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-500 block mt-0.5">Asosiy chakana narx</span>
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-700 mb-1">300 - 999 birlik (Optom)</label>
-                                <input type="number" name="tier_300_price" placeholder="Masalan: 41000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
-                                <span class="text-[10px] text-slate-400">Bo'sh qolsa: -8% chegirma</span>
+                                <input type="number" name="tier_300_price" placeholder="Masalan: 41000" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-500 block mt-0.5">Bo'sh qolsa: -8% avto chegirma</span>
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-700 mb-1">1000+ birlik (Katta Optom)</label>
-                                <input type="number" name="tier_1000_price" placeholder="Masalan: 38000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
-                                <span class="text-[10px] text-slate-400">Bo'sh qolsa: -15% chegirma</span>
+                                <input type="number" name="tier_1000_price" placeholder="Masalan: 38000" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                                <span class="text-[10px] text-slate-500 block mt-0.5">Bo'sh qolsa: -15% dilerlik narxi</span>
                             </div>
                         </div>
                     </div>
 
+                    <!-- 5. Ombor va Zaxira -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">SKU Kodi</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">SKU Kodi</label>
+                            </div>
                             <input type="text" name="sku" placeholder="Ixtiyoriy (avto yaratiladi)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Noyob ombor artiquli</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qaysi Omborga</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Qaysi Omborga</label>
+                            </div>
                             <select name="warehouse_id" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
                                 @foreach($warehouses as $wh)
                                     <option value="{{ $wh->id }}">{{ $wh->name }}</option>
                                 @endforeach
                             </select>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Tovar joylashgan ombor</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Boshlang'ich Qoldiq *</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Boshlang'ich Qoldiq *</label>
+                            </div>
                             <input type="number" step="0.001" name="stock_quantity" value="250" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Hozir sotuvda bor miqdor</span>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mahsulot Rasmi (Rasm havolasi / URL)</label>
-                        <input type="text" name="image_url" placeholder="Masalan: /images/products/sement.jpg yoki https://..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]">
-                        <span class="text-[11px] text-slate-400">Bo'sh qoldirilsa toifaga mos standart rasm avtomatik o'rnatiladi</span>
+                    <!-- 6. Mahsulot Rasmi (Rasm yuklash / URL) -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>📸</span> Mahsulot Rasmi (Rasm Yuklash) *
+                                </label>
+                                <p class="text-[11px] text-slate-500">
+                                    Vitrinalarda va mahsulot sahifasida <strong>2.6x radiusli kattalashtirish lupasi</strong> bilan ko'rsatiladi.
+                                </p>
+                            </div>
+
+                            <!-- Tabs: File upload vs URL -->
+                            <div class="inline-flex rounded-xl bg-slate-100 p-0.5 shrink-0 text-xs">
+                                <button type="button" 
+                                        @click="imageMode = 'file'" 
+                                        :class="imageMode === 'file' ? 'bg-white text-[#123C2F] shadow-xs font-bold' : 'text-slate-600 font-medium'"
+                                        class="px-3 py-1 rounded-lg transition-all">
+                                    📁 Qurilmadan yuklash
+                                </button>
+                                <button type="button" 
+                                        @click="imageMode = 'url'" 
+                                        :class="imageMode === 'url' ? 'bg-white text-[#123C2F] shadow-xs font-bold' : 'text-slate-600 font-medium'"
+                                        class="px-3 py-1 rounded-lg transition-all">
+                                    🔗 Havola (URL)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mode 1: File Upload (Drag & Drop or Picker) -->
+                        <div x-show="imageMode === 'file'">
+                            <input type="file" 
+                                   name="image_file" 
+                                   x-ref="fileInput" 
+                                   @change="onFileSelect($event)" 
+                                   accept="image/png,image/jpeg,image/webp,image/svg+xml" 
+                                   class="hidden">
+
+                            <!-- File Selected Preview -->
+                            <template x-if="previewUrl">
+                                <div class="flex items-center justify-between p-3.5 bg-emerald-50/70 border border-emerald-300 rounded-2xl">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-emerald-400 bg-white shadow-xs shrink-0">
+                                            <img :src="previewUrl" alt="Rasm ko'rinishi" class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-black text-slate-800 truncate" x-text="fileName"></p>
+                                            <p class="text-[11px] text-emerald-800 font-bold" x-text="fileSize"></p>
+                                            <span class="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-bold mt-0.5">
+                                                <span>✓</span> Rasm serverga yuklashga tayyor
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button type="button" 
+                                            @click="clearFile()" 
+                                            class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-xl font-bold border border-rose-200 transition shrink-0">
+                                        ✕ O'chirish
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- Dropzone (When no file selected) -->
+                            <template x-if="!previewUrl">
+                                <div @dragover.prevent="isDragging = true"
+                                     @dragleave.prevent="isDragging = false"
+                                     @drop.prevent="handleDrop($event)"
+                                     @click="$refs.fileInput.click()"
+                                     :class="isDragging ? 'border-[#123C2F] bg-emerald-50 scale-[1.01]' : 'border-slate-300 hover:border-[#123C2F] hover:bg-slate-50/80'"
+                                     class="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200">
+                                    <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-100/70 text-[#123C2F] flex items-center justify-center mb-2 shadow-xs">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs font-bold text-slate-800">
+                                        <span class="text-[#123C2F] underline decoration-emerald-500 font-extrabold">Kompyuter yoki telefondan rasm tanlang</span> yoki bu yerga sudrab tashlang
+                                    </p>
+                                    <p class="text-[11px] text-slate-400 mt-1">PNG, JPG, WEBP, SVG (maks. 10 MB)</p>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Mode 2: URL Input -->
+                        <div x-show="imageMode === 'url'" class="space-y-1.5">
+                            <input type="text" 
+                                   name="image_url" 
+                                   placeholder="Masalan: /images/products/sement.jpg yoki https://..." 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
+                            <span class="text-[11px] text-slate-400 block">
+                                Bo'sh qoldirilsa toifaga mos standart rasm avtomatik o'rnatiladi.
+                            </span>
+                        </div>
                     </div>
 
+                    <!-- 7. Mahsulot Haqida Tavsif -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mahsulot Haqida Tavsif</label>
-                        <textarea name="description" rows="2" placeholder="O'lchamlari, texnik xususiyatlari, sertifikatlari..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]"></textarea>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Mahsulot Haqida Batafsil Tavsif</label>
+                            <span class="text-[11px] text-slate-400">Texnik parametrlar, GOST, o'lchamlar</span>
+                        </div>
+                        <textarea name="description" 
+                                  rows="3" 
+                                  placeholder="Tovarning o'lchamlari, texnik xususiyatlari, markasi, sertifikatlari, kafolati va foydalanish yo'riqnomasi..." 
+                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#123C2F]"></textarea>
                     </div>
 
+                    <!-- Footer actions -->
                     <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-                        <button @click="showAddModal = false" type="button" class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition">
+                        <button @click="showAddModal = false" type="button" class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition">
                             Bekor qilish
                         </button>
-                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#123C2F] hover:bg-[#0e2f25] text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#123C2F] hover:bg-[#0e2f25] text-white font-bold text-xs shadow-md transition flex items-center gap-2">
                             <span>Katalogga Qo'shish</span>
                             <span class="text-[#C9F46B]">✓</span>
                         </button>
@@ -630,6 +779,51 @@
         </div>
 
     </main>
+
+    <script>
+    function productAddForm() {
+        return {
+            imageMode: 'file',
+            previewUrl: null,
+            fileName: '',
+            fileSize: '',
+            isDragging: false,
+
+            onFileSelect(event) {
+                const files = event.target.files;
+                if (files && files[0]) {
+                    const file = files[0];
+                    this.fileName = file.name;
+                    const sizeMb = file.size / (1024 * 1024);
+                    this.fileSize = sizeMb >= 1 ? sizeMb.toFixed(2) + ' MB' : (file.size / 1024).toFixed(0) + ' KB';
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.previewUrl = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+
+            handleDrop(event) {
+                this.isDragging = false;
+                const files = event.dataTransfer.files;
+                if (files && files[0] && files[0].type.startsWith('image/')) {
+                    this.$refs.fileInput.files = files;
+                    this.onFileSelect({ target: { files: files } });
+                }
+            },
+
+            clearFile() {
+                this.previewUrl = null;
+                this.fileName = '';
+                this.fileSize = '';
+                if (this.$refs.fileInput) {
+                    this.$refs.fileInput.value = '';
+                }
+            }
+        };
+    }
+    </script>
 
 </body>
 </html>

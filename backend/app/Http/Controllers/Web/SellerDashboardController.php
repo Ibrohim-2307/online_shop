@@ -106,6 +106,7 @@ class SellerDashboardController extends Controller
             'unit_step' => ['required', 'numeric', 'min:0.001'],
             'items_per_box' => ['nullable', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:10240'],
             'image_url' => ['nullable', 'string', 'max:1000'],
             'sku' => ['nullable', 'string', 'max:100', 'unique:product_variants,sku'],
             'retail_price' => ['required', 'integer', 'min:100'],
@@ -134,13 +135,44 @@ class SellerDashboardController extends Controller
             $slug .= '-' . Str::lower(Str::random(5));
         }
 
+        $imageUrl = $validated['image_url'] ?? null;
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $uploadDir = public_path('images/products');
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            $extension = $file->getClientOriginalExtension() ?: 'jpg';
+            $filename = Str::slug($validated['name']) . '-' . time() . '.' . $extension;
+            $file->move($uploadDir, $filename);
+            $imageUrl = '/images/products/' . $filename;
+        }
+
+        if (!$imageUrl) {
+            $category = Category::find($validated['category_id']);
+            $catSlug = $category ? strtolower($category->slug . ' ' . $category->name) : '';
+            if (str_contains($catSlug, 'sement')) {
+                $imageUrl = '/images/products/sement.jpg';
+            } elseif (str_contains($catSlug, 'quvur') || str_contains($catSlug, 'santexnika')) {
+                $imageUrl = '/images/products/quvur.jpg';
+            } elseif (str_contains($catSlug, 'elektr') || str_contains($catSlug, 'uskuna') || str_contains($catSlug, 'generator')) {
+                $imageUrl = '/images/products/generator.jpg';
+            } elseif (str_contains($catSlug, 'ichimlik') || str_contains($catSlug, 'suv')) {
+                $imageUrl = '/images/products/suv.jpg';
+            } elseif (str_contains($catSlug, 'metall') || str_contains($catSlug, 'armatura')) {
+                $imageUrl = '/images/products/armatura.jpg';
+            } elseif (str_contains($catSlug, 'yogoch') || str_contains($catSlug, 'fanera')) {
+                $imageUrl = '/images/products/profil_truba.jpg';
+            }
+        }
+
         $product = Product::create([
             'seller_id' => $seller->id,
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
             'slug' => $slug,
             'description' => $validated['description'] ?? null,
-            'image_url' => $validated['image_url'] ?? null,
+            'image_url' => $imageUrl,
             'trade_mode' => $validated['trade_mode'],
             'unit' => $validated['unit'],
             'items_per_box' => $validated['items_per_box'] ?? 1,

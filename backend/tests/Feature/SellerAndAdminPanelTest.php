@@ -485,4 +485,52 @@ class SellerAndAdminPanelTest extends TestCase
         ]);
         $illegalRes->assertStatus(422);
     }
+
+    public function test_seller_can_create_product_with_uploaded_image_and_tiered_pricing(): void
+    {
+        $seller = $this->createSeller('Stroy Express', 'stroy-express');
+        $user = $this->setupUserWithRole('seller_owner', 'owner@stroy.uz', $seller->id);
+
+        $category = Category::create([
+            'name' => 'Qurilish mollari',
+            'slug' => 'qurilish-mollari',
+            'is_active' => true,
+        ]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->image('test_product.jpg', 600, 600);
+
+        $response = $this->actingAs($user)->post('/seller/products', [
+            'name' => 'Gipsokarton Knauf 9.5mm',
+            'category_id' => $category->id,
+            'trade_mode' => 'both',
+            'unit' => 'piece',
+            'min_order_quantity' => 10,
+            'unit_step' => 1,
+            'items_per_box' => 1,
+            'retail_price' => 50000,
+            'tier_300_price' => 46000,
+            'tier_1000_price' => 42000,
+            'stock_quantity' => 500,
+            'image_file' => $file,
+            'description' => 'Sifatli Knauf gipsokarton plitasi.',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('products', [
+            'seller_id' => $seller->id,
+            'name' => 'Gipsokarton Knauf 9.5mm',
+            'trade_mode' => 'both',
+        ]);
+
+        $product = Product::where('name', 'Gipsokarton Knauf 9.5mm')->first();
+        $this->assertNotNull($product);
+        $this->assertStringStartsWith('/images/products/', $product->image_url);
+
+        // Verify tiered pricing created
+        $variant = $product->variants()->first();
+        $this->assertNotNull($variant);
+        $this->assertCount(3, $variant->priceTiers);
+    }
 }

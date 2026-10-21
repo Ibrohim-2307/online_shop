@@ -30,22 +30,23 @@ function productDetails() {
             try {
                 const tokenEl = document.querySelector('meta[name="csrf-token"]');
                 const token = tokenEl ? tokenEl.getAttribute('content') : '';
-                const res = await fetch('/api/v1/cart/items', {
+                const res = await fetch('/cart/items', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': token
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({
                         variant_id: this.selectedVariantId,
                         quantity: this.quantity
                     })
                 });
                 const data = await res.json();
-                if (res.ok) {
+                if (res.ok && data.success) {
                     this.addedSuccess = true;
-                    setTimeout(() => { window.location.href = '/cart'; }, 500);
+                    setTimeout(() => { window.location.href = '/cart'; }, 350);
                 } else {
                     alert(data.message || 'Xatolik yuz berdi');
                 }

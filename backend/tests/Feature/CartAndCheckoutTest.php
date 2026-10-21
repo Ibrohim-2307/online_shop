@@ -416,4 +416,26 @@ class CartAndCheckoutTest extends TestCase
         $successResp->assertSee($order->order_number);
         $successResp->assertSee('Buyurtmangiz qabul qilindi!');
     }
+
+    public function test_guest_can_add_item_to_cart_via_web_and_view_it(): void
+    {
+        [$seller, $product, $variant] = $this->setupSellerWithProduct(
+            'B2B Seller', 'b2b-seller', 'Gips', 'gips-test', 'GIPS-01', 500
+        );
+
+        // 1. Post to web /cart/items as guest
+        $response = $this->postJson('/cart/items', [
+            'variant_id' => $variant->id,
+            'quantity' => 10,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+
+        // 2. Visit /cart - it should show the item and NOT be empty!
+        $cartResp = $this->get('/cart');
+        $cartResp->assertStatus(200);
+        $cartResp->assertDontSee('Savatchangiz hozircha bo\'sh', false);
+        $cartResp->assertSee('Gips');
+    }
 }

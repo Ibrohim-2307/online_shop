@@ -113,17 +113,28 @@
                                             </div>
                                         </div>
 
-                                        <!-- Quantity and Subtotal -->
-                                        <div class="flex items-center justify-between sm:justify-end gap-6 pt-2 sm:pt-0">
-                                            <div class="text-xs font-medium text-[#172326] bg-[#FAFBF7] px-3 py-1.5 rounded-xl border border-[#E8ECE4]">
-                                                {{ $it['quantity'] }} {{ $it['unit'] }}
+                                        <!-- Quantity, Subtotal and Remove -->
+                                        <div class="flex items-center justify-between sm:justify-end gap-4 sm:gap-5 pt-2 sm:pt-0">
+                                            <div class="text-xs font-bold text-[#172326] bg-[#FAFBF7] px-3.5 py-1.5 rounded-xl border border-[#E8ECE4]">
+                                                {{ number_format($it['quantity'], 0, ' ', ' ') }} {{ $it['unit'] }}
                                             </div>
 
-                                            <div class="text-right">
+                                            <div class="text-right min-w-[110px]">
                                                 <div class="font-black text-base text-[#172326]">
                                                     {{ number_format($it['subtotal'], 0, '.', ' ') }} UZS
                                                 </div>
                                             </div>
+
+                                            <!-- Remove from cart button -->
+                                            <form action="{{ route('cart.remove', $it['cart_item_id']) }}" method="POST" class="inline" onsubmit="return confirm('Rostdan ham ushbu mahsulotni savatchadan o\'chirmoqchimisiz?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 flex items-center justify-center transition shrink-0" title="Savatchadan o'chirish">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </form>
                                         </div>
 
                                     </div>

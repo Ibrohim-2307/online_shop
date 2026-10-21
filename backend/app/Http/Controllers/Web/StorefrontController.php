@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\Shipment;
 use App\Services\Cart\CartService;
 use App\Services\Checkout\CheckoutService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -187,9 +188,143 @@ class StorefrontController extends Controller
         $sessionId = $request->session()->getId();
 
         $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
+
+        // If current cart is empty, check for recently created orphan guest cart items and adopt them
+        if ($cart->items->isEmpty()) {
+            $orphan = Cart::where('status', 'active')
+                ->where('id', '!=', $cart->id)
+                ->whereNull('user_id')
+                ->whereHas('items')
+                ->where('created_at', '>=', now()->subHours(2))
+                ->latest()
+                ->first();
+
+            if ($orphan) {
+                foreach ($orphan->items as $it) {
+                    $this->cartService->addItem($cart, $it->product_variant_id, (float) $it->quantity);
+                }
+                $orphan->items()->delete();
+                $orphan->delete();
+                $cart->refresh();
+            }
+        }
+
         $quote = $this->cartService->getCartQuote($cart);
 
         return view('storefront.cart', compact('cart', 'quote'));
+    }
+
+    /**
+     * Web add item to cart.
+     */
+    public function addToCart(Request $request): JsonResponse|RedirectResponse
+    {
+        $validated = $request->validate([
+            'variant_id' => 'required|integer|exists:product_variants,id',
+            'quantity' => 'required|numeric|min:0.001',
+        ]);
+
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+
+        try {
+            $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
+            $item = $this->cartService->addItem($cart, $validated['variant_id'], (float) $validated['quantity']);
+            $quote = $this->cartService->getCartQuote($cart);
+
+            $cookie = cookie('cart_session_id', $sessionId, 60 * 24 * 30);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Mahsulot savatchaga muvaffaqiyatli qo'shildi.",
+                    'data' => [
+                        'cart_item_id' => $item->id,
+                        'session_id' => $sessionId,
+                        'quote' => $quote,
+                    ]
+                ], 200)->withCookie($cookie);
+            }
+
+            return redirect()->route('cart')
+                ->with('success', "Mahsulot savatchaga muvaffaqiyatli qo'shildi.")
+                ->withCookie($cookie);
+        } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Web update cart item quantity.
+     */
+    public function updateCartItem(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $validated = $request->validate([
+            'quantity' => 'required|numeric|min:0.001',
+        ]);
+
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+
+        try {
+            $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
+            $item = $this->cartService->updateItem($cart, $id, (float) $validated['quantity']);
+            $quote = $this->cartService->getCartQuote($cart);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Savatcha yangilandi.',
+                    'data' => ['cart_item_id' => $item->id, 'quote' => $quote]
+                ]);
+            }
+
+            return redirect()->route('cart')->with('success', 'Savatcha yangilandi.');
+        } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Web remove cart item.
+     */
+    public function removeCartItem(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+
+        try {
+            $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
+            $this->cartService->removeItem($cart, $id);
+            $quote = $this->cartService->getCartQuote($cart);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Mahsulot savatchadan o'chirildi.",
+                    'data' => ['quote' => $quote]
+                ]);
+            }
+
+            return redirect()->route('cart')->with('success', "Mahsulot savatchadan o'chirildi.");
+        } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     /**

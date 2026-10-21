@@ -12,6 +12,9 @@ Route::get('/products/{slug}', [StorefrontController::class, 'product'])->name('
 Route::get('/sellers/{slug}', [StorefrontController::class, 'seller'])->name('seller.show');
 Route::get('/wishlist', [StorefrontController::class, 'wishlist'])->name('wishlist');
 Route::get('/cart', [StorefrontController::class, 'cart'])->name('cart');
+Route::post('/cart/items', [StorefrontController::class, 'addToCart'])->name('cart.add');
+Route::post('/cart/items/{id}', [StorefrontController::class, 'updateCartItem'])->name('cart.update');
+Route::delete('/cart/items/{id}', [StorefrontController::class, 'removeCartItem'])->name('cart.remove');
 Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
 Route::post('/checkout', [StorefrontController::class, 'processCheckout'])->name('checkout.post');
 Route::get('/orders/{orderNumber}/success', [StorefrontController::class, 'orderSuccess'])->name('order.success');

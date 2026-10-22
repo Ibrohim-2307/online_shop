@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Install system dependencies and PHP extensions
 RUN apk add --no-cache \
@@ -33,7 +33,7 @@ WORKDIR /var/www/html
 COPY backend/ /var/www/html/
 
 # Install composer production dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
 # Create SQLite DB directory and set permissions
 RUN touch /var/www/html/database/database.sqlite \

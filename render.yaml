@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: online-shop
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt
+    envVars:
+      - key: APP_NAME
+        value: MARKET
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /var/www/html/database/database.sqlite

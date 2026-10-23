@@ -35,15 +35,15 @@ class ExpandedCatalogSeeder extends Seeder
             ]);
         }
 
-        // Categories
+        // Categories with distinct vibrant emojis
         $categories = [
-            'qurilish-materiallari' => Category::firstOrCreate(['slug' => 'qurilish-materiallari'], ['name' => 'Qurilish materiallari', 'sort_order' => 1, 'is_active' => true]),
-            'sanoat-uskunalari' => Category::firstOrCreate(['slug' => 'sanoat-uskunalari'], ['name' => 'Sanoat uskunalari', 'sort_order' => 2, 'is_active' => true]),
-            'oziq-ovqat-va-ichimliklar' => Category::firstOrCreate(['slug' => 'oziq-ovqat-va-ichimliklar'], ['name' => 'Oziq-ovqat va ichimliklar', 'sort_order' => 3, 'is_active' => true]),
-            'elektr-jihozlari' => Category::firstOrCreate(['slug' => 'elektr-jihozlari'], ['name' => 'Elektr va yoritish jihozlari', 'sort_order' => 4, 'is_active' => true]),
-            'boyoqlar-va-kimyo' => Category::firstOrCreate(['slug' => 'boyoqlar-va-kimyo'], ['name' => 'Bo\'yoqlar va kimyoviy mahsulotlar', 'sort_order' => 5, 'is_active' => true]),
-            'santexnika-va-quvurlar' => Category::firstOrCreate(['slug' => 'santexnika-va-quvurlar'], ['name' => 'Santexnika va quvurlar', 'sort_order' => 6, 'is_active' => true]),
-            'asbob-uskunalar' => Category::firstOrCreate(['slug' => 'asbob-uskunalar'], ['name' => 'Qurilish asbob-uskunalari', 'sort_order' => 7, 'is_active' => true]),
+            'qurilish-materiallari' => Category::updateOrCreate(['slug' => 'qurilish-materiallari'], ['name' => 'Qurilish materiallari', 'icon' => '🧱', 'sort_order' => 1, 'is_active' => true]),
+            'sanoat-uskunalari' => Category::updateOrCreate(['slug' => 'sanoat-uskunalari'], ['name' => 'Sanoat uskunalari', 'icon' => '🏭', 'sort_order' => 2, 'is_active' => true]),
+            'oziq-ovqat-va-ichimliklar' => Category::updateOrCreate(['slug' => 'oziq-ovqat-va-ichimliklar'], ['name' => 'Oziq-ovqat va ichimliklar', 'icon' => '🌾', 'sort_order' => 3, 'is_active' => true]),
+            'elektr-jihozlari' => Category::updateOrCreate(['slug' => 'elektr-jihozlari'], ['name' => 'Elektr va yoritish jihozlari', 'icon' => '💡', 'sort_order' => 4, 'is_active' => true]),
+            'boyoqlar-va-kimyo' => Category::updateOrCreate(['slug' => 'boyoqlar-va-kimyo'], ['name' => 'Bo\'yoqlar va kimyoviy mahsulotlar', 'icon' => '🎨', 'sort_order' => 5, 'is_active' => true]),
+            'santexnika-va-quvurlar' => Category::updateOrCreate(['slug' => 'santexnika-va-quvurlar'], ['name' => 'Santexnika va quvurlar', 'icon' => '🚰', 'sort_order' => 6, 'is_active' => true]),
+            'asbob-uskunalar' => Category::updateOrCreate(['slug' => 'asbob-uskunalar'], ['name' => 'Qurilish asbob-uskunalari', 'icon' => '🛠️', 'sort_order' => 7, 'is_active' => true]),
         ];
 
         $items = [

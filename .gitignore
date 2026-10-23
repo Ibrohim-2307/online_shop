@@ -33,6 +33,7 @@ npm-debug.log
 yarn-error.log
 /backend/public/build/
 /backend/public/hot
+/backend/public/images/products/*-[0-9]*.jpg
 
 # Flutter / Dart
 **/.dart_tool/

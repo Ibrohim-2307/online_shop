@@ -71,17 +71,29 @@
                 </a>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
                 @forelse($categories as $category)
-                    <a href="{{ route('catalog', ['category' => $category->slug]) }}" class="group bg-white p-5 rounded-3xl border border-[#E8ECE4] hover:border-[#123C2F] hover:shadow-lg transition-all duration-200 flex flex-col items-center text-center">
-                        <div class="w-14 h-14 rounded-2xl bg-[#FAFBF7] group-hover:bg-[#C9F46B] flex items-center justify-center text-[#123C2F] mb-3 transition-colors">
-                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
+                    <a href="{{ route('catalog', ['category' => $category->slug]) }}" 
+                       class="group bg-white p-4 sm:p-5 rounded-3xl border border-[#E8ECE4] hover:border-[#123C2F] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden">
+                        
+                        <!-- Icon / Emoji Container with Soft Tint & Hover Bounce -->
+                        <div class="w-16 h-16 rounded-2xl {{ $category->bg_color }} border border-black/5 group-hover:border-[#123C2F]/20 flex items-center justify-center mb-3 transition-all duration-300 group-hover:scale-110 shadow-xs">
+                            <span class="text-3xl select-none filter drop-shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+                                {{ $category->display_icon }}
+                            </span>
                         </div>
-                        <span class="font-bold text-sm text-[#172326] group-hover:text-[#123C2F] transition-colors leading-tight">
+
+                        <!-- Category Name -->
+                        <span class="font-bold text-sm text-[#172326] group-hover:text-[#123C2F] transition-colors leading-tight line-clamp-2">
                             {{ $category->name }}
                         </span>
+
+                        <!-- Product Count Badge if available -->
+                        @if(isset($category->products_count) && $category->products_count > 0)
+                            <span class="text-[11px] font-medium text-[#64748B] mt-1.5 group-hover:text-[#123C2F] transition-colors">
+                                {{ $category->products_count }} mahsulot
+                            </span>
+                        @endif
                     </a>
                 @empty
                     <div class="col-span-full py-8 text-center text-[#64748B] text-sm bg-white rounded-3xl border border-[#E8ECE4]">

@@ -63,19 +63,19 @@ class DemoCatalogSeeder extends Seeder
         );
 
         // 3. Demo Categories
-        $catConstruction = Category::firstOrCreate(
+        $catConstruction = Category::updateOrCreate(
             ['slug' => 'qurilish-materiallari'],
-            ['name' => 'Qurilish materiallari', 'sort_order' => 1, 'is_active' => true]
+            ['name' => 'Qurilish materiallari', 'icon' => '🧱', 'sort_order' => 1, 'is_active' => true]
         );
 
-        $catMachinery = Category::firstOrCreate(
+        $catMachinery = Category::updateOrCreate(
             ['slug' => 'sanoat-uskunalari'],
-            ['name' => 'Sanoat uskunalari', 'sort_order' => 2, 'is_active' => true]
+            ['name' => 'Sanoat uskunalari', 'icon' => '🏭', 'sort_order' => 2, 'is_active' => true]
         );
 
-        $catFood = Category::firstOrCreate(
+        $catFood = Category::updateOrCreate(
             ['slug' => 'oziq-ovqat-va-ichimliklar'],
-            ['name' => 'Oziq-ovqat va ichimliklar', 'sort_order' => 3, 'is_active' => true]
+            ['name' => 'Oziq-ovqat va ichimliklar', 'icon' => '🌾', 'sort_order' => 3, 'is_active' => true]
         );
 
         // 4. Warehouse

@@ -32,8 +32,11 @@ class StorefrontController extends Controller
     {
         $categories = Category::where('is_active', true)
             ->whereNull('parent_id')
+            ->withCount(['products' => function ($query) {
+                $query->where('status', 'approved')->where('is_active', true);
+            }])
             ->orderBy('sort_order')
-            ->take(8)
+            ->take(14)
             ->get();
 
         $featuredProducts = Product::where('status', 'approved')

@@ -88,13 +88,19 @@
                                 Toifalar
                             </label>
                             <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                                <a href="{{ route('catalog', request()->except('category', 'page')) }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs {{ !request('category') ? 'bg-[#123C2F] text-white font-bold' : 'text-[#64748B] hover:bg-[#FAFBF7]' }}">
-                                    <span>Barcha toifalar</span>
+                                <a href="{{ route('catalog', request()->except('category', 'page')) }}" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs {{ !request('category') ? 'bg-[#123C2F] text-white font-bold' : 'text-[#64748B] hover:bg-[#FAFBF7]' }}">
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-sm">🌐</span>
+                                        <span>Barcha toifalar</span>
+                                    </span>
                                 </a>
                                 @foreach($categories as $cat)
                                     <a href="{{ route('catalog', array_merge(request()->except('page'), ['category' => $cat->slug])) }}" 
-                                       class="flex items-center justify-between px-3 py-2 rounded-xl text-xs {{ request('category') === $cat->slug ? 'bg-[#123C2F] text-white font-bold' : 'text-[#172326] hover:bg-[#FAFBF7]' }}">
-                                        <span>{{ $cat->name }}</span>
+                                       class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs {{ request('category') === $cat->slug ? 'bg-[#123C2F] text-white font-bold' : 'text-[#172326] hover:bg-[#FAFBF7]' }}">
+                                        <span class="flex items-center gap-2.5">
+                                            <span class="text-base select-none">{{ $cat->display_icon }}</span>
+                                            <span class="leading-snug">{{ $cat->name }}</span>
+                                        </span>
                                     </a>
                                 @endforeach
                             </div>

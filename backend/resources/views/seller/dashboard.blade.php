@@ -543,7 +543,7 @@
                             </div>
                             <select name="category_id" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#123C2F] bg-white">
                                 @foreach($categories as $cat)
-                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                    <option value="{{ $cat->id }}">{{ $cat->display_icon }} {{ $cat->name }}</option>
                                 @endforeach
                             </select>
                             <p class="text-[11px] text-slate-500 mt-1">Mahsulot katalogda qaysi bo'lim va filtrlarda aks etishi.</p>

@@ -130,6 +130,45 @@ class StorefrontController extends Controller
     }
 
     /**
+     * Live search endpoint returning JSON suggestions for instant autocomplete.
+     */
+    public function liveSearch(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json(['products' => []]);
+        }
+
+        $products = Product::where('status', 'approved')
+            ->where('is_active', true)
+            ->where(function ($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhere('description', 'like', "%{$q}%")
+                      ->orWhereHas('variants', function ($vq) use ($q) {
+                          $vq->where('sku', 'like', "%{$q}%")
+                             ->orWhere('name', 'like', "%{$q}%");
+                      });
+            })
+            ->with(['category:id,name,slug', 'defaultVariant'])
+            ->take(6)
+            ->get()
+            ->map(function ($product) {
+                $variant = $product->defaultVariant;
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'url' => route('product.show', $product->slug),
+                    'category' => $product->category?->name,
+                    'price' => $variant ? number_format($variant->retail_price, 0, '.', ' ') . ' UZS' : null,
+                    'trade_mode' => $product->trade_mode,
+                ];
+            });
+
+        return response()->json(['products' => $products]);
+    }
+
+    /**
      * Product details page with variant switching, all-units tiered price calculation, and stock.
      */
     public function product(string $slug): View

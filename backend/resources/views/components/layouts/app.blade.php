@@ -94,8 +94,31 @@
                     </a>
                 </div>
 
-                <!-- Central Search Bar (Expanded Width & Clean Layout) -->
-                <div class="flex-1 max-w-2xl xl:max-w-3xl hidden md:block mx-2">
+                <!-- Central Search Bar (Expanded Width & Clean Layout with Instant Live Search) -->
+                <div class="flex-1 max-w-2xl xl:max-w-3xl hidden md:block mx-2 relative"
+                     x-data="{ 
+                         query: '{{ request('q') }}', 
+                         results: [], 
+                         isLoading: false, 
+                         isOpen: false,
+                         search() {
+                             if (!this.query || this.query.trim().length < 2) {
+                                 this.results = [];
+                                 this.isOpen = false;
+                                 return;
+                             }
+                             this.isLoading = true;
+                             fetch('{{ route('search.live') }}?q=' + encodeURIComponent(this.query))
+                                 .then(res => res.json())
+                                 .then(data => {
+                                     this.results = data.products || [];
+                                     this.isOpen = true;
+                                     this.isLoading = false;
+                                 })
+                                 .catch(() => { this.isLoading = false; });
+                         }
+                     }"
+                     @click.away="isOpen = false">
                     <form action="{{ route('catalog') }}" method="GET" class="relative">
                         @if(request('trade_mode'))
                             <input type="hidden" name="trade_mode" value="{{ request('trade_mode') }}">
@@ -105,7 +128,10 @@
                         @endif
                         <input type="search" 
                                name="q" 
-                               value="{{ request('q') }}"
+                               x-model="query"
+                               @input.debounce.300ms="search()"
+                               @focus="if(results.length > 0) isOpen = true"
+                               autocomplete="off"
                                placeholder="Mahsulot, SKU yoki toifani qidiring (masalan: sement, gipsokarton, profil)..." 
                                class="w-full h-11 pl-11 pr-24 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs font-medium text-[#172326] placeholder-[#64748B] focus:bg-white focus:border-[#123C2F] focus:ring-2 focus:ring-[#123C2F]/10 transition-all outline-none">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#64748B]">
@@ -117,6 +143,36 @@
                             Qidirish
                         </button>
                     </form>
+
+                    <!-- Instant Results Dropdown (Live Search Suggestions) -->
+                    <div x-show="isOpen && results.length > 0" 
+                         x-cloak 
+                         class="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-[#E8ECE4] shadow-2xl overflow-hidden z-50 divide-y divide-[#E8ECE4]">
+                        <div class="p-2.5 bg-[#FAFBF7] flex items-center justify-between text-[11px] font-bold text-[#64748B]">
+                            <span>⚡ Tezkor takliflar</span>
+                            <span x-text="results.length + ' ta tovar'"></span>
+                        </div>
+                        <div class="max-h-72 overflow-y-auto">
+                            <template x-for="item in results" :key="item.id">
+                                <a :href="item.url" class="p-3 flex items-center justify-between hover:bg-[#FAFBF7] transition-colors group">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-xl bg-[#123C2F]/5 flex items-center justify-center text-base">📦</div>
+                                        <div>
+                                            <div class="text-xs font-bold text-[#172326] group-hover:text-[#123C2F] transition-colors" x-text="item.name"></div>
+                                            <div class="text-[10px] text-[#64748B]" x-text="item.category"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs font-extrabold text-[#123C2F]" x-text="item.price"></div>
+                                        <span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Mavjud</span>
+                                    </div>
+                                </a>
+                            </template>
+                        </div>
+                        <a :href="'{{ route('catalog') }}?q=' + encodeURIComponent(query)" class="block p-2.5 text-center bg-[#123C2F] text-[#C9F46B] text-xs font-bold hover:brightness-110 transition">
+                            Barcha natijalarni katalogda ko'rish →
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Right Nav Actions (Single Row, Matched 40px Height, Whitespace-Nowrap) -->
@@ -409,6 +465,83 @@
             </div>
         </div>
     </footer>
+
+    <!-- 24/7 Live Support & Contact Floating Button & Drawer -->
+    <div x-data="{ supportOpen: false }" class="fixed bottom-20 md:bottom-6 right-6 z-40">
+        <!-- Floating Trigger Button -->
+        <button @click="supportOpen = !supportOpen" 
+                class="flex items-center gap-2.5 px-4 py-3 rounded-full bg-[#123C2F] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-[#C9F46B]/40 group"
+                title="Tezkor yordam va aloqa markazi">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#C9F46B] animate-ping"></span>
+            <span class="text-base">🎧</span>
+            <span class="text-xs font-black tracking-wide hidden sm:inline text-[#C9F46B]">Yordam & Aloqa</span>
+        </button>
+
+        <!-- Interactive Support Drawer / Modal -->
+        <div x-show="supportOpen" 
+             x-cloak 
+             @click.away="supportOpen = false" 
+             class="absolute bottom-16 right-0 w-80 sm:w-96 bg-white rounded-3xl border border-[#E8ECE4] shadow-2xl p-6 text-slate-800 space-y-4">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-[#123C2F] text-[#C9F46B] flex items-center justify-center text-lg font-black">
+                        🎧
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-sm text-[#172326]">Yordam & Tezkor Aloqa</h3>
+                        <p class="text-[11px] text-[#64748B]">24/7 xizmat ko'rsatish markazi</p>
+                    </div>
+                </div>
+                <button @click="supportOpen = false" class="text-[#64748B] hover:text-[#172326] text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Contact options -->
+            <div class="space-y-2.5 text-xs">
+                <!-- Phone Call Center -->
+                <a href="tel:+998712000000" class="flex items-center justify-between p-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] hover:bg-emerald-50/50 transition group">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold">📞</span>
+                        <div>
+                            <div class="font-bold text-[#172326]">Yagona Call-markaz</div>
+                            <div class="text-[11px] text-[#64748B]">+998 (71) 200-00-00</div>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-emerald-700">Qo'ng'iroq →</span>
+                </a>
+
+                <!-- Telegram Support -->
+                <a href="https://t.me/market_support_bot" target="_blank" class="flex items-center justify-between p-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] hover:bg-sky-50/50 transition group">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center text-sm font-bold">💬</span>
+                        <div>
+                            <div class="font-bold text-[#172326]">Telegram Operator</div>
+                            <div class="text-[11px] text-[#64748B]">@market_support_bot (1 daqiqada javob)</div>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-sky-700">Yozish →</span>
+                </a>
+
+                <!-- Order Problem / Return guarantee -->
+                <div class="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-[11px] text-amber-950 space-y-1">
+                    <div class="font-bold flex items-center gap-1.5">
+                        <span>🛡️</span>
+                        <span>100% Xaridor Himoyasi:</span>
+                    </div>
+                    <p class="text-[#64748B] leading-relaxed">
+                        Agar tovarda nuqson bo'lsa yoki yetkazish kechiksa, 14 kun ichida pulingiz 100% qaytariladi yoki bepul almashtirib beriladi.
+                    </p>
+                </div>
+            </div>
+
+            <div class="pt-2 text-center border-t border-[#E8ECE4]">
+                <a href="{{ route('orders.hub') }}" class="text-xs font-bold text-[#123C2F] hover:underline flex items-center justify-center gap-1">
+                    <span>📦</span>
+                    <span>Mening buyurtmalarim va sotuvchilar bilan bog'lanish</span>
+                </a>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>

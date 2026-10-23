@@ -70,14 +70,30 @@
             <div class="space-y-6">
                 @foreach($order->suborders as $suborder)
                     <div class="p-5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E8ECE4]">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E8ECE4]">
                             <div>
-                                <h3 class="font-bold text-sm text-[#172326]">{{ $suborder->seller->name }}</h3>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-sm text-[#172326]">{{ $suborder->seller->name }}</h3>
+                                    <a href="{{ route('seller.show', $suborder->seller->slug) }}" class="text-[11px] text-[#123C2F] font-bold underline hover:text-emerald-700">Do'kon sahifasi →</a>
+                                </div>
                                 <p class="text-[11px] text-[#64748B]">Suborder: <span class="font-mono">{{ $suborder->suborder_number }}</span></p>
                             </div>
-                            <span class="px-2.5 py-1 rounded-lg bg-white border border-[#E8ECE4] text-xs font-bold text-[#123C2F]">
-                                {{ number_format($suborder->total_amount, 0, '.', ' ') }} UZS
-                            </span>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                @if($suborder->seller->phone)
+                                    <a href="tel:{{ $suborder->seller->phone }}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold hover:bg-emerald-100 transition" title="Sotuvchiga qo'ng'iroq qilish">
+                                        <span>📞</span>
+                                        <span>{{ $suborder->seller->phone }}</span>
+                                    </a>
+                                @endif
+                                <a href="https://t.me/market_seller_support?text={{ urlencode('Salom! Men buyurtma bo\'yicha murojaat qilyapman. Suborder raqami: ' . $suborder->suborder_number) }}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold hover:bg-sky-100 transition" title="Sotuvchiga Telegram orqali yozish">
+                                    <span>💬</span>
+                                    <span>Telegramda yozish</span>
+                                </a>
+                                <span class="px-2.5 py-1 rounded-lg bg-white border border-[#E8ECE4] text-xs font-bold text-[#123C2F]">
+                                    {{ number_format($suborder->total_amount, 0, '.', ' ') }} UZS
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Items in this suborder -->

@@ -44,10 +44,24 @@
                     </div>
                 </div>
 
-                <!-- Trust badge -->
-                <div class="px-5 py-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-center text-xs">
-                    <span class="text-[#64748B] font-semibold block">Do'konda mavjud:</span>
-                    <span class="text-lg font-black text-[#123C2F]">{{ $products->total() }} ta tovar</span>
+                <!-- Contact Actions & Trust badge -->
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        @if($seller->phone)
+                            <a href="tel:{{ $seller->phone }}" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 shadow-sm transition">
+                                <span>📞</span>
+                                <span>{{ $seller->phone }}</span>
+                            </a>
+                        @endif
+                        <a href="https://t.me/market_seller_support?text={{ urlencode('Salom, men ' . $seller->name . ' do\'koni mahsulotlari bo\'yicha murojaat qilyapman.') }}" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-bold text-xs hover:bg-[#0d2a21] shadow-sm transition">
+                            <span>💬</span>
+                            <span>Telegramda yozish</span>
+                        </a>
+                    </div>
+                    <div class="px-5 py-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-center text-xs">
+                        <span class="text-[#64748B] font-semibold block">Do'konda mavjud:</span>
+                        <span class="text-lg font-black text-[#123C2F]">{{ $products->total() }} ta tovar</span>
+                    </div>
                 </div>
 
             </div>

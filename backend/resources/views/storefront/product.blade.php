@@ -307,23 +307,72 @@ function imageMagnifier(imgUrl) {
                 @endif
             </div>
 
-            <!-- Seller Card Preview -->
-            <div class="bg-white rounded-3xl border border-[#E8ECE4] p-5 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-black text-xl flex items-center justify-center">
-                        {{ mb_substr($product->seller->name ?? 'S', 0, 1) }}
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-1.5">
-                            <h4 class="font-bold text-sm text-[#172326]">{{ $product->seller->name ?? 'Sotuvchi' }}</h4>
-                            <span class="text-xs text-emerald-600 font-bold" title="Litsenziyalangan">✓</span>
+            <!-- Seller Card & Quick Contact -->
+            <div class="bg-white rounded-3xl border border-[#E8ECE4] p-5 space-y-4 shadow-xs" x-data="{ showAskModal: false }">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-black text-xl flex items-center justify-center shrink-0">
+                            {{ mb_substr($product->seller->name ?? 'S', 0, 1) }}
                         </div>
-                        <p class="text-xs text-[#64748B]">★ {{ number_format($product->seller->rating ?? 5.0, 1) }} • Rasmiy do'kon</p>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <h4 class="font-bold text-sm text-[#172326]">{{ $product->seller->name ?? 'Sotuvchi' }}</h4>
+                                <span class="text-xs text-emerald-600 font-bold" title="Litsenziyalangan">✓</span>
+                            </div>
+                            <p class="text-xs text-[#64748B]">★ {{ number_format($product->seller->rating ?? 5.0, 1) }} • Rasmiy do'kon</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('seller.show', $product->seller->slug ?? '') }}" class="px-3 py-1.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] hover:bg-[#123C2F] hover:text-white text-xs font-bold transition-all">
+                        Do'konga o'tish
+                    </a>
+                </div>
+
+                <!-- Seller Direct Contact Actions (Qanday bog'lanadi?) -->
+                <div class="pt-3 border-t border-[#E8ECE4] grid grid-cols-3 gap-2 text-center text-xs">
+                    <a href="tel:{{ $product->seller->phone ?? '+998712000000' }}" class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold hover:bg-emerald-100 transition" title="Qo'ng'iroq qilish">
+                        <span>📞</span>
+                        <span class="truncate">Qo'ng'iroq</span>
+                    </a>
+                    <a href="https://t.me/market_seller_support?text={{ urlencode('Salom, men ' . $product->name . ' mahsuloti haqida ma\'lumot olmoqchiman.') }}" target="_blank" class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-sky-50 text-sky-900 border border-sky-200 font-bold hover:bg-sky-100 transition" title="Telegram orqali yozish">
+                        <span>💬</span>
+                        <span class="truncate">Telegram</span>
+                    </a>
+                    <button type="button" @click="showAskModal = true" class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-[#FAFBF7] text-[#123C2F] border border-[#E8ECE4] font-bold hover:bg-[#123C2F] hover:text-white transition" title="Savol berish">
+                        <span>❓</span>
+                        <span class="truncate">Savol berish</span>
+                    </button>
+                </div>
+
+                <!-- Modal: Savol berish -->
+                <div x-show="showAskModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div @click.away="showAskModal = false" class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#E8ECE4]">
+                        <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
+                            <div>
+                                <h3 class="font-extrabold text-base text-[#172326]">Sotuvchiga savol yo'llash</h3>
+                                <p class="text-xs text-[#64748B]">{{ $product->seller->name ?? 'Do\'kon' }} ma'murlariga</p>
+                            </div>
+                            <button @click="showAskModal = false" class="text-[#64748B] hover:text-[#172326] text-xl font-bold">✕</button>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-[#172326] mb-1">Ismingiz</label>
+                                <input type="text" placeholder="Ismingizni kiriting" class="w-full px-3.5 py-2 rounded-xl border border-[#E8ECE4] text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-[#172326] mb-1">Telefon raqamingiz</label>
+                                <input type="text" value="+998 " class="w-full px-3.5 py-2 rounded-xl border border-[#E8ECE4] text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-[#172326] mb-1">Savolingiz</label>
+                                <textarea rows="3" placeholder="{{ $product->name }} haqida savolingiz..." class="w-full px-3.5 py-2 rounded-xl border border-[#E8ECE4] text-xs"></textarea>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end gap-2 pt-2">
+                            <button type="button" @click="showAskModal = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-slate-100">Bekor qilish</button>
+                            <button type="button" @click="showAskModal = false; alert('Savolingiz sotuvchiga yuborildi! Tez orada siz bilan telefon orqali bog\'lanishadi.')" class="px-4 py-2 rounded-xl text-xs font-bold bg-[#123C2F] text-[#C9F46B]">Yuborish ✓</button>
+                        </div>
                     </div>
                 </div>
-                <a href="{{ route('seller.show', $product->seller->slug ?? '') }}" class="px-4 py-2 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] hover:bg-[#123C2F] hover:text-white text-xs font-bold transition-all">
-                    Do'konni ko'rish
-                </a>
             </div>
         </div>
 
@@ -520,6 +569,35 @@ function imageMagnifier(imgUrl) {
                     <p class="text-center text-[11px] text-[#64748B] mt-2">
                         🔒 Xavfsiz ko'p sotuvchili buyurtma va avtomatik zaxira band qilish
                     </p>
+
+                    <!-- Installment / Muddatli to'lov (Nasiya) Kalkulyatori -->
+                    <div class="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-sm">⚡</span>
+                                <span class="text-xs font-black text-amber-950 uppercase tracking-wider">Muddatli To'lov (Nasiya)</span>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-200/70 text-amber-900">0% Boshlang'ich To'lov</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="p-2 rounded-xl bg-white border border-amber-200/80">
+                                <span class="block text-[10px] font-bold text-[#64748B]">3 oyga</span>
+                                <span class="text-xs font-black text-[#123C2F]" x-text="formatNumber(Math.ceil(currentQuote.total_price / 3)) + ' UZS'"></span>
+                                <span class="block text-[9px] text-[#64748B]">oyiga</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-white border-2 border-amber-400 shadow-xs relative">
+                                <span class="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded bg-amber-500 text-white text-[8px] font-black">XIT</span>
+                                <span class="block text-[10px] font-bold text-[#64748B]">6 oyga</span>
+                                <span class="text-xs font-black text-[#123C2F]" x-text="formatNumber(Math.ceil((currentQuote.total_price * 1.08) / 6)) + ' UZS'"></span>
+                                <span class="block text-[9px] text-[#64748B]">oyiga</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-white border border-amber-200/80">
+                                <span class="block text-[10px] font-bold text-[#64748B]">12 oyga</span>
+                                <span class="text-xs font-black text-[#123C2F]" x-text="formatNumber(Math.ceil((currentQuote.total_price * 1.18) / 12)) + ' UZS'"></span>
+                                <span class="block text-[9px] text-[#64748B]">oyiga</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>

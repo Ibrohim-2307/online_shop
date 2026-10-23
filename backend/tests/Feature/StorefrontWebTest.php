@@ -179,4 +179,34 @@ class StorefrontWebTest extends TestCase
         $response->assertSee('Saqlangan Mahsulotlar');
         $response->assertSee("Sevimlilar ro'yxati bo'sh", false);
     }
+
+    public function test_live_search_json_endpoint(): void
+    {
+        $this->createCatalogFixture();
+
+        // Short query returns empty products
+        $shortResponse = $this->getJson(route('search.live', ['q' => 's']));
+        $shortResponse->assertOk();
+        $shortResponse->assertJson(['products' => []]);
+
+        // Valid search returns matching product
+        $response = $this->getJson(route('search.live', ['q' => 'Sement']));
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'name' => 'Qurilish Sementi M-500',
+            'slug' => 'sement-m500',
+        ]);
+    }
+
+    public function test_product_page_displays_seller_contact_and_installments(): void
+    {
+        $this->createCatalogFixture();
+
+        $response = $this->get('/products/sement-m500');
+        $response->assertOk();
+        $response->assertSee('Telegram');
+        $response->assertSee('Savol berish');
+        $response->assertSee('Muddatli To\'lov (Nasiya)', false);
+        $response->assertSee('Yordam & Aloqa', false);
+    }
 }

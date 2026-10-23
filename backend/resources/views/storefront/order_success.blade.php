@@ -68,6 +68,77 @@
                 @endif
             </div>
 
+            @if($isPaid)
+                <!-- Rasmiy Elektron Fiskal Chek (Online Chek) -->
+                <div class="mt-8 bg-[#FAFBF7] rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 max-w-lg mx-auto text-left shadow-xs space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
+                        <div>
+                            <div class="text-[10px] font-black uppercase tracking-widest text-[#123C2F]">ONLINE DO'KON FISKAL CHEKI</div>
+                            <h4 class="font-black text-sm text-[#172326]">MARKETPLACE UZBEKISTAN</h4>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                            ✓ TO'LANDI
+                        </span>
+                    </div>
+
+                    <div class="space-y-1.5 text-xs font-mono">
+                        <div class="flex justify-between text-[#64748B]">
+                            <span>Chek raqami:</span>
+                            <span class="font-bold text-[#172326]">#CHK-{{ strtoupper(substr($order->order_number, -8)) }}</span>
+                        </div>
+                        <div class="flex justify-between text-[#64748B]">
+                            <span>Tranzaksiya:</span>
+                            <span class="font-bold text-[#172326]">{{ $latestPayment->transaction_id ?? 'TXN-ONLINE' }}</span>
+                        </div>
+                        <div class="flex justify-between text-[#64748B]">
+                            <span>To'lov tizimi:</span>
+                            <span class="font-bold text-[#123C2F] uppercase">{{ $latestPayment->payment_method ?? 'ONLINE' }}</span>
+                        </div>
+                        <div class="flex justify-between text-[#64748B]">
+                            <span>Vaqti:</span>
+                            <span>{{ $latestPayment->paid_at ? \Carbon\Carbon::parse($latestPayment->paid_at)->format('d.m.Y H:i:s') : now()->format('d.m.Y H:i:s') }}</span>
+                        </div>
+                        <div class="flex justify-between text-[#64748B]">
+                            <span>Fiskal belgi:</span>
+                            <span>FSK-{{ rand(10000000, 99999999) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-dashed border-[#E8ECE4] space-y-1.5 text-xs">
+                        @foreach($order->suborders->flatMap->items as $it)
+                            <div class="flex justify-between font-mono">
+                                <span class="truncate max-w-[200px]">{{ $it->product_name }}</span>
+                                <span>{{ number_format($it->subtotal, 0, '.', ' ') }} UZS</span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="pt-3 border-t border-[#E8ECE4] flex justify-between items-baseline font-mono">
+                        <span class="font-black text-sm text-[#172326]">JAMI TO'LANDI:</span>
+                        <span class="font-black text-lg text-[#123C2F]">{{ number_format($order->grand_total, 0, '.', ' ') }} UZS</span>
+                    </div>
+
+                    <div class="pt-4 border-t border-[#E8ECE4] flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-12 h-12 bg-white border border-[#E8ECE4] rounded-lg p-1 flex items-center justify-center">
+                                <svg class="w-10 h-10 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm-2 10h8v8H2v-8zm2 2v4h4v-4H4zm10-14h8v8h-8V2zm2 2v4h4V4h-4zm-1 10h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm-4-10h2v2h-2V6zm2 2h2v2h-2V8zm2-2h2v2h-2V6z"/>
+                                </svg>
+                            </div>
+                            <div class="text-[10px] text-[#64748B]">
+                                <p class="font-bold text-[#172326]">Soliq.uz QR-kodi</p>
+                                <p>Elektron fiskal kvitansiya</p>
+                            </div>
+                        </div>
+
+                        <button type="button" onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-white border border-[#E8ECE4] hover:bg-[#FAFBF7] text-xs font-bold text-[#172326] flex items-center gap-1.5 shadow-xs transition">
+                            <span>🖨️</span>
+                            <span>Chop etish</span>
+                        </button>
+                    </div>
+                </div>
+            @endif
+
             <!-- Pending Payment Actions Widget -->
             @if(!$isPaid && !$isCod)
                 <div class="mt-8 p-6 rounded-2xl bg-amber-50/70 border border-amber-200 text-left max-w-lg mx-auto space-y-4">

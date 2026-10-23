@@ -166,7 +166,7 @@ class WebPaymentIntegrationTest extends TestCase
         $checkoutView->assertStatus(200);
         $checkoutView->assertSee('Click');
         $checkoutView->assertSee('Payme');
-        $checkoutView->assertSee('Xavfsiz To\'lov Oynasi', false);
+        $checkoutView->assertSee('Onlayn To\'lov Oynasi', false);
 
         // 4. Settle payment via Click
         $payResponse = $this->actingAs($this->customer)->post(route('payment.pay', ['orderNumber' => $order->order_number]), [

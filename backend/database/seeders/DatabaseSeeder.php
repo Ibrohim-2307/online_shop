@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             DemoCatalogSeeder::class,
             ExpandedCatalogSeeder::class,
             ProductImageSeeder::class,
+            ProductReviewSeeder::class,
         ]);
 
         // Demo Customer

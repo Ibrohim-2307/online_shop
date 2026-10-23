@@ -142,6 +142,7 @@ class StorefrontController extends Controller
                 'category:id,name,slug',
                 'variants.priceTiers',
                 'variants.inventoryBalances.warehouse:id,name,address',
+                'reviews' => fn($q) => $q->where('is_approved', true)->latest()->take(25),
             ])
             ->firstOrFail();
 
@@ -154,6 +155,44 @@ class StorefrontController extends Controller
             ->get();
 
         return view('storefront.product', compact('product', 'relatedProducts'));
+    }
+
+    /**
+     * Submit a customer review and star rating for a product.
+     */
+    public function storeReview(Request $request, string $slug): RedirectResponse
+    {
+        $product = Product::where('slug', $slug)->firstOrFail();
+
+        $validated = $request->validate([
+            'rating' => 'required|integer|between:1,5',
+            'author_name' => 'required|string|min:2|max:100',
+            'comment' => 'required|string|min:3|max:1000',
+        ]);
+
+        $user = $request->user();
+        $isVerifiedPurchase = false;
+
+        if ($user) {
+            $isVerifiedPurchase = \App\Models\OrderItem::where('product_id', $product->id)
+                ->whereHas('suborder.order', function ($query) use ($user) {
+                    $query->where('user_id', $user->id)
+                        ->whereIn('status', ['processing', 'completed']);
+                })
+                ->exists();
+        }
+
+        \App\Models\ProductReview::create([
+            'product_id' => $product->id,
+            'user_id' => $user?->id,
+            'author_name' => $validated['author_name'],
+            'rating' => (int) $validated['rating'],
+            'comment' => $validated['comment'],
+            'is_verified_purchase' => $isVerifiedPurchase,
+            'is_approved' => true,
+        ]);
+
+        return back()->with('success_review', "Fikr va bahoingiz uchun tashakkur! Sharhingiz sahifada e'lon qilindi.");
     }
 
     /**

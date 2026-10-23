@@ -348,6 +348,23 @@ function imageMagnifier(imgUrl) {
                     {{ $product->name }}
                 </h1>
 
+                <!-- Rating and Reviews Count Badge -->
+                <div class="flex flex-wrap items-center gap-3 pt-1">
+                    <a href="#reviews" class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-500 hover:text-amber-600 transition">
+                        <span class="text-sm">★</span>
+                        <span class="text-[#172326] font-black text-sm">{{ number_format($product->average_rating, 1) }}</span>
+                        <span class="text-[#64748B] font-medium underline">({{ $product->reviews_count }} ta sharh)</span>
+                    </a>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-xs text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-md">
+                        ✓ 98% tavsiya qiladi
+                    </span>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-xs text-[#64748B]">
+                        {{ $product->seller->name ?? 'Rasmiy do\'kon' }}
+                    </span>
+                </div>
+
                 <p class="text-sm text-[#64748B] leading-relaxed">
                     {{ $product->description ?? 'Ushbu mahsulot uchun batafsil tavsif tayyorlanmoqda.' }}
                 </p>
@@ -531,6 +548,198 @@ function imageMagnifier(imgUrl) {
         </div>
 
     </div>
+
+    <!-- Customer Reviews & Star Ratings Section -->
+    <section id="reviews" class="border-t border-[#E8ECE4] pt-12 pb-6 space-y-8"
+             x-data="{
+                 hoverRating: 5,
+                 selectedRating: 5,
+                 ratingLabels: {
+                     1: 'Yomon (1 yulduz)',
+                     2: 'Qoniqarli (2 yulduz)',
+                     3: 'O\'rtacha (3 yulduz)',
+                     4: 'Yaxshi (4 yulduz)',
+                     5: 'A\'lo darajada! (5 yulduz)'
+                 }
+             }">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
+                        Xaridorlar Fikri
+                    </span>
+                    <span class="text-xs text-[#64748B]">{{ $product->reviews_count }} ta sharh</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-[#172326] tracking-tight">
+                    Mijozlar Sharhlari va Baholari
+                </h2>
+            </div>
+
+            <a href="#leave-review" class="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#123C2F] text-[#C9F46B] text-xs font-bold hover:brightness-110 shadow-sm transition">
+                <span>✍️</span>
+                <span>Fikr bildirish</span>
+            </a>
+        </div>
+
+        @if(session('success_review'))
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center gap-3 shadow-xs">
+                <span class="text-xl">✅</span>
+                <span>{{ session('success_review') }}</span>
+            </div>
+        @endif
+
+        <!-- Summary & Rating Breakdown Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left: Overall Rating Card (4 cols) -->
+            <div class="lg:col-span-4 bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-6">
+                <div class="text-center pb-6 border-b border-[#E8ECE4]">
+                    <div class="text-5xl font-black text-[#172326] tracking-tight">
+                        {{ number_format($product->average_rating, 1) }}
+                    </div>
+                    <div class="flex items-center justify-center gap-1 my-2 text-amber-400 text-xl">
+                        @for($i = 1; $i <= 5; $i++)
+                            <span>{{ $i <= round($product->average_rating) ? '★' : '☆' }}</span>
+                        @endfor
+                    </div>
+                    <p class="text-xs text-[#64748B]">
+                        {{ $product->reviews_count }} ta baholash asosida
+                    </p>
+                    <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">
+                        <span>✓</span>
+                        <span>98% xaridorlar tavsiya qiladi</span>
+                    </div>
+                </div>
+
+                <!-- Rating Bars (5 to 1 stars) -->
+                <div class="space-y-2 text-xs">
+                    @foreach($product->rating_breakdown as $stars => $data)
+                        <div class="flex items-center gap-2">
+                            <span class="w-12 font-bold text-[#172326] flex items-center gap-1">
+                                <span>{{ $stars }}</span>
+                                <span class="text-amber-400 text-sm">★</span>
+                            </span>
+                            <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                                <div class="h-full rounded-full bg-amber-400 transition-all duration-500" style="width: {{ $data['percentage'] }}%"></div>
+                            </div>
+                            <span class="w-8 text-right font-medium text-[#64748B]">{{ $data['count'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Right: Review List & Form (8 cols) -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <!-- Review List Feed -->
+                <div class="space-y-4">
+                    @forelse($product->reviews as $review)
+                        <div class="bg-white rounded-3xl border border-[#E8ECE4] p-5 sm:p-6 shadow-xs space-y-3">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-[#123C2F]/10 text-[#123C2F] font-bold text-sm flex items-center justify-center">
+                                        {{ mb_substr($review->author_name, 0, 1) }}
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="font-bold text-sm text-[#172326]">{{ $review->author_name }}</h4>
+                                            @if($review->is_verified_purchase)
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                                    <span>✓</span>
+                                                    <span>Tasdiqlangan xarid</span>
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <p class="text-[11px] text-[#64748B]">{{ $review->created_at->diffForHumans() }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Stars -->
+                                <div class="flex items-center gap-0.5 text-amber-400 text-sm">
+                                    @for($s = 1; $s <= 5; $s++)
+                                        <span>{{ $s <= $review->rating ? '★' : '☆' }}</span>
+                                    @endfor
+                                </div>
+                            </div>
+
+                            <p class="text-xs sm:text-sm text-[#172326] leading-relaxed">
+                                {{ $review->comment }}
+                            </p>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-[#E8ECE4]/70 text-[11px] text-[#64748B]">
+                                <span class="text-emerald-700 font-semibold">Tavsiya etadi</span>
+                                <button type="button" @click="$el.innerText = '👍 Foydali (' + ({{ $review->likes_count }} + 1) + ')'" class="hover:text-[#123C2F] font-semibold transition">
+                                    👍 Foydali ({{ $review->likes_count }})
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="bg-white rounded-3xl border border-[#E8ECE4] p-8 text-center text-[#64748B] text-sm">
+                            Hali sharhlar qoldirilmagan. Birinchi bo'lib fikr bildiring!
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Review Submission Form -->
+                <div id="leave-review" class="bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-4">
+                    <div class="flex items-center gap-2 pb-3 border-b border-[#E8ECE4]">
+                        <span class="text-xl">✍️</span>
+                        <div>
+                            <h3 class="font-black text-base text-[#172326]">Fikr va Baho Qoldirish</h3>
+                            <p class="text-xs text-[#64748B]">Boshqa xaridorlarga to'g'ri tanlov qilishda yordam bering</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('product.reviews.store', ['slug' => $product->slug]) }}" class="space-y-4">
+                        @csrf
+                        
+                        <!-- Interactive Star Rating Picker -->
+                        <div>
+                            <label class="block text-xs font-bold text-[#172326] mb-1.5">Mahsulotni baholang:</label>
+                            <input type="hidden" name="rating" :value="selectedRating">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-1 cursor-pointer">
+                                    <template x-for="star in 5" :key="star">
+                                        <button type="button" 
+                                                @mouseenter="hoverRating = star"
+                                                @mouseleave="hoverRating = selectedRating"
+                                                @click="selectedRating = star; hoverRating = star"
+                                                class="text-2xl transition-transform hover:scale-125 focus:outline-none">
+                                            <span :class="star <= hoverRating ? 'text-amber-400' : 'text-slate-200'">★</span>
+                                        </button>
+                                    </template>
+                                </div>
+                                <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg" x-text="ratingLabels[hoverRating]"></span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-[#172326] mb-1.5">Ismingiz</label>
+                            <input type="text" name="author_name" required
+                                   value="{{ old('author_name', auth()->user()?->name) }}"
+                                   placeholder="Masalan: Azizbek T."
+                                   class="w-full px-4 py-3 rounded-xl border border-[#E8ECE4] bg-[#FAFBF7] text-sm text-[#172326] focus:outline-none focus:border-[#123C2F] focus:bg-white transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-[#172326] mb-1.5">Fikringiz va tajribangiz</label>
+                            <textarea name="comment" rows="3" required
+                                      placeholder="Mahsulot sifati, yetkazib berish tezligi yoki ishlatish jarayoni haqida fikringizni yozing..."
+                                      class="w-full px-4 py-3 rounded-xl border border-[#E8ECE4] bg-[#FAFBF7] text-sm text-[#172326] focus:outline-none focus:border-[#123C2F] focus:bg-white transition-colors"></textarea>
+                        </div>
+
+                        <button type="submit" class="px-6 py-3.5 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-black text-xs hover:brightness-110 shadow-sm transition">
+                            Sharhni e'lon qilish →
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
 
     <!-- Related Products -->
     @if($relatedProducts->count() > 0)

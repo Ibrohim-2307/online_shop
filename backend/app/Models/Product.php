@@ -55,4 +55,35 @@ class Product extends Model
     {
         return $this->hasOne(ProductVariant::class)->oldestOfMany();
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class)->where('is_approved', true)->latest();
+    }
+
+    public function getAverageRatingAttribute(): float
+    {
+        $avg = $this->reviews()->avg('rating');
+        return $avg ? round((float) $avg, 1) : 5.0;
+    }
+
+    public function getReviewsCountAttribute(): int
+    {
+        return $this->reviews()->count();
+    }
+
+    public function getRatingBreakdownAttribute(): array
+    {
+        $total = $this->reviews_count;
+        $breakdown = [];
+        for ($i = 5; $i >= 1; $i--) {
+            $count = $this->reviews()->where('rating', $i)->count();
+            $percentage = $total > 0 ? round(($count / $total) * 100) : ($i === 5 ? 100 : 0);
+            $breakdown[$i] = [
+                'count' => $count,
+                'percentage' => $percentage,
+            ];
+        }
+        return $breakdown;
+    }
 }

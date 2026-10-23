@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\StorefrontController;
 Route::get('/', [StorefrontController::class, 'index'])->name('home');
 Route::get('/catalog', [StorefrontController::class, 'catalog'])->name('catalog');
 Route::get('/products/{slug}', [StorefrontController::class, 'product'])->name('product.show');
+Route::post('/products/{slug}/reviews', [StorefrontController::class, 'storeReview'])->name('product.reviews.store');
 Route::get('/sellers/{slug}', [StorefrontController::class, 'seller'])->name('seller.show');
 Route::get('/wishlist', [StorefrontController::class, 'wishlist'])->name('wishlist');
 Route::get('/cart', [StorefrontController::class, 'cart'])->name('cart');

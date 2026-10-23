@@ -70,18 +70,19 @@
 
             @if($isPaid)
                 <!-- Rasmiy Elektron Fiskal Chek (Online Chek) -->
-                <div class="mt-8 bg-[#FAFBF7] rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 max-w-lg mx-auto text-left shadow-xs space-y-4">
-                    <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
+                <div class="mt-8 bg-white rounded-3xl border-2 border-slate-300 p-6 sm:p-8 max-w-lg mx-auto text-left shadow-lg space-y-4 relative overflow-hidden">
+                    <div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600"></div>
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200">
                         <div>
                             <div class="text-[10px] font-black uppercase tracking-widest text-[#123C2F]">ONLINE DO'KON FISKAL CHEKI</div>
                             <h4 class="font-black text-sm text-[#172326]">MARKETPLACE UZBEKISTAN</h4>
                         </div>
-                        <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                        <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase border border-emerald-300">
                             ✓ TO'LANDI
                         </span>
                     </div>
 
-                    <div class="space-y-1.5 text-xs font-mono">
+                    <div class="space-y-1.5 text-xs font-mono bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                         <div class="flex justify-between text-[#64748B]">
                             <span>Chek raqami:</span>
                             <span class="font-bold text-[#172326]">#CHK-{{ strtoupper(substr($order->order_number, -8)) }}</span>
@@ -183,13 +184,27 @@
             <div class="space-y-6">
                 @foreach($order->suborders as $suborder)
                     <div class="p-5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E8ECE4]">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E8ECE4]">
                             <div>
-                                <h3 class="font-bold text-sm text-[#172326]">{{ $suborder->seller->name }}</h3>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-sm text-[#172326]">{{ $suborder->seller->name }}</h3>
+                                    <a href="{{ route('seller.show', $suborder->seller->slug) }}" class="text-[11px] text-[#123C2F] font-bold underline hover:text-emerald-700">Do'kon sahifasi →</a>
+                                </div>
                                 <p class="text-[11px] text-[#64748B]">Suborder: <span class="font-mono">{{ $suborder->suborder_number }}</span></p>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="px-2.5 py-1 rounded-lg bg-[#FAFBF7] border border-[#E8ECE4] text-xs font-bold text-[#123C2F]">
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                @if($suborder->seller->phone)
+                                    <a href="tel:{{ $suborder->seller->phone }}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold hover:bg-emerald-100 transition" title="Sotuvchiga qo'ng'iroq qilish">
+                                        <span>📞</span>
+                                        <span>{{ $suborder->seller->phone }}</span>
+                                    </a>
+                                @endif
+                                <a href="https://t.me/market_seller_support?text={{ urlencode('Salom! Men buyurtma bo\'yicha murojaat qilyapman. Suborder raqami: ' . $suborder->suborder_number) }}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold hover:bg-sky-100 transition" title="Sotuvchiga Telegram orqali yozish">
+                                    <span>💬</span>
+                                    <span>Telegram</span>
+                                </a>
+                                <span class="px-2.5 py-1 rounded-lg bg-white border border-[#E8ECE4] text-xs font-bold text-[#123C2F]">
                                     {{ number_format($suborder->total_amount, 0, '.', ' ') }} UZS
                                 </span>
                             </div>

@@ -261,80 +261,112 @@
                 </form>
             </div>
 
+            <!-- Mobile Horizontal Scrollable Category Pills -->
+            <div class="pb-2.5 md:hidden overflow-x-auto no-scrollbar flex items-center gap-1.5 text-xs">
+                <a href="{{ route('home') }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request()->routeIs('home') ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    🏠 Bosh sahifa
+                </a>
+                <a href="{{ route('catalog', ['category' => 'qurilish-materiallari']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'qurilish-materiallari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    🧱 Qurilish
+                </a>
+                <a href="{{ route('catalog', ['category' => 'sanoat-uskunalari']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'sanoat-uskunalari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    ⚙️ Sanoat
+                </a>
+                <a href="{{ route('catalog', ['category' => 'elektr-jihozlari']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'elektr-jihozlari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    ⚡ Elektr
+                </a>
+                <a href="{{ route('catalog', ['category' => 'santexnika-va-quvurlar']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'santexnika-va-quvurlar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    🚰 Santexnika
+                </a>
+                <a href="{{ route('catalog', ['category' => 'boyoqlar-va-kimyo']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'boyoqlar-va-kimyo' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    🎨 Bo'yoq
+                </a>
+                <a href="{{ route('catalog', ['category' => 'asbob-uskunalar']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'asbob-uskunalar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    🔧 Asboblar
+                </a>
+            </div>
+
         </div>
 
-        <!-- TIER 2: DEDICATED CATEGORIES & NAVIGATION RIBBON -->
-        <div class="border-t border-[#E8ECE4] bg-white hidden md:block">
+        <!-- TIER 2: DEDICATED DISTINCT CATEGORIES & NAVIGATION RIBBON -->
+        <div class="border-t border-b border-[#D8E2D2] bg-[#F4F7F1] hidden md:block py-2 shadow-2xs">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-12 text-xs">
+                <div class="flex items-center justify-between gap-4 text-xs">
                     
-                    <!-- Left: Bosh sahifa + Main Category Pills -->
-                    <nav class="flex items-center gap-1 overflow-x-auto no-scrollbar py-1">
+                    <!-- Left: Bosh sahifa + Main Category Pills (Each distinctly separated) -->
+                    <nav class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
                         
                         <!-- Bosh sahifa Tab -->
                         <a href="{{ route('home') }}" 
-                           class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition font-extrabold whitespace-nowrap {{ request()->routeIs('home') ? 'bg-[#123C2F] text-white shadow-xs' : 'bg-[#FAFBF7] text-[#172326] hover:bg-[#E8ECE4] border border-[#E8ECE4]' }}">
+                           class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all font-extrabold whitespace-nowrap border shadow-2xs {{ request()->routeIs('home') ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:bg-[#EEF5EA] border-[#D8E2D2] hover:border-[#123C2F]' }}">
                             <span>🏠</span>
                             <span>Bosh sahifa</span>
                         </a>
 
-                        <div class="h-4 w-px bg-[#E8ECE4] mx-1"></div>
+                        <div class="h-5 w-px bg-[#D6E0D2] mx-0.5"></div>
 
-                        <!-- Real Catalog Categories -->
+                        <!-- Real Catalog Categories as Distinct Capsule Cards -->
                         <a href="{{ route('catalog', ['category' => 'qurilish-materiallari']) }}" 
-                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'qurilish-materiallari' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
-                            🧱 Qurilish mollari
+                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'qurilish-materiallari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
+                            <span>🧱</span>
+                            <span>Qurilish mollari</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'sanoat-uskunalari']) }}" 
-                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'sanoat-uskunalari' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
-                            ⚙️ Sanoat uskunalari
+                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'sanoat-uskunalari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
+                            <span>⚙️</span>
+                            <span>Sanoat uskunalari</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'elektr-jihozlari']) }}" 
-                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'elektr-jihozlari' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
-                            ⚡ Elektr & Yoritish
+                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'elektr-jihozlari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
+                            <span>⚡</span>
+                            <span>Elektr & Yoritish</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'santexnika-va-quvurlar']) }}" 
-                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'santexnika-va-quvurlar' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
-                            🚰 Santexnika
+                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'santexnika-va-quvurlar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
+                            <span>🚰</span>
+                            <span>Santexnika</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'boyoqlar-va-kimyo']) }}" 
-                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'boyoqlar-va-kimyo' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
-                            🎨 Bo'yoqlar
+                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'boyoqlar-va-kimyo' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
+                            <span>🎨</span>
+                            <span>Bo'yoqlar</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'asbob-uskunalar']) }}" 
-                           class="px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap {{ request('category') === 'asbob-uskunalar' ? 'bg-[#123C2F] text-white' : 'text-[#475569] hover:text-[#123C2F] hover:bg-[#FAFBF7]' }}">
-                            🔧 Asbob-uskunalar
+                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'asbob-uskunalar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
+                            <span>🔧</span>
+                            <span>Asbob-uskunalar</span>
                         </a>
                     </nav>
 
                     <!-- Right: Trade Mode Filter (Chakana / Optom) & Live Map Link -->
-                    <div class="flex items-center gap-3 shrink-0 pl-3">
+                    <div class="flex items-center gap-2.5 shrink-0 pl-2">
                         
-                        <!-- Trade Mode Segmented Badge -->
-                        <div class="flex items-center p-0.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-[11px] font-bold">
+                        <!-- Trade Mode Segmented Badge with Clear Frame & Label -->
+                        <div class="flex items-center p-1 rounded-xl bg-white border border-[#D8E2D2] text-[11px] font-bold shadow-2xs">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#64748B] px-2 hidden xl:inline">Savdo:</span>
                             <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'all'])) }}" 
-                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode', 'all') === 'all' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
+                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode', 'all') === 'all' ? 'bg-[#123C2F] text-white shadow-xs font-bold' : 'text-[#64748B] hover:text-[#172326]' }}">
                                 Barchasi
                             </a>
                             <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'retail_only'])) }}" 
-                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode') === 'retail_only' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
+                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode') === 'retail_only' ? 'bg-[#123C2F] text-white shadow-xs font-bold' : 'text-[#64748B] hover:text-[#172326]' }}">
                                 Chakana
                             </a>
                             <a href="{{ route('catalog', array_merge(request()->query(), ['trade_mode' => 'wholesale_only'])) }}" 
-                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode') === 'wholesale_only' ? 'bg-[#123C2F] text-white' : 'text-[#64748B] hover:text-[#172326]' }}">
+                               class="px-2.5 py-1 rounded-lg transition {{ request('trade_mode') === 'wholesale_only' ? 'bg-[#123C2F] text-white shadow-xs font-bold' : 'text-[#64748B] hover:text-[#172326]' }}">
                                 Optom
                             </a>
                         </div>
 
-                        <!-- Live Map Link -->
-                        <a href="{{ route('tracking') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-bold text-[11px] transition whitespace-nowrap">
+                        <!-- Live Map Link Distinct Capsule Button -->
+                        <a href="{{ route('tracking') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-300 font-extrabold text-[11px] transition whitespace-nowrap shadow-2xs">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                            <span>📍 Xarita</span>
+                            <span>📍 Jonli Xarita</span>
                         </a>
 
                     </div>

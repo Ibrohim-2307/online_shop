@@ -130,24 +130,98 @@
 
                 </div>
 
-                <!-- Payment Method (Phase 06 preview) -->
-                <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-4">
-                    <div class="flex items-center gap-3 pb-4 border-b border-[#E8ECE4]">
-                        <div class="w-9 h-9 rounded-xl bg-[#C9F46B] text-[#123C2F] flex items-center justify-center font-black">
-                            2
-                        </div>
-                        <h2 class="text-lg font-bold text-[#172326]">To'lov usuli</h2>
-                    </div>
-
-                    <div class="p-4 rounded-2xl bg-[#FAFBF7] border border-[#C9F46B] flex items-center justify-between">
+                <!-- Payment Method Selection -->
+                <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-4" x-data="{ selectedMethod: 'cash_on_delivery' }">
+                    <div class="flex items-center justify-between pb-4 border-b border-[#E8ECE4]">
                         <div class="flex items-center gap-3">
-                            <span class="text-2xl">💳</span>
+                            <div class="w-9 h-9 rounded-xl bg-[#C9F46B] text-[#123C2F] flex items-center justify-center font-black">
+                                2
+                            </div>
                             <div>
-                                <h4 class="font-bold text-sm text-[#172326]">Onlayn to'lov (Payme / Click / Uzum)</h4>
-                                <p class="text-xs text-[#64748B]">Buyurtma tasdiqlangach, to'lov sahifasiga o'tasiz</p>
+                                <h2 class="text-lg font-bold text-[#172326]">To'lov usuli</h2>
+                                <p class="text-xs text-[#64748B]">O'zingizga qulay to'lov turini tanlang</p>
                             </div>
                         </div>
-                        <span class="px-2.5 py-1 rounded-lg bg-[#123C2F] text-white text-[11px] font-bold">Tanlangan</span>
+                        <span class="text-xs font-semibold text-[#123C2F] bg-[#FAFBF7] px-3 py-1 rounded-full border border-[#E8ECE4]">
+                            4 xil usul
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                        
+                        <!-- 1. Cash on Delivery (Naqd pul / Yetkazib berilganda) -->
+                        <label class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200"
+                               :class="selectedMethod === 'cash_on_delivery' ? 'border-[#123C2F] bg-[#FAFBF7] shadow-sm' : 'border-[#E8ECE4] hover:border-slate-300 bg-white'">
+                            <input type="radio" name="payment_method" value="cash_on_delivery" x-model="selectedMethod" class="sr-only">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-2xl">💵</span>
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+                                      :class="selectedMethod === 'cash_on_delivery' ? 'bg-[#123C2F] text-[#C9F46B]' : 'bg-slate-100 text-slate-600'">
+                                    Ommabop
+                                </span>
+                            </div>
+                            <span class="font-bold text-sm text-[#172326] leading-tight">Naqd / Kuryerga to'lash</span>
+                            <span class="text-xs text-[#64748B] mt-1">Eshigingizga yetib borganida naqd yoki terminal orqali to'lang</span>
+                        </label>
+
+                        <!-- 2. Click Up -->
+                        <label class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200"
+                               :class="selectedMethod === 'click' ? 'border-[#123C2F] bg-[#FAFBF7] shadow-sm' : 'border-[#E8ECE4] hover:border-slate-300 bg-white'">
+                            <input type="radio" name="payment_method" value="click" x-model="selectedMethod" class="sr-only">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-2xl">🟢</span>
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+                                      :class="selectedMethod === 'click' ? 'bg-[#123C2F] text-[#C9F46B]' : 'bg-slate-100 text-slate-600'">
+                                    Click Up
+                                </span>
+                            </div>
+                            <span class="font-bold text-sm text-[#172326] leading-tight">Click (Click Up / Evolution)</span>
+                            <span class="text-xs text-[#64748B] mt-1">Click ilovasi yoki QR-kod orqali avtomatik to'lov</span>
+                        </label>
+
+                        <!-- 3. Payme -->
+                        <label class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200"
+                               :class="selectedMethod === 'payme' ? 'border-[#123C2F] bg-[#FAFBF7] shadow-sm' : 'border-[#E8ECE4] hover:border-slate-300 bg-white'">
+                            <input type="radio" name="payment_method" value="payme" x-model="selectedMethod" class="sr-only">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-2xl">🔵</span>
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+                                      :class="selectedMethod === 'payme' ? 'bg-[#123C2F] text-[#C9F46B]' : 'bg-slate-100 text-slate-600'">
+                                    Payme.uz
+                                </span>
+                            </div>
+                            <span class="font-bold text-sm text-[#172326] leading-tight">Payme</span>
+                            <span class="text-xs text-[#64748B] mt-1">Payme ilovasi orqali Uzcard va Humo bilan to'lov</span>
+                        </label>
+
+                        <!-- 4. Uzum / Bank Kartasi -->
+                        <label class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200"
+                               :class="selectedMethod === 'uzum' ? 'border-[#123C2F] bg-[#FAFBF7] shadow-sm' : 'border-[#E8ECE4] hover:border-slate-300 bg-white'">
+                            <input type="radio" name="payment_method" value="uzum" x-model="selectedMethod" class="sr-only">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-2xl">🟣</span>
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+                                      :class="selectedMethod === 'uzum' ? 'bg-[#123C2F] text-[#C9F46B]' : 'bg-slate-100 text-slate-600'">
+                                    Karta
+                                </span>
+                            </div>
+                            <span class="font-bold text-sm text-[#172326] leading-tight">Uzum Bank / Karta</span>
+                            <span class="text-xs text-[#64748B] mt-1">Ixtiyoriy Uzcard, Humo, Visa va Mastercard kartalari</span>
+                        </label>
+
+                    </div>
+
+                    <!-- Informational note based on selection -->
+                    <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs text-[#64748B] flex items-center gap-2">
+                        <svg class="w-4 h-4 text-[#123C2F] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span x-show="selectedMethod === 'cash_on_delivery'">
+                            Buyurtma tasdiqlanadi va to'g'ridan-to'g'ri yetkazishga yuboriladi. Hech qanday oldindan to'lov talab qilinmaydi.
+                        </span>
+                        <span x-show="selectedMethod === 'click' || selectedMethod === 'payme' || selectedMethod === 'uzum'" style="display: none;">
+                            Buyurtma rasmiylashtirilgach, Click / Payme xavfsiz to'lov oynasiga o'tasiz.
+                        </span>
                     </div>
                 </div>
 

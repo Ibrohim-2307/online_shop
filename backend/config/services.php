@@ -35,4 +35,19 @@ return [
         ],
     ],
 
+    'payment' => [
+        'demo_secret' => env('PAYMENT_DEMO_SECRET', 'marketplace-sandbox-hmac-secret-key-2026'),
+    ],
+
+    'click' => [
+        'service_id' => env('CLICK_SERVICE_ID'),
+        'merchant_id' => env('CLICK_MERCHANT_ID'),
+        'secret_key' => env('CLICK_SECRET_KEY'),
+    ],
+
+    'payme' => [
+        'merchant_id' => env('PAYME_MERCHANT_ID'),
+        'secret_key' => env('PAYME_SECRET_KEY'),
+    ],
+
 ];

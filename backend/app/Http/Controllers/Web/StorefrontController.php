@@ -362,6 +362,7 @@ class StorefrontController extends Controller
             'city' => 'required|string|max:50',
             'address_line' => 'required|string|max:255',
             'notes' => 'nullable|string|max:500',
+            'payment_method' => 'nullable|string|in:cash_on_delivery,click,payme,uzum,demo',
             'idempotency_key' => 'nullable|string|max:100',
         ]);
 
@@ -383,6 +384,8 @@ class StorefrontController extends Controller
         $sessionId = $request->session()->getId();
         $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
 
+        $paymentMethod = $validated['payment_method'] ?? 'cash_on_delivery';
+
         $payload = [
             'shipping_address' => [
                 'recipient_name' => $validated['recipient_name'],
@@ -392,6 +395,7 @@ class StorefrontController extends Controller
                 'address_line' => $validated['address_line'],
             ],
             'notes' => $validated['notes'] ?? null,
+            'payment_method' => $paymentMethod,
         ];
 
         try {
@@ -403,7 +407,13 @@ class StorefrontController extends Controller
 
             $order = $result['order'];
 
-            return redirect()->route('order.success', ['orderNumber' => $order->order_number]);
+            // If customer picked online payment (Click / Payme), take them directly to payment checkout
+            if (in_array($paymentMethod, ['click', 'payme', 'uzum'])) {
+                return redirect()->route('payment.checkout', ['orderNumber' => $order->order_number]);
+            }
+
+            return redirect()->route('order.success', ['orderNumber' => $order->order_number])
+                ->with('success', "Buyurtmangiz muvaffaqiyatli qabul qilindi! To'lov eshikka yetkazib berilganda naqd yoki karta orqali qabul qilinadi.");
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
@@ -415,7 +425,7 @@ class StorefrontController extends Controller
     public function orderSuccess(string $orderNumber): View
     {
         $order = Order::where('order_number', $orderNumber)
-            ->with(['suborders.items', 'suborders.seller', 'suborders.shipments'])
+            ->with(['suborders.items', 'suborders.seller', 'suborders.shipments', 'payments'])
             ->firstOrFail();
 
         return view('storefront.order_success', compact('order'));

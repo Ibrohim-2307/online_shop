@@ -168,6 +168,10 @@
                                     <span class="text-xl font-black text-[#123C2F]">{{ number_format($order->grand_total, 0, '.', ' ') }} UZS</span>
                                 </div>
 
+                                <a href="{{ route('orders.detail', ['orderNumber' => $order->order_number]) }}" class="px-3.5 py-2.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-[#172326] hover:bg-white text-xs font-bold transition">
+                                    Batafsil →
+                                </a>
+
                                 @if($firstShipment)
                                     <a href="{{ route('tracking', ['trackingNumber' => $firstShipment->tracking_number]) }}" class="px-4 py-2.5 rounded-xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] text-xs font-bold flex items-center gap-1.5 shadow-sm transition">
                                         <span>📍</span>

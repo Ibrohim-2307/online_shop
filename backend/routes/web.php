@@ -22,6 +22,10 @@ Route::get('/orders', [\App\Http\Controllers\Web\OrderHubController::class, 'ind
 Route::get('/orders/{orderNumber}', [\App\Http\Controllers\Web\OrderHubController::class, 'show'])->name('orders.detail');
 Route::get('/tracking/{trackingNumber?}', [StorefrontController::class, 'tracking'])->name('tracking');
 
+// Payments (Click, Payme, Cash on Delivery, Uzum)
+Route::get('/payments/checkout/{orderNumber}', [\App\Http\Controllers\Web\PaymentWebController::class, 'checkout'])->name('payment.checkout');
+Route::post('/payments/pay/{orderNumber}', [\App\Http\Controllers\Web\PaymentWebController::class, 'pay'])->name('payment.pay');
+
 // Customer Profile & Account Center (Amazon / AliExpress / Uzum style)
 Route::get('/profile', [\App\Http\Controllers\Web\ProfileController::class, 'index'])->name('profile');
 Route::post('/profile', [\App\Http\Controllers\Web\ProfileController::class, 'updateProfile'])->name('profile.update');

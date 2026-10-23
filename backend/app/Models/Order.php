@@ -46,6 +46,16 @@ class Order extends Model
         return $this->hasMany(InventoryReservation::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function getLatestPaymentAttribute(): ?Payment
+    {
+        return $this->payments()->latest()->first();
+    }
+
     public function getItemsAttribute()
     {
         return $this->suborders->flatMap->items;

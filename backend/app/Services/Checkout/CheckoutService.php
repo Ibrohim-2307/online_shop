@@ -244,6 +244,34 @@ class CheckoutService
                 ]);
             }
 
+            // Create initial Payment record
+            $paymentMethod = $payload['payment_method'] ?? 'cash_on_delivery';
+            $transactionId = 'TXN-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
+
+            \App\Models\Payment::create([
+                'order_id' => $order->id,
+                'payment_method' => $paymentMethod,
+                'transaction_id' => $transactionId,
+                'amount' => $order->grand_total,
+                'currency' => $order->currency,
+                'status' => 'pending',
+                'payload_snapshot' => [
+                    'source' => 'web_checkout',
+                    'shipping_address' => $shippingAddress,
+                ],
+            ]);
+
+            // If cash on delivery: confirm order immediately for packaging and courier delivery
+            if ($paymentMethod === 'cash_on_delivery') {
+                $order->update(['status' => 'processing']);
+                foreach ($order->suborders as $sub) {
+                    $sub->update(['status' => 'confirmed']);
+                }
+                \App\Models\InventoryReservation::where('order_id', $order->id)
+                    ->where('status', 'reserved')
+                    ->update(['status' => 'committed']);
+            }
+
             // D. Transactional Outbox Event
             OutboxEvent::create([
                 'event_type' => 'OrderCreated',

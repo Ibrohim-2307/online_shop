@@ -4,6 +4,11 @@
 .env.production
 *.env
 !.env.example
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+/backend/online_shop
 
 # Composer / PHP
 /backend/vendor/

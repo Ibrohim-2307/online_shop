@@ -36,7 +36,8 @@ COPY backend/ /var/www/html/
 RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
 # Create SQLite DB directory and set permissions
-RUN touch /var/www/html/database/database.sqlite \
+RUN mkdir -p /var/www/html/database /run/nginx /var/log/nginx /var/log/supervisor \
+    && touch /var/www/html/database/database.sqlite \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 

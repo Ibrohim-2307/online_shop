@@ -100,4 +100,26 @@ class CustomerProfileWebTest extends TestCase
 
         $this->assertDatabaseMissing('addresses', ['id' => $address->id]);
     }
+
+    public function test_guest_is_redirected_to_login_when_accessing_profile(): void
+    {
+        $res = $this->get('/profile');
+        $res->assertRedirect(route('login'));
+    }
+
+    public function test_guest_is_redirected_to_login_when_accessing_orders_hub(): void
+    {
+        $res = $this->get('/orders');
+        $res->assertRedirect(route('login'));
+    }
+
+    public function test_authenticated_customer_can_view_orders_hub(): void
+    {
+        $customer = $this->createCustomer('hub_cust@example.uz');
+
+        $res = $this->actingAs($customer)->get('/orders');
+        $res->assertStatus(200)
+            ->assertSee('Buyurtmalar va Yetkazib Berishlar')
+            ->assertSee($customer->name);
+    }
 }

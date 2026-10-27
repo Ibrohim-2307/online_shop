@@ -34,10 +34,14 @@ class SellerDashboardController extends Controller
         }
 
         $sellerId = $user->seller_id;
-        $seller = Seller::find($sellerId);
+        $seller = $sellerId ? Seller::find($sellerId) : null;
         if (!$seller) {
             // Fallback for first demo seller if membership query differs
             $seller = Seller::first();
+        }
+
+        if (!$seller) {
+            return redirect()->route('home')->with('error', "Sizga biriktirilgan faol do'kon topilmadi.");
         }
 
         $products = Product::with(['variants.priceTiers', 'variants.inventoryBalances.warehouse'])

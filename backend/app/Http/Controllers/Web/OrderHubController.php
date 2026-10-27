@@ -19,14 +19,13 @@ class OrderHubController extends Controller
      * 1. Purchases (Sotib olingan tovarlar / Yetkazib berilayotgan xaridlar)
      * 2. Sales Orders (Do'kondan sotib olishga berilgan buyurtmalar - for sellers)
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         $user = Auth::user();
 
-        // If not logged in, provide active demo view (defaulting to seller user to showcase both purchases and sales)
+        // If not logged in, redirect to login page
         if (!$user) {
-            $user = User::where('email', 'seller@market.uz')->first()
-                 ?? User::first();
+            return redirect()->guest(route('login'))->with('error', "Buyurtmalaringizni ko'rish uchun profilingizga kiring.");
         }
 
         $activeTab = $request->query('tab', 'purchases'); // 'purchases' or 'sales'
@@ -111,8 +110,13 @@ class OrderHubController extends Controller
     /**
      * Show detailed single order view.
      */
-    public function show(string $orderNumber): View
+    public function show(string $orderNumber): View|\Illuminate\Http\RedirectResponse
     {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->guest(route('login'))->with('error', "Buyurtma tafsilotlarini ko'rish uchun profilingizga kiring.");
+        }
+
         $order = Order::where('order_number', $orderNumber)
             ->with([
                 'user',
@@ -121,6 +125,11 @@ class OrderHubController extends Controller
                 'suborders.shipments.courier',
             ])
             ->firstOrFail();
+
+        // Security check: Customer can only view their own orders unless they have staff/admin/seller/courier roles
+        if (!$user->hasRole(['admin', 'superadmin', 'moderator', 'seller_owner', 'seller_manager', 'courier', 'logistics_operator']) && $order->user_id !== $user->id) {
+            abort(403, "Ushbu buyurtmani ko'rishga ruxsat berilmagan.");
+        }
 
         return view('storefront.order_detail', compact('order'));
     }

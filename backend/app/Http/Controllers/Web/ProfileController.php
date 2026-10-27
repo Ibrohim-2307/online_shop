@@ -32,17 +32,16 @@ class ProfileController extends Controller
     /**
      * Unified Customer, Seller, and Courier Profile & Control Center.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $user = Auth::user();
 
-        // If not logged in, provide demo customer view so experience is immediately tangible
-        $isDemo = false;
+        // If not logged in, redirect to login page
         if (!$user) {
-            $user = User::where('email', 'customer@market.uz')->first()
-                 ?? User::first();
-            $isDemo = true;
+            return redirect()->guest(route('login'))->with('error', "Profilingizni ko'rish uchun tizimga kiring.");
         }
+
+        $isDemo = false;
 
         // Determine default tab based on user's primary role
         $defaultTab = 'orders';

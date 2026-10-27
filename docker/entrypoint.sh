@@ -49,9 +49,10 @@ nginx -t
 echo "Running database migrations..."
 php artisan migrate --force
 
-# Run seeds ONLY if explicitly requested (e.g. initial setup)
-if [ "$INITIAL_SEED" = "true" ]; then
-    echo "Running initial database seeding..."
+# Run seeds ONLY if explicitly requested or if database is brand new (0 users)
+USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tr -d '\r\n' || echo "0")
+if [ "$INITIAL_SEED" = "true" ] || [ "$USER_COUNT" = "0" ]; then
+    echo "Fresh database detected (Users: $USER_COUNT). Running initial setup seeds for roles, demo accounts, and catalog..."
     php artisan db:seed --force
 fi
 

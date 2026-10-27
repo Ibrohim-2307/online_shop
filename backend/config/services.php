@@ -37,6 +37,7 @@ return [
 
     'payment' => [
         'demo_secret' => env('PAYMENT_DEMO_SECRET', 'marketplace-sandbox-hmac-secret-key-2026'),
+        'allow_demo_settlement' => (bool) env('PAYMENT_ALLOW_DEMO', false),
     ],
 
     'click' => [
@@ -48,6 +49,15 @@ return [
     'payme' => [
         'merchant_id' => env('PAYME_MERCHANT_ID'),
         'secret_key' => env('PAYME_SECRET_KEY'),
+    ],
+
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'demo'), // eskiz, demo
+        'eskiz' => [
+            'email' => env('ESKIZ_EMAIL'),
+            'password' => env('ESKIZ_PASSWORD'),
+            'from' => env('ESKIZ_FROM', '4546'),
+        ],
     ],
 
 ];

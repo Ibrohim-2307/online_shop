@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Services\Payment\DemoPaymentAdapter;
+use App\Services\Payment\PaymentManager;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +14,7 @@ use InvalidArgumentException;
 class PaymentController extends Controller
 {
     public function __construct(
-        protected DemoPaymentAdapter $paymentAdapter
+        protected PaymentManager $paymentManager
     ) {}
 
     /**
@@ -24,7 +24,7 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'payment_method' => 'nullable|string|in:demo_sandbox,payme,click,uzum',
+            'payment_method' => 'nullable|string|in:demo_sandbox,demo,payme,click,uzum,cash_on_delivery',
         ]);
 
         $order = Order::findOrFail($validated['order_id']);
@@ -50,13 +50,30 @@ class PaymentController extends Controller
             return ApiResponse::error($e->getMessage(), 'TON_FREIGHT_SHIPPING_REQUIRED', [], 422);
         }
 
-        $session = $this->paymentAdapter->initializePayment($order, [
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'method' => $validated['payment_method'] ?? 'demo_sandbox',
-        ]);
+        $defaultDriver = app()->environment('testing') ? 'demo_sandbox' : config('services.payment.default', 'click');
+        $method = $validated['payment_method'] ?? $defaultDriver;
 
-        return ApiResponse::success($session, "To'lov sessiyasi muvaffaqiyatli yaratildi.");
+        if (!$this->paymentManager->isProviderConfigured($method)) {
+            return ApiResponse::error(
+                "Tanlangan to'lov usuli ({$method}) hozirda faol emas yoki sozlanmagan.",
+                'PROVIDER_NOT_CONFIGURED',
+                [],
+                422
+            );
+        }
+
+        try {
+            $driver = $this->paymentManager->driver($method);
+            $session = $driver->initializePayment($order, [
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'method' => $method,
+            ]);
+
+            return ApiResponse::success($session, "To'lov sessiyasi muvaffaqiyatli yaratildi.");
+        } catch (\Throwable $e) {
+            return ApiResponse::error("To'lov sessiyasini yaratishda xato: " . $e->getMessage(), 'PAYMENT_INITIATION_FAILED', [], 500);
+        }
     }
 
     /**
@@ -65,7 +82,7 @@ class PaymentController extends Controller
     public function webhook(Request $request): JsonResponse
     {
         try {
-            $result = $this->paymentAdapter->verifyPayment($request);
+            $result = $this->paymentManager->demo()->verifyPayment($request);
             return ApiResponse::success($result, 'Webhook qabul qilindi.');
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 'WEBHOOK_VERIFICATION_FAILED', [], 400);

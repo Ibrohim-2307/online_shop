@@ -38,7 +38,9 @@ class DemoOtpService implements OtpServiceInterface
             'attempts' => 0,
         ]);
 
-        Log::info("OTP generated for {$phone}: {$code} (type: {$type})");
+        if (app()->environment('local', 'testing')) {
+            Log::debug("Demo OTP generated for {$phone} (type: {$type})");
+        }
 
         return [
             'success' => true,

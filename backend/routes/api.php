@@ -7,10 +7,12 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\CheckoutController;
+use App\Http\Controllers\Api\V1\ClickWebhookController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\LogisticsPanelController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\PaymeWebhookController;
 use App\Http\Controllers\Api\V1\RefundController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SellerCatalogController;
@@ -36,7 +38,9 @@ Route::prefix('v1')->group(function () {
     Route::delete('/cart/items/{id}', [CartController::class, 'removeItem']);
     Route::post('/checkout/quote', [CheckoutController::class, 'quote']);
 
-    // Payments public webhook (HMAC signature validated inside controller/adapter)
+    // Payments official provider callbacks & webhook
+    Route::post('/payments/click', [ClickWebhookController::class, 'handle'])->name('api.v1.payments.click');
+    Route::post('/payments/payme', [PaymeWebhookController::class, 'handle'])->name('api.v1.payments.payme');
     Route::post('/payments/webhook', [PaymentController::class, 'webhook']);
 
     // Public authentication routes (with rate limiting)

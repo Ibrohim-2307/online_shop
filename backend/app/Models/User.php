@@ -72,6 +72,16 @@ class User extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function wishlistProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'wishlists')->withTimestamps();
+    }
+
     public function sellerMemberships(): HasMany
     {
         return $this->hasMany(SellerMember::class);
@@ -88,6 +98,31 @@ class User extends Authenticatable
     {
         $roleList = is_array($roles) ? $roles : func_get_args();
         return $this->roles->pluck('name')->intersect($roleList)->isNotEmpty();
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole(['superadmin', 'admin']);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(['superadmin', 'admin', 'moderator']);
+    }
+
+    public function isSeller(): bool
+    {
+        return $this->hasRole(['seller_owner', 'seller_manager', 'seller_operator']) || $this->seller_id !== null;
+    }
+
+    public function isCourier(): bool
+    {
+        return $this->hasRole(['courier', 'logistics_operator']);
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->hasRole(['customer', 'wholesale_customer']) || $this->roles->isEmpty();
     }
 
     public function hasPermission(string $permission): bool

@@ -21,33 +21,56 @@ class CartService
     public function getCartForUserOrSession(?User $user, ?string $sessionId): Cart
     {
         if ($user) {
-            $cart = Cart::where('user_id', $user->id)
+            $userCart = Cart::where('user_id', $user->id)
                 ->where('status', 'active')
                 ->latest()
                 ->first();
 
-            if (!$cart) {
-                // If there's a guest cart for this session, associate it with the user
-                if ($sessionId) {
-                    $cart = Cart::where('session_id', $sessionId)
-                        ->where('status', 'active')
-                        ->whereNull('user_id')
-                        ->latest()
-                        ->first();
-                }
+            // Check if there is a guest cart for this session that needs merging
+            if ($sessionId) {
+                $guestCart = Cart::where('session_id', $sessionId)
+                    ->where('status', 'active')
+                    ->whereNull('user_id')
+                    ->with('items')
+                    ->latest()
+                    ->first();
 
-                if ($cart) {
-                    $cart->update(['user_id' => $user->id]);
-                } else {
-                    $cart = Cart::create([
-                        'user_id' => $user->id,
-                        'session_id' => $sessionId,
-                        'status' => 'active',
-                    ]);
+                if ($guestCart) {
+                    if (!$userCart) {
+                        // User has no active cart, so directly associate the guest cart with this user
+                        $guestCart->update(['user_id' => $user->id]);
+                        return $guestCart;
+                    }
+
+                    // User already has an active cart: safely merge items from guestCart into userCart
+                    foreach ($guestCart->items as $guestItem) {
+                        $existingUserItem = CartItem::where('cart_id', $userCart->id)
+                            ->where('product_variant_id', $guestItem->product_variant_id)
+                            ->first();
+
+                        if ($existingUserItem) {
+                            $existingUserItem->update([
+                                'quantity' => (float) $existingUserItem->quantity + (float) $guestItem->quantity,
+                            ]);
+                            $guestItem->delete();
+                        } else {
+                            $guestItem->update(['cart_id' => $userCart->id]);
+                        }
+                    }
+
+                    $guestCart->update(['status' => 'abandoned']);
                 }
             }
 
-            return $cart;
+            if (!$userCart) {
+                $userCart = Cart::create([
+                    'user_id' => $user->id,
+                    'session_id' => $sessionId,
+                    'status' => 'active',
+                ]);
+            }
+
+            return $userCart;
         }
 
         if (!$sessionId) {

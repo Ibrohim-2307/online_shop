@@ -111,6 +111,12 @@ class RoleAndPermissionSeeder extends Seeder
                 'description' => 'Platformaning barcha modullari bo\'yicha to\'liq vakolatli rahbar',
                 'permissions' => array_column($permissions, 'name'),
             ],
+            [
+                'name' => 'superadmin',
+                'label' => 'Super Administrator',
+                'description' => 'Platformaning to\'liq egasi va cheklovsiz boshqaruvchisi',
+                'permissions' => array_column($permissions, 'name'),
+            ],
         ];
 
         foreach ($roles as $r) {

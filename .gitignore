@@ -31,13 +31,13 @@
 node_modules/
 npm-debug.log
 yarn-error.log
-/backend/public/build/
+!/backend/public/build/
 /backend/public/hot
 /backend/public/images/products/*-[0-9]*.jpg
 
 # Flutter / Dart
 **/.dart_tool/
-**/build/
+apps/**/build/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
 **/.pub-cache/
@@ -48,6 +48,7 @@ yarn-error.log
 dist/*.zip
 dist/staging_hosting/
 storage/installed.lock
+backups/
 cloudflared.exe
 .idea/
 .vscode/

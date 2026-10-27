@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boshqaruv Paneli (Admin) - Marketplace</title>
+    <title>Superadmin Boshqaruv Paneli - Marketplace</title>
     <link rel="stylesheet" href="/css/app.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -19,17 +19,25 @@
                     <span class="font-extrabold text-lg tracking-tight">MARKET</span>
                 </a>
                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider">
-                    Admin Panel
+                    🛡️ Superadmin & Admin Panel
                 </span>
             </div>
 
-            <div class="flex items-center gap-4">
-                <a href="/" class="text-xs font-semibold text-slate-300 hover:text-white transition">
-                    Do'konga o'tish →
+            <div class="flex items-center gap-3">
+                <a href="{{ route('home') }}" class="text-xs font-semibold text-slate-300 hover:text-white transition flex items-center gap-1">
+                    <span>🏠</span> <span>Marketplace</span>
                 </a>
-                <div class="h-4 w-px bg-slate-700"></div>
+                <span class="text-slate-700">|</span>
+                <a href="{{ route('profile', ['tab' => 'seller_products']) }}" class="text-xs font-semibold text-lime-300 hover:text-lime-200 transition flex items-center gap-1">
+                    <span>💼</span> <span>Sotuvchi</span>
+                </a>
+                <span class="text-slate-700">|</span>
+                <a href="{{ route('profile', ['tab' => 'courier_shipments']) }}" class="text-xs font-semibold text-amber-300 hover:text-amber-200 transition flex items-center gap-1">
+                    <span>🛵</span> <span>Kuryer</span>
+                </a>
+                <div class="h-4 w-px bg-slate-700 mx-1"></div>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-300">{{ Auth::user()->name }}</span>
+                    <span class="text-xs text-slate-300 font-bold">{{ Auth::user()->name }}</span>
                     <form action="{{ route('logout') }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
@@ -45,56 +53,67 @@
 
         @if(session('success'))
             <div class="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm font-medium flex items-center justify-between">
-                <span>{{ session('success') }}</span>
+                <span>✓ {{ session('success') }}</span>
             </div>
         @endif
         @if(session('error'))
             <div class="mb-6 p-4 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-sm font-medium flex items-center justify-between">
-                <span>{{ session('error') }}</span>
+                <span>⚠️ {{ session('error') }}</span>
             </div>
         @endif
 
-        <!-- Summary Stats Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Xaridorlar</span>
-                <span class="text-2xl font-black text-slate-900">{{ number_format($stats['total_users']) }}</span>
+        <!-- Summary Stats Grid (7 Key Metrics) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Xaridorlar</span>
+                <span class="text-xl font-black text-slate-900">{{ number_format($stats['total_users']) }}</span>
             </div>
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Do'konlar</span>
-                <span class="text-2xl font-black text-slate-900">{{ number_format($stats['total_sellers']) }}</span>
-                <span class="text-[11px] text-emerald-600 block mt-0.5">({{ $stats['active_sellers'] }} faol)</span>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Do'konlar</span>
+                <span class="text-xl font-black text-slate-900">{{ number_format($stats['total_sellers']) }}</span>
+                <span class="text-[10px] text-emerald-600 block">({{ $stats['active_sellers'] }} faol)</span>
             </div>
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Mahsulotlar</span>
-                <span class="text-2xl font-black text-slate-900">{{ number_format($stats['total_products']) }}</span>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Mahsulotlar</span>
+                <span class="text-xl font-black text-slate-900">{{ number_format($stats['total_products']) }}</span>
             </div>
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Buyurtmalar</span>
-                <span class="text-2xl font-black text-slate-900">{{ number_format($stats['total_orders']) }}</span>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Buyurtmalar</span>
+                <span class="text-xl font-black text-slate-900">{{ number_format($stats['total_orders']) }}</span>
             </div>
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm col-span-2">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Jami Tushum</span>
-                <span class="text-2xl font-black text-emerald-600">{{ number_format($stats['total_revenue']) }} <span class="text-xs text-slate-500 font-bold">UZS</span></span>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Kuryerlar</span>
+                <span class="text-xl font-black text-amber-700">{{ number_format($stats['total_couriers']) }}</span>
+            </div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Faol Yetkazish</span>
+                <span class="text-xl font-black text-blue-700">{{ number_format($stats['active_shipments']) }}</span>
+            </div>
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Jami Tushum</span>
+                <span class="text-lg font-black text-emerald-600">{{ number_format($stats['total_revenue']) }} <span class="text-[9px] text-slate-400">UZS</span></span>
             </div>
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex items-center gap-2 border-b border-slate-200 mb-6 pb-2">
+        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 mb-6 pb-2">
             <button @click="currentTab = 'sellers'" :class="currentTab === 'sellers' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                Sotuvchilar & Do'konlar ({{ $sellers->count() }})
+                💼 Sotuvchilar ({{ $sellers->count() }})
             </button>
             <button @click="currentTab = 'products'" :class="currentTab === 'products' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                Mahsulotlar ({{ $products->total() }})
+                📦 Mahsulotlar ({{ $products->total() }})
             </button>
             <button @click="currentTab = 'users'" :class="currentTab === 'users' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                Foydalanuvchilar ({{ $users->total() }})
+                👥 Foydalanuvchilar & Rollar ({{ $users->total() }})
+            </button>
+            <button @click="currentTab = 'shipments'" :class="currentTab === 'shipments' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                🚚 Yetkazish & Kuryerlar ({{ $shipments->total() }})
             </button>
             <button @click="currentTab = 'orders'" :class="currentTab === 'orders' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                Oxirgi Buyurtmalar ({{ $recentOrders->count() }})
+                🛒 Buyurtmalar ({{ $recentOrders->count() }})
             </button>
             <button @click="currentTab = 'audit'" :class="currentTab === 'audit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                Audit Jurnali
+                🔍 Audit Jurnali
             </button>
         </div>
 
@@ -281,9 +300,13 @@
                 {{ $products->links() }}
             </div>
         </div>
+        <!-- TAB 3: USERS & ROLES -->
         <div x-show="currentTab === 'users'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-sm">Foydalanuvchilar Ro'yxati</h3>
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm">Foydalanuvchilar va Rollar Boshqaruvi</h3>
+                    <p class="text-[11px] text-slate-500">Superadmin: Har qanday foydalanuvchini Xaridor, Sotuvchi, Kuryer yoki Administrator qilib tayinlash mumkin</p>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-600">
@@ -292,7 +315,8 @@
                             <th class="p-3.5">ID / Ism</th>
                             <th class="p-3.5">Email</th>
                             <th class="p-3.5">Telefon</th>
-                            <th class="p-3.5">Roli</th>
+                            <th class="p-3.5">Joriy Roli</th>
+                            <th class="p-3.5">Rolni O'zgartirish</th>
                             <th class="p-3.5">Holati</th>
                             <th class="p-3.5 text-right">Amal</th>
                         </tr>
@@ -312,6 +336,21 @@
                                             {{ $role->label ?? $role->name }}
                                         </span>
                                     @endforeach
+                                </td>
+                                <td class="p-3.5">
+                                    <form action="{{ route('admin.users.role', $u->id) }}" method="POST" class="flex items-center gap-1.5">
+                                        @csrf
+                                        <select name="role" class="h-8 px-2 rounded-lg bg-slate-50 border border-slate-300 text-[11px] font-bold text-slate-800 outline-none focus:border-slate-900">
+                                            @foreach($roles as $r)
+                                                <option value="{{ $r->name }}" {{ $u->hasRole($r->name) ? 'selected' : '' }}>
+                                                    {{ $r->label ?? $r->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-950 text-white font-bold text-[10px] transition" title="Rolni yangilash">
+                                            Saqlash
+                                        </button>
+                                    </form>
                                 </td>
                                 <td class="p-3.5">
                                     @if($u->is_active)
@@ -335,6 +374,95 @@
             </div>
             <div class="p-4 border-t border-slate-100">
                 {{ $users->links() }}
+            </div>
+        </div>
+
+        <!-- TAB 4: SHIPMENTS & COURIERS -->
+        <div x-show="currentTab === 'shipments'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm">Yetkazib Berish & Kuryerlarni Biriktirish</h3>
+                    <p class="text-[11px] text-slate-500">Barcha faol jo'natmalar va kuryerlar boshqaruvi</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                        <tr>
+                            <th class="p-3.5">Tracking #</th>
+                            <th class="p-3.5">Buyurtma & Do'kon</th>
+                            <th class="p-3.5">Xaridor & Manzil</th>
+                            <th class="p-3.5">Holati</th>
+                            <th class="p-3.5">Biriktirilgan Kuryer</th>
+                            <th class="p-3.5 text-right">Amal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse($shipments as $sh)
+                            <tr class="hover:bg-slate-50/50">
+                                <td class="p-3.5 font-bold font-mono text-slate-900">
+                                    {{ $sh->tracking_number }}
+                                    <span class="block text-[10px] text-slate-400 font-normal">{{ $sh->shipping_method }}</span>
+                                </td>
+                                <td class="p-3.5">
+                                    <span class="font-bold text-slate-800">{{ $sh->suborder->seller->name ?? 'Do\'kon' }}</span>
+                                    <span class="block text-[10px] text-slate-400 font-mono">Buyurtma: #{{ $sh->suborder->order->order_number ?? '—' }}</span>
+                                </td>
+                                <td class="p-3.5">
+                                    <span class="font-medium text-slate-800">{{ $sh->suborder->order->user->name ?? 'Xaridor' }}</span>
+                                    <span class="block text-[11px] text-slate-500 max-w-xs truncate">
+                                        {{ is_array($sh->delivery_address) ? ($sh->delivery_address['address_line'] ?? ($sh->delivery_address['street'] ?? 'Toshkent sh.')) : 'Toshkent sh.' }}
+                                    </span>
+                                    <span class="block text-[10px] text-slate-400 font-mono">{{ $sh->suborder->order->user->phone ?? '—' }}</span>
+                                </td>
+                                <td class="p-3.5">
+                                    @php
+                                        $statusBadges = [
+                                            'pending' => 'bg-slate-100 text-slate-700',
+                                            'assigned' => 'bg-blue-100 text-blue-800',
+                                            'picked_up' => 'bg-indigo-100 text-indigo-800',
+                                            'in_transit' => 'bg-amber-100 text-amber-800',
+                                            'out_for_delivery' => 'bg-purple-100 text-purple-800',
+                                            'delivered' => 'bg-emerald-100 text-emerald-800',
+                                            'failed' => 'bg-rose-100 text-rose-800',
+                                        ];
+                                    @endphp
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $statusBadges[$sh->status] ?? 'bg-slate-100 text-slate-700' }}">
+                                        {{ $sh->status }}
+                                    </span>
+                                </td>
+                                <td class="p-3.5">
+                                    <form action="{{ route('admin.shipments.assign', $sh->id) }}" method="POST" class="flex items-center gap-1.5">
+                                        @csrf
+                                        <select name="courier_id" class="h-8 px-2 rounded-lg bg-slate-50 border border-slate-300 text-[11px] font-medium text-slate-800 outline-none focus:border-slate-900">
+                                            <option value="">-- Kuryer tanlang --</option>
+                                            @foreach($couriers as $cr)
+                                                <option value="{{ $cr->id }}" {{ $sh->courier_id === $cr->id ? 'selected' : '' }}>
+                                                    {{ $cr->name }} ({{ $cr->phone ?? $cr->email }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] transition whitespace-nowrap">
+                                            Biriktirish
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="p-3.5 text-right">
+                                    <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] transition">
+                                        <span>📍</span> Xarita
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="p-8 text-center text-slate-400">Jo'natmalar mavjud emas</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-4 border-t border-slate-100">
+                {{ $shipments->links() }}
             </div>
         </div>
 

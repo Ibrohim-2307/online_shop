@@ -35,6 +35,9 @@ COPY backend/ /var/www/html/
 # Install composer production dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
+# Install node dependencies and build production assets with Vite
+RUN npm install && npm run build
+
 # Create SQLite DB directory and set permissions
 RUN mkdir -p /var/www/html/database /run/nginx /var/log/nginx /var/log/supervisor \
     && touch /var/www/html/database/database.sqlite \

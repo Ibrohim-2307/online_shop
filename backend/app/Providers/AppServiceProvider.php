@@ -7,6 +7,7 @@ use App\Models\Seller;
 use App\Policies\AddressPolicy;
 use App\Policies\SellerPolicy;
 use App\Services\Auth\DemoOtpService;
+use App\Services\Auth\EskizSmsService;
 use App\Services\Auth\OtpServiceInterface;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -22,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(OtpServiceInterface::class, function () {
+            $driver = config('services.sms.driver', 'demo');
+            if ($driver === 'eskiz') {
+                return new EskizSmsService();
+            }
             return new DemoOtpService();
         });
     }

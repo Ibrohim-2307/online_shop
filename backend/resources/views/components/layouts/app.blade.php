@@ -12,14 +12,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- CSS & JS Bundle with CDN Fallback -->
-    <style>[x-cloak] { display: none !important; }</style>
+    <!-- CSS & JS Bundle with Vite and CDN Fallback -->
+    <style>
+        [x-cloak] { display: none !important; }
+        html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    @if(file_exists(public_path('build/manifest.json')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <link rel="stylesheet" href="/build/assets/app-CK_P82eU.css">
+        <script type="module" src="/build/assets/app-DbeYgy-K.js"></script>
+    @endif
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="/build/assets/app-D2FgvmjV.css">
-    <script type="module" src="/build/assets/app-DbeYgy-K.js"></script>
 </head>
-<body class="min-h-full flex flex-col bg-[#FAFBF7] text-[#172326] antialiased selection:bg-[#C9F46B] selection:text-[#123C2F] overflow-x-hidden"
+<body class="min-h-full flex flex-col bg-[#FAFBF7] text-[#172326] antialiased selection:bg-[#C9F46B] selection:text-[#123C2F] overflow-x-hidden w-full max-w-full"
       x-data="{ 
           mobileMenuOpen: false, 
           isOnline: navigator.onLine,
@@ -39,25 +48,22 @@
         ⚠️ Internet aloqasi uzildi. Offline rejimda faqat avval yuklangan sahifalar ko'rinadi.
     </div>
 
-    <!-- Announcement Bar -->
-    <div class="bg-[#123C2F] text-white text-xs py-2 px-4">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <span class="flex items-center gap-1.5 font-medium">
-                    <span class="w-2 h-2 rounded-full bg-[#C9F46B] animate-pulse"></span>
-                    O'zbekiston bo'ylab tezkor yetkazib berish
-                </span>
+    <!-- Announcement Bar (Desktop/Tablet only, hidden on mobile for clean UX) -->
+    <div class="bg-[#123C2F] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-4 hidden sm:block">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 truncate">
+                <span class="w-2 h-2 rounded-full bg-[#C9F46B] animate-pulse shrink-0"></span>
+                <span class="truncate font-medium">O'zbekiston bo'ylab tezkor yetkazib berish</span>
                 <span class="hidden md:inline text-white/40">|</span>
-                <span class="hidden md:inline text-white/80">Chakana va ulgurji narxlar bitta platformada</span>
+                <span class="hidden md:inline text-white/80">Chakana va ulgurji narxlar</span>
             </div>
-            <div class="flex items-center gap-4 text-white/80">
-                <a href="{{ route('tracking') }}" class="flex items-center gap-1.5 text-[#C9F46B] font-bold hover:underline transition-colors">
-                    <span class="w-2 h-2 rounded-full bg-[#C9F46B] animate-ping"></span>
-                    <span>📍 Jonli Xarita (Kuzatuv)</span>
+            <div class="flex items-center gap-2 sm:gap-4 shrink-0 text-white/80">
+                <a href="{{ route('tracking') }}" class="flex items-center gap-1 text-[#C9F46B] font-bold hover:underline text-[11px] sm:text-xs">
+                    <span>📍 Kuzatuv</span>
                 </a>
-                <span class="text-white/40">|</span>
-                <a href="tel:+998712000000" class="hover:text-[#C9F46B] transition-colors">Yordam: +998 (71) 200-00-00</a>
-                <span class="text-white/40">|</span>
+                <span class="hidden sm:inline text-white/40">|</span>
+                <a href="tel:+998712000000" class="hidden sm:inline hover:text-[#C9F46B] transition-colors">Yordam: +998 (71) 200-00-00</a>
+                <span class="hidden sm:inline text-white/40">|</span>
                 <span class="font-medium text-[#C9F46B]">UZS</span>
             </div>
         </div>
@@ -67,21 +73,21 @@
     <header class="bg-white border-b border-[#E8ECE4] sticky top-0 z-40 transition-shadow duration-200">
         
         <!-- TOP MAIN BAR: Logo, Catalog, Search, and Action Icons -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20 gap-3 sm:gap-4">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14 sm:h-20 gap-2 sm:gap-4">
                 
                 <!-- Brand Logo & Catalog Button -->
-                <div class="flex items-center gap-3 sm:gap-4 shrink-0">
-                    <a href="{{ route('home') }}" class="flex items-center gap-2.5 group">
-                        <div class="w-11 h-11 rounded-2xl bg-[#123C2F] flex items-center justify-center text-white font-extrabold text-xl shadow-sm group-hover:bg-[#C9F46B] group-hover:text-[#123C2F] transition-all duration-200">
+                <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+                    <a href="{{ route('home') }}" class="flex items-center gap-2 group">
+                        <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#123C2F] flex items-center justify-center text-white font-extrabold text-base sm:text-xl shadow-sm group-hover:bg-[#C9F46B] group-hover:text-[#123C2F] transition-all duration-200">
                             M
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-2xl font-black tracking-tight text-[#172326] flex items-center gap-1">
+                            <span class="text-xl sm:text-2xl font-black tracking-tight text-[#172326] flex items-center gap-1">
                                 MARKET
-                                <span class="w-2 h-2 rounded-full bg-[#C9F46B]"></span>
+                                <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#C9F46B]"></span>
                             </span>
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">B2B & B2C Savdo</span>
+                            <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#64748B] hidden xs:inline">B2B & B2C Savdo</span>
                         </div>
                     </a>
 
@@ -175,8 +181,8 @@
                     </div>
                 </div>
 
-                <!-- Right Nav Actions (Single Row, Matched 40px Height, Whitespace-Nowrap) -->
-                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Desktop Nav Actions (Single Row, Matched 40px Height, Whitespace-Nowrap) -->
+                <div class="hidden md:flex items-center gap-1.5 sm:gap-2 shrink-0">
                     
                     <!-- Wishlist (Sevimlilar) -->
                     <a href="{{ route('wishlist') }}" class="relative p-2.5 rounded-2xl bg-[#FAFBF7] hover:bg-white border border-[#E8ECE4] hover:border-[#123C2F] text-[#172326] transition-all" title="Sevimlilar">
@@ -203,13 +209,17 @@
                     <!-- Account / Auth / Profil - Mening profilim -->
                     @auth
                         <div class="flex items-center gap-1.5 pl-1">
-                            @if(auth()->user()->hasRole(['admin', 'moderator']))
-                                <a href="{{ route('admin.dashboard') }}" class="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold hover:bg-rose-100 transition whitespace-nowrap">
-                                    Admin
+                            @if(auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
+                                <a href="{{ route('admin.dashboard') }}" class="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold hover:bg-rose-100 transition whitespace-nowrap" title="Superadmin Boshqaruv Paneli">
+                                    🛡️ Superadmin
                                 </a>
-                            @elseif(auth()->user()->hasRole(['seller_owner', 'seller_manager', 'seller_operator']))
-                                <a href="{{ route('seller.dashboard') }}" class="px-2.5 py-1.5 rounded-xl bg-[#C9F46B]/20 text-[#123C2F] border border-[#C9F46B]/40 text-xs font-bold hover:bg-[#C9F46B]/30 transition whitespace-nowrap">
-                                    Do'kon
+                            @elseif(auth()->user()->isSeller())
+                                <a href="{{ route('profile', ['tab' => 'seller_products']) }}" class="px-2.5 py-1.5 rounded-xl bg-[#C9F46B]/20 text-[#123C2F] border border-[#C9F46B]/40 text-xs font-bold hover:bg-[#C9F46B]/30 transition whitespace-nowrap" title="Sotuvchi Do'kon Bo'limi">
+                                    💼 Sotuvchi
+                                </a>
+                            @elseif(auth()->user()->isCourier())
+                                <a href="{{ route('profile', ['tab' => 'courier_shipments']) }}" class="px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition whitespace-nowrap" title="Kuryer Yetkazish Bo'limi">
+                                    🛵 Kuryer
                                 </a>
                             @endif
 
@@ -239,6 +249,39 @@
                         </div>
                     @endauth
 
+                </div>
+
+                <!-- Mobile Header Right Actions (Compact, Touch-Friendly, Overflow-Free) -->
+                <div class="md:hidden flex items-center gap-1.5 shrink-0">
+                    <a href="{{ route('tracking') }}" class="w-9 h-9 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-[#123C2F] text-xs flex items-center justify-center shadow-2xs" title="Jonli Kuzatuv">
+                        📍
+                    </a>
+
+                    <a href="{{ route('cart') }}" class="relative w-9 h-9 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-[#123C2F] flex items-center justify-center shadow-2xs" title="Savatcha">
+                        <svg class="w-4 h-4 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                    </a>
+
+                    @auth
+                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
+                            <a href="{{ route('admin.dashboard') }}" class="px-2 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-extrabold whitespace-nowrap">
+                                🛡️ Admin
+                            </a>
+                        @elseif(auth()->user()->isSeller())
+                            <a href="{{ route('profile', ['tab' => 'seller_products']) }}" class="px-2 py-1 rounded-xl bg-[#C9F46B]/20 text-[#123C2F] border border-[#C9F46B]/40 text-[10px] font-extrabold whitespace-nowrap">
+                                💼 Do'kon
+                            </a>
+                        @elseif(auth()->user()->isCourier())
+                            <a href="{{ route('profile', ['tab' => 'courier_shipments']) }}" class="px-2 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-extrabold whitespace-nowrap">
+                                🛵 Kuryer
+                            </a>
+                        @endif
+                    @else
+                        <a href="{{ route('login') }}" class="px-2.5 py-1.5 rounded-xl bg-[#123C2F] text-white font-bold text-xs">
+                            Kirish
+                        </a>
+                    @endauth
                 </div>
             </div>
 
@@ -383,48 +426,40 @@
         {{ $slot }}
     </main>
 
-    <!-- Mobile Bottom Navigation Bar (Fixed) -->
-    <nav aria-label="Mobil navigatsiya" class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#E8ECE4] z-50 py-1.5 px-3">
-        <div class="flex items-center justify-around">
-            <a href="{{ route('home') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl {{ request()->routeIs('home') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-6 h-6" fill="{{ request()->routeIs('home') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Mobile Bottom Navigation Bar (Fixed - Exactly 5 Balanced Tabs, No Horizontal Overflow) -->
+    <nav aria-label="Mobil navigatsiya" class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#E8ECE4] z-50 py-1.5 px-1 shadow-lg">
+        <div class="flex items-center justify-between w-full">
+            <a href="{{ route('home') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('home') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
+                <svg class="w-5 h-5" fill="{{ request()->routeIs('home') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                <span class="text-[11px]">Bosh sahifa</span>
+                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Bosh sahifa</span>
             </a>
 
-            <a href="{{ route('catalog') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl {{ request()->routeIs('catalog') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-6 h-6" fill="{{ request()->routeIs('catalog') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="{{ route('catalog') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('catalog') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
+                <svg class="w-5 h-5" fill="{{ request()->routeIs('catalog') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
-                <span class="text-[11px]">Katalog</span>
+                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Katalog</span>
             </a>
 
-            <a href="{{ route('wishlist') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl relative {{ request()->routeIs('wishlist') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-6 h-6" fill="{{ request()->routeIs('wishlist') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                <span class="text-[11px]">Sevimlilar</span>
-                <span x-data x-show="$store.wishlist.count() > 0" x-text="$store.wishlist.count()" class="absolute top-0 right-2 w-4 h-4 rounded-full bg-[#123C2F] text-white font-bold text-[9px] flex items-center justify-center">0</span>
-            </a>
-
-            <a href="{{ route('cart') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-[#64748B]">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="{{ route('cart') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 relative {{ request()->routeIs('cart') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
-                <span class="text-[11px]">Savatcha</span>
+                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Savat</span>
             </a>
 
-            <a href="{{ route('orders.hub') }}" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl {{ request()->routeIs('orders.*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <span class="text-base">📦</span>
-                <span class="text-[10px]">Buyurtmalar</span>
+            <a href="{{ route('orders.hub') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('orders.*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
+                <span class="text-base leading-none">📦</span>
+                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Buyurtmalar</span>
             </a>
 
-            <a href="{{ route('profile') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl {{ request()->routeIs('profile*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-6 h-6" fill="{{ request()->routeIs('profile*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="{{ route('profile') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('profile*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
+                <svg class="w-5 h-5" fill="{{ request()->routeIs('profile*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span class="text-[11px] font-bold">Mening profilim</span>
+                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5 font-bold">Profil</span>
             </a>
         </div>
     </nav>
@@ -460,6 +495,8 @@
                         <li><a href="{{ route('catalog') }}" class="hover:text-[#123C2F] transition-colors">Barcha mahsulotlar</a></li>
                         <li><a href="{{ route('catalog', ['trade_mode' => 'wholesale_only']) }}" class="hover:text-[#123C2F] transition-colors">Optom savdo</a></li>
                         <li><a href="{{ route('wishlist') }}" class="hover:text-[#123C2F] transition-colors">Sevimlilar</a></li>
+                        <li><a href="{{ route('delivery') }}" class="hover:text-[#123C2F] transition-colors">Yetkazib berish shartlari</a></li>
+                        <li><a href="{{ route('returns') }}" class="hover:text-[#123C2F] transition-colors">Qaytarish va almashtirish</a></li>
                         <li><a href="{{ route('tracking') }}" class="hover:text-[#123C2F] transition-colors font-medium text-[#123C2F] flex items-center gap-1.5"><span>📍</span> Jonli yetkazib berish xaritasi</a></li>
                     </ul>
                 </div>
@@ -469,19 +506,20 @@
                     <h4 class="font-bold text-[#172326] mb-4 text-sm uppercase tracking-wider">Sotuvchilarga</h4>
                     <ul class="space-y-2.5 text-[#64748B]">
                         <li><a href="{{ route('login') }}" class="hover:text-[#123C2F] transition-colors">Sotuvchi kabineti</a></li>
-                        <li><a href="#" @click.prevent="alert('Sotuvchi arizasi 07-bosqichda to\'liq panel orqali boshqariladi')" class="hover:text-[#123C2F] transition-colors">Do'kon ochish</a></li>
-                        <li><a href="#" class="hover:text-[#123C2F] transition-colors">Komissiya stavkalari</a></li>
-                        <li><a href="#" class="hover:text-[#123C2F] transition-colors">Ombor xizmati</a></li>
+                        <li><a href="{{ route('contact') }}" class="hover:text-[#123C2F] transition-colors">Do'kon ochish</a></li>
+                        <li><a href="{{ route('contact') }}" class="hover:text-[#123C2F] transition-colors">Komissiya stavkalari</a></li>
+                        <li><a href="{{ route('delivery') }}" class="hover:text-[#123C2F] transition-colors">Ombor xizmati</a></li>
                     </ul>
                 </div>
 
                 <!-- Column 3 -->
                 <div>
-                    <h4 class="font-bold text-[#172326] mb-4 text-sm uppercase tracking-wider">Platforma</h4>
+                    <h4 class="font-bold text-[#172326] mb-4 text-sm uppercase tracking-wider">Platforma & Yordam</h4>
                     <ul class="space-y-2.5 text-[#64748B]">
+                        <li><a href="{{ route('contact') }}" class="hover:text-[#123C2F] transition-colors">Yordam & Aloqa</a></li>
+                        <li><a href="{{ route('privacy') }}" class="hover:text-[#123C2F] transition-colors">Maxfiylik siyosati</a></li>
                         <li><a href="/health" class="hover:text-[#123C2F] transition-colors">Tizim holati (Health)</a></li>
                         <li><a href="/api/v1/health" class="hover:text-[#123C2F] transition-colors">API Endpoint</a></li>
-                        <li><span class="text-xs text-[#64748B]">Versiya: 1.0 (Laravel 13 + PHP 8.4)</span></li>
                     </ul>
                 </div>
 
@@ -489,22 +527,24 @@
 
             <div class="pt-8 border-t border-[#E8ECE4] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B]">
                 <p>© {{ date('Y') }} MARKET. Barcha huquqlar himoyalangan.</p>
-                <div class="flex items-center gap-6">
+                <div class="flex flex-wrap items-center gap-6">
                     <span>O'zbekiston, Toshkent</span>
-                    <span>Maxfiylik siyosati</span>
-                    <span>Foydalanish shartlari</span>
+                    <a href="{{ route('privacy') }}" class="hover:text-[#123C2F] transition-colors">Maxfiylik siyosati</a>
+                    <a href="{{ route('returns') }}" class="hover:text-[#123C2F] transition-colors">Qaytarish tartibi</a>
+                    <a href="{{ route('delivery') }}" class="hover:text-[#123C2F] transition-colors">Yetkazib berish</a>
+                    <a href="{{ route('contact') }}" class="hover:text-[#123C2F] transition-colors">Yordam & Aloqa</a>
                 </div>
             </div>
         </div>
     </footer>
 
     <!-- 24/7 Live Support & Contact Floating Button & Drawer -->
-    <div x-data="{ supportOpen: false }" class="fixed bottom-20 md:bottom-6 right-6 z-40">
+    <div x-data="{ supportOpen: false }" class="fixed bottom-16 sm:bottom-20 md:bottom-6 right-3 sm:right-6 z-40">
         <!-- Floating Trigger Button -->
         <button @click="supportOpen = !supportOpen" 
-                class="flex items-center gap-2.5 px-4 py-3 rounded-full bg-[#123C2F] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-[#C9F46B]/40 group"
+                class="flex items-center justify-center w-11 h-11 sm:w-auto sm:px-4 sm:py-3 rounded-full bg-[#123C2F] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-[#C9F46B]/40 group"
                 title="Tezkor yordam va aloqa markazi">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#C9F46B] animate-ping"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#C9F46B] animate-ping hidden sm:inline-block"></span>
             <span class="text-base">🎧</span>
             <span class="text-xs font-black tracking-wide hidden sm:inline text-[#C9F46B]">Yordam & Aloqa</span>
         </button>
@@ -513,7 +553,7 @@
         <div x-show="supportOpen" 
              x-cloak 
              @click.away="supportOpen = false" 
-             class="absolute bottom-16 right-0 w-80 sm:w-96 bg-white rounded-3xl border border-[#E8ECE4] shadow-2xl p-6 text-slate-800 space-y-4">
+             class="absolute bottom-14 right-0 w-[calc(100vw-24px)] max-w-sm sm:w-96 bg-white rounded-3xl border border-[#E8ECE4] shadow-2xl p-5 sm:p-6 text-slate-800 space-y-4">
             
             <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
                 <div class="flex items-center gap-2.5">

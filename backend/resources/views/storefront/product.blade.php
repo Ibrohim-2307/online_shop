@@ -193,10 +193,10 @@ function imageMagnifier(imgUrl) {
 }
 </script>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16" x-data="productDetails()">
+<div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-12 sm:pb-16" x-data="productDetails()">
 
     <!-- Breadcrumb -->
-    <nav class="flex flex-wrap items-center gap-2 text-xs text-[#64748B] mb-6" aria-label="Breadcrumb">
+    <nav class="flex flex-wrap items-center gap-1.5 text-xs text-[#64748B] mb-3 sm:mb-6" aria-label="Breadcrumb">
         <a href="{{ route('home') }}" class="hover:text-[#123C2F]">Bosh sahifa</a>
         <span>/</span>
         <a href="{{ route('catalog') }}" class="hover:text-[#123C2F]">Katalog</a>

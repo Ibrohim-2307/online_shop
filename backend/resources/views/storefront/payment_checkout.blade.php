@@ -2,43 +2,6 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24"
          x-data="{
              activeTab: '{{ in_array($payment->payment_method, ['payme', 'uzum']) ? $payment->payment_method : 'click' }}',
-             cardNumber: '8600 4512 8900 3456',
-             cardExpiry: '12/28',
-             cardHolder: '{{ $order->shipping_address['recipient_name'] ?? 'AZIZ ALIYEV' }}',
-             cardStep: 'input',
-             smsCode: '',
-             smsTimer: 60,
-             isSubmitting: false,
-             formatCard(e) {
-                 let v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-                 let matches = v.match(/\d{4,16}/g);
-                 let match = matches && matches[0] || '';
-                 let parts = [];
-                 for (let i=0, len=match.length; i<len; i+=4) {
-                     parts.push(match.substring(i, i+4));
-                 }
-                 this.cardNumber = parts.length ? parts.join(' ') : v;
-             },
-             formatExpiry(e) {
-                 let v = e.target.value.replace(/[^0-9]/g, '');
-                 if (v.length > 2) {
-                     this.cardExpiry = v.substring(0, 2) + '/' + v.substring(2, 4);
-                 } else {
-                     this.cardExpiry = v;
-                 }
-             },
-             goToSms() {
-                 if (this.cardNumber.replace(/\s/g, '').length < 16) {
-                     alert('Iltimos, 16 xonali karta raqamini to\'liq kiriting!');
-                     return;
-                 }
-                 this.cardStep = 'sms';
-                 this.smsTimer = 60;
-                 let interval = setInterval(() => {
-                     if (this.smsTimer > 0) this.smsTimer--;
-                     else clearInterval(interval);
-                 }, 1000);
-             }
          }">
 
         <!-- Breadcrumbs -->
@@ -64,7 +27,7 @@
                     Onlayn To'lov Oynasi
                 </h1>
                 <p class="text-xs text-[#64748B] mt-1">
-                    Click, Payme yoki Bank kartasi (Uzcard / Humo) orqali to'lovni tasdiqlang
+                    Click yoki Payme to'lov tizimlari orqali xavfsiz to'lovni tasdiqlang
                 </p>
             </div>
 
@@ -122,43 +85,45 @@
                             </div>
                             <div>
                                 <h3 class="font-black text-base text-[#172326]">Click Up / Click Evolution</h3>
-                                <p class="text-xs text-[#64748B]">Click ilovasi yoki QR-kod orqali 1-bosqichda onlayn to'lov</p>
+                                <p class="text-xs text-[#64748B]">Click ilovasi yoki to'lov oynasi orqali rasmiy xavfsiz to'lov</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 rounded-xl bg-emerald-200/80 text-emerald-900 text-xs font-bold">Faol</span>
+                        @if($isClickConfigured)
+                            <span class="px-3 py-1 rounded-xl bg-emerald-200/80 text-emerald-900 text-xs font-bold">Faol</span>
+                        @else
+                            <span class="px-3 py-1 rounded-xl bg-amber-100 text-amber-800 text-xs font-bold">Sozlanmoqda</span>
+                        @endif
                     </div>
 
-                    @if($clickUrl)
+                    @if($isClickConfigured && $clickUrl)
                         <div class="space-y-2">
                             <a href="{{ $clickUrl }}" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#00A551] text-white font-black text-sm hover:brightness-105 transition-all shadow-md">
                                 <span>Click ilovasida to'lash →</span>
                             </a>
-                            <p class="text-center text-xs text-[#64748B]">Click rasmiy to'lov oynasiga yo'naltirilasiz</p>
+                            <p class="text-center text-xs text-[#64748B]">Click rasmiy himoyalangan to'lov oynasiga yo'naltirilasiz</p>
+                        </div>
+                    @elseif($isClickConfigured)
+                        <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}">
+                            @csrf
+                            <input type="hidden" name="payment_method" value="click">
+                            <button type="submit" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#00A551] text-white font-black text-sm hover:brightness-105 transition-all shadow-md">
+                                <span>Click orqali to'lash sahifasiga o'tish →</span>
+                            </button>
+                        </form>
+                    @else
+                        <div class="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-800 space-y-2">
+                            <p class="font-bold text-amber-900 flex items-center gap-2">
+                                <span>⚙️</span>
+                                <span>Click integratsiyasi sozlanmoqda</span>
+                            </p>
+                            <p>
+                                Click tizimi orqali to'lovlarni qabul qilish uchun server sozlamalarida <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300">CLICK_SERVICE_ID</code>, <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300">CLICK_MERCHANT_ID</code> va <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300">CLICK_SECRET_KEY</code> kiritilishi kerak.
+                            </p>
+                            <p class="text-slate-600">
+                                Iltimos, boshqa to'lov usulidan foydalaning (masalan, Kuryer orqali qabul qilishda to'lov).
+                            </p>
                         </div>
                     @endif
-
-                    <div class="p-5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] flex flex-col sm:flex-row items-center gap-6">
-                        <!-- Simulated QR Code -->
-                        <div class="w-32 h-32 bg-white p-2 rounded-2xl border border-[#E8ECE4] flex items-center justify-center shadow-xs flex-shrink-0">
-                            <svg class="w-28 h-28 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm-2 10h8v8H2v-8zm2 2v4h4v-4H4zm10-14h8v8h-8V2zm2 2v4h4V4h-4zm-1 10h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm-4-10h2v2h-2V6zm2 2h2v2h-2V8zm2-2h2v2h-2V6z"/>
-                            </svg>
-                        </div>
-                        <div class="text-xs space-y-2 text-[#64748B]">
-                            <p class="font-bold text-[#172326] text-sm">Click Evolution ilovasidan skanerlang</p>
-                            <p>Telefoningizdagi Click ilovasi orqali yuqoridagi QR-kodni skaner qilib to'lovni tasdiqlashingiz mumkin.</p>
-                            <p class="font-semibold text-emerald-700">✓ Fiskal chek darhol soliq tizimida ro'yxatga olinadi</p>
-                        </div>
-                    </div>
-
-                    <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}">
-                        @csrf
-                        <input type="hidden" name="payment_method" value="click">
-                        <button type="submit" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-black text-sm hover:brightness-110 transition-all shadow-md">
-                            <span>Click orqali to'lashni tasdiqlash (Instant Onlayn To'lov)</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                        </button>
-                    </form>
                 </div>
 
                 <!-- 2. PAYME TAB -->
@@ -169,121 +134,99 @@
                                 🔵
                             </div>
                             <div>
-                                <h3 class="font-black text-base text-[#172326]">Payme (Payme.uz)</h3>
-                                <p class="text-xs text-[#64748B]">Uzcard va Humo kartalari orqali xavfsiz onlayn to'lov</p>
+                                <h3 class="font-black text-base text-[#172326]">Payme (Paycom)</h3>
+                                <p class="text-xs text-[#64748B]">Uzcard va Humo kartalari orqali rasmiy xavfsiz onlayn to'lov</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 rounded-xl bg-teal-200/80 text-teal-900 text-xs font-bold">Faol</span>
+                        @if($isPaymeConfigured)
+                            <span class="px-3 py-1 rounded-xl bg-teal-200/80 text-teal-900 text-xs font-bold">Faol</span>
+                        @else
+                            <span class="px-3 py-1 rounded-xl bg-amber-100 text-amber-800 text-xs font-bold">Sozlanmoqda</span>
+                        @endif
                     </div>
 
-                    @if($paymeUrl)
+                    @if($isPaymeConfigured && $paymeUrl)
                         <div class="space-y-2">
                             <a href="{{ $paymeUrl }}" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#14B8A6] text-white font-black text-sm hover:brightness-105 transition-all shadow-md">
                                 <span>Payme ilovasida to'lash →</span>
                             </a>
+                            <p class="text-center text-xs text-[#64748B]">Payme rasmiy to'lov oynasiga yo'naltirilasiz</p>
                         </div>
-                    @endif
-
-                    <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}">
-                        @csrf
-                        <input type="hidden" name="payment_method" value="payme">
-                        <button type="submit" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-black text-sm hover:brightness-110 transition-all shadow-md">
-                            <span>Payme orqali to'lashni tasdiqlash (Instant Onlayn To'lov)</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- 3. UZCARD / HUMO ONLINE KARTA (SMS VERIFY) TAB -->
-                <div x-show="activeTab === 'uzum'" style="display: none;" class="space-y-6">
-                    
-                    <!-- Virtual Card Representation -->
-                    <div class="relative w-full max-w-sm mx-auto h-48 rounded-2xl p-5 bg-gradient-to-tr from-slate-900 via-[#123C2F] to-emerald-800 text-white shadow-xl flex flex-col justify-between overflow-hidden">
-                        <div class="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-white/10 blur-xl"></div>
-                        <div class="flex items-center justify-between">
-                            <span class="font-black text-sm tracking-widest text-[#C9F46B]">UZCARD / HUMO</span>
-                            <span class="text-xs font-mono opacity-80">ONLAYN TO'LOV</span>
-                        </div>
-                        <div class="font-mono text-xl tracking-widest font-black text-center my-auto" x-text="cardNumber || '8600 •••• •••• ••••'">
-                            8600 •••• •••• ••••
-                        </div>
-                        <div class="flex items-center justify-between text-xs font-mono">
-                            <div>
-                                <span class="block text-[9px] uppercase opacity-70">Egasi</span>
-                                <span class="font-bold uppercase tracking-wider" x-text="cardHolder || 'AZIZ ALIYEV'">AZIZ ALIYEV</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="block text-[9px] uppercase opacity-70">Muddati</span>
-                                <span class="font-bold" x-text="cardExpiry || '12/28'">12/28</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 1: Card Input -->
-                    <div x-show="cardStep === 'input'" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1.5">Karta raqami (16 xonali Uzcard / Humo)</label>
-                            <input type="text" x-model="cardNumber" @input="formatCard($event)" maxlength="19"
-                                   placeholder="8600 0000 0000 0000"
-                                   class="w-full px-4 py-3 rounded-xl border border-[#E8ECE4] bg-[#FAFBF7] font-mono text-sm text-[#172326] focus:outline-none focus:border-[#123C2F] focus:bg-white">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-[#172326] mb-1.5">Amal qilish muddati</label>
-                                <input type="text" x-model="cardExpiry" @input="formatExpiry($event)" maxlength="5" placeholder="MM/YY"
-                                       class="w-full px-4 py-3 rounded-xl border border-[#E8ECE4] bg-[#FAFBF7] font-mono text-sm text-[#172326] focus:outline-none focus:border-[#123C2F] focus:bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-[#172326] mb-1.5">Karta egasining ismi</label>
-                                <input type="text" x-model="cardHolder" placeholder="ISM FAMILIYA"
-                                       class="w-full px-4 py-3 rounded-xl border border-[#E8ECE4] bg-[#FAFBF7] text-sm text-[#172326] focus:outline-none focus:border-[#123C2F] focus:bg-white uppercase">
-                            </div>
-                        </div>
-
-                        <button type="button" @click="goToSms()" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-black text-sm hover:brightness-110 transition-all shadow-md">
-                            <span>SMS-kod olish va Davom etish →</span>
-                        </button>
-                    </div>
-
-                    <!-- Step 2: SMS OTP Verification Modal -->
-                    <div x-show="cardStep === 'sms'" style="display: none;" class="p-6 rounded-2xl bg-[#FAFBF7] border border-[#C9F46B] space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="font-black text-sm text-[#172326]">SMS-kodni kiriting</h4>
-                                <p class="text-xs text-[#64748B]">Kartaga ulangan telefon raqamiga 6 xonali tasdiqlash kodi yuborildi</p>
-                            </div>
-                            <span class="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                                <span x-text="smsTimer">60</span>s
-                            </span>
-                        </div>
-
-                        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
-                            <span>📲 Test SMS kodi: <strong>777777</strong></span>
-                            <span class="text-[10px] text-emerald-600">Avtomatik to'ldirish</span>
-                        </div>
-
-                        <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}" class="space-y-4">
+                    @elseif($isPaymeConfigured)
+                        <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}">
                             @csrf
-                            <input type="hidden" name="payment_method" value="uzum">
-                            
-                            <div>
-                                <input type="text" name="sms_code" x-model="smsCode" maxlength="6"
-                                       placeholder="777777"
-                                       class="w-full px-4 py-3 rounded-xl border border-[#123C2F] bg-white font-mono text-center text-xl font-black tracking-widest text-[#172326] focus:outline-none focus:ring-2 focus:ring-[#C9F46B]">
-                            </div>
-
-                            <button type="submit" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#00A551] text-white font-black text-sm hover:brightness-105 transition-all shadow-md">
-                                <span>To'lovni yakunlash ({{ number_format($order->grand_total, 0, '.', ' ') }} UZS)</span>
+                            <input type="hidden" name="payment_method" value="payme">
+                            <button type="submit" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#14B8A6] text-white font-black text-sm hover:brightness-105 transition-all shadow-md">
+                                <span>Payme to'lov oynasiga o'tish →</span>
                             </button>
                         </form>
-
-                        <button type="button" @click="cardStep = 'input'" class="text-xs text-[#64748B] hover:text-[#172326] font-medium block mx-auto underline pt-1">
-                            ← Kartani o'zgartirish
-                        </button>
-                    </div>
-
+                    @else
+                        <div class="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-800 space-y-2">
+                            <p class="font-bold text-amber-900 flex items-center gap-2">
+                                <span>⚙️</span>
+                                <span>Payme integratsiyasi sozlanmoqda</span>
+                            </p>
+                            <p>
+                                Payme orqali to'lovlarni qabul qilish uchun server sozlamalarida <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300">PAYME_MERCHANT_ID</code> va <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300">PAYME_SECRET_KEY</code> kiritilishi kerak.
+                            </p>
+                            <p class="text-slate-600">
+                                Iltimos, boshqa to'lov usulidan foydalaning (masalan, Kuryer orqali qabul qilishda to'lov).
+                            </p>
+                        </div>
+                    @endif
                 </div>
+
+                <!-- 3. UZCARD / HUMO BANK KARTALARI MA'LUMOTI -->
+                <div x-show="activeTab === 'uzum'" style="display: none;" class="space-y-6">
+                    <div class="p-6 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">💳</span>
+                            <div>
+                                <h3 class="font-black text-base text-[#172326]">Bank kartalari (Uzcard / Humo / Visa)</h3>
+                                <p class="text-xs text-[#64748B]">Xavfsizlik va PCI-DSS xalqaro to'lov standartlari</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-white border border-[#E8ECE4] text-xs text-[#64748B] space-y-2.5">
+                            <p class="text-[#172326] font-medium leading-relaxed">
+                                Xaridorlarning shaxsiy bank karta ma'lumotlarini (PAN raqami va amal qilish muddati) firibgarlikdan himoya qilish uchun to'g'ridan-to'g'ri karta ma'lumotlari saytda saqlanmaydi.
+                            </p>
+                            <p class="text-[#172326] font-medium leading-relaxed">
+                                Uzcard va Humo kartalaringiz orqali komissiyasiz va xavfsiz to'lash uchun rasmiy <strong>Click Up</strong> yoki <strong>Payme</strong> tugmasini bosing:
+                            </p>
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <button type="button" @click="activeTab = 'click'" class="py-2.5 px-4 rounded-xl bg-[#00A551] text-white font-bold text-xs text-center hover:brightness-105 transition">
+                                    Click orqali to'lash →
+                                </button>
+                                <button type="button" @click="activeTab = 'payme'" class="py-2.5 px-4 rounded-xl bg-[#14B8A6] text-white font-bold text-xs text-center hover:brightness-105 transition">
+                                    Payme orqali to'lash →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. DEVELOPER SANDBOX SIMULATION (Only shown in local/test mode if explicitly enabled) -->
+                @if($isDemoAllowed)
+                    <div class="p-5 rounded-2xl bg-amber-50 border-2 border-dashed border-amber-300 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-amber-800 font-black text-xs uppercase tracking-wider">⚠️ Dasturchi / Test Rejimi (Sandbox)</span>
+                            </div>
+                            <span class="text-[10px] font-mono bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded font-bold">DEV ONLY</span>
+                        </div>
+                        <p class="text-xs text-amber-800 leading-relaxed">
+                            Ushbu blok faqat mahalliy test va dasturlash bosqichida ko'rinadi. Production (haqiqiy server)da butunlay o'chirilgan.
+                        </p>
+                        <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}">
+                            @csrf
+                            <input type="hidden" name="payment_method" value="demo">
+                            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-sm">
+                                Test to'lovini simulyatsiya qilish (Sandbox Settlement)
+                            </button>
+                        </form>
+                    </div>
+                @endif
 
             </div>
 

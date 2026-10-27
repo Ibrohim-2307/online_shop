@@ -1,17 +1,17 @@
 <x-layouts.app title="Savatcha">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-12 sm:pb-16">
         
         <!-- Breadcrumbs -->
-        <nav class="flex flex-wrap items-center gap-2 text-xs text-[#64748B] mb-6" aria-label="Breadcrumb">
+        <nav class="flex flex-wrap items-center gap-1.5 text-xs text-[#64748B] mb-3 sm:mb-6" aria-label="Breadcrumb">
             <a href="{{ route('home') }}" class="hover:text-[#123C2F]">Bosh sahifa</a>
             <span>/</span>
             <span class="text-[#172326] font-semibold">Savatcha</span>
         </nav>
 
-        <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center justify-between mb-4 sm:mb-8">
             <div>
-                <h1 class="text-3xl font-black text-[#172326] tracking-tight">Savatcha</h1>
-                <p class="text-xs text-[#64748B] mt-1">
+                <h1 class="text-xl sm:text-3xl font-black text-[#172326] tracking-tight">Savatcha</h1>
+                <p class="text-[11px] sm:text-xs text-[#64748B] mt-0.5 sm:mt-1">
                     @if($quote['is_empty'])
                         Savatchangiz bo'sh
                     @else

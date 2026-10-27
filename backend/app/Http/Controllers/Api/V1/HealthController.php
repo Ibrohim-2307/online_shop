@@ -25,7 +25,8 @@ class HealthController extends Controller
             $dbLatencyMs = round((microtime(true) - $start) * 1000, 2);
             $dbStatus = 'connected';
         } catch (Throwable $e) {
-            $dbStatus = 'error: ' . $e->getMessage();
+            \Illuminate\Support\Facades\Log::error("API Health check DB error: " . $e->getMessage());
+            $dbStatus = app()->environment('local', 'testing') ? ('error: ' . $e->getMessage()) : 'unavailable';
         }
 
         $healthy = ($dbStatus === 'connected');

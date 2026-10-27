@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InventoryReservation;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Services\Payment\DemoPaymentAdapter;
+use App\Services\Payment\PaymentManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +14,7 @@ use Illuminate\View\View;
 class PaymentWebController extends Controller
 {
     public function __construct(
-        protected DemoPaymentAdapter $paymentAdapter
+        protected PaymentManager $paymentManager
     ) {}
 
     /**
@@ -44,34 +44,45 @@ class PaymentWebController extends Controller
             ]);
         }
 
-        // Generate Click URL
-        $clickServiceId = config('services.click.service_id');
-        $clickMerchantId = config('services.click.merchant_id');
+        $isClickConfigured = $this->paymentManager->isProviderConfigured('click');
+        $isPaymeConfigured = $this->paymentManager->isProviderConfigured('payme');
+        $isDemoAllowed = $this->paymentManager->isProviderConfigured('demo');
+
+        // Generate Click URL if configured
         $clickUrl = null;
-        if ($clickServiceId && $clickMerchantId) {
-            $returnUrl = route('order.success', ['orderNumber' => $order->order_number]);
-            $clickUrl = "https://my.click.uz/services/pay?service_id={$clickServiceId}&merchant_id={$clickMerchantId}&amount={$order->grand_total}&transaction_param={$order->id}&return_url=" . urlencode($returnUrl);
+        if ($isClickConfigured) {
+            try {
+                $session = $this->paymentManager->click()->initializePayment($order);
+                $clickUrl = $session['payment_url'] ?? null;
+            } catch (\Throwable) {
+                $clickUrl = null;
+            }
         }
 
-        // Generate Payme URL
-        $paymeMerchantId = config('services.payme.merchant_id');
+        // Generate Payme URL if configured
         $paymeUrl = null;
-        if ($paymeMerchantId) {
-            $amountInTiyin = $order->grand_total * 100;
-            $paymeParams = "m={$paymeMerchantId};ac.order_id={$order->id};a={$amountInTiyin}";
-            $paymeUrl = "https://checkout.paycom.uz/" . base64_encode($paymeParams);
+        if ($isPaymeConfigured) {
+            try {
+                $session = $this->paymentManager->payme()->initializePayment($order);
+                $paymeUrl = $session['payment_url'] ?? null;
+            } catch (\Throwable) {
+                $paymeUrl = null;
+            }
         }
 
         return view('storefront.payment_checkout', compact(
             'order',
             'payment',
             'clickUrl',
-            'paymeUrl'
+            'paymeUrl',
+            'isClickConfigured',
+            'isPaymeConfigured',
+            'isDemoAllowed'
         ));
     }
 
     /**
-     * Process payment action: instant test settlement, Cash on Delivery confirmation, or gateway redirect.
+     * Process payment action: gateway redirect, Cash on Delivery confirmation, or sandbox simulation.
      */
     public function pay(Request $request, string $orderNumber): RedirectResponse
     {
@@ -82,7 +93,7 @@ class PaymentWebController extends Controller
         $order = Order::where('order_number', $orderNumber)->firstOrFail();
         $method = $validated['payment_method'];
 
-        // 1. Handle Cash on Delivery
+        // 1. Handle Cash on Delivery (Payment remains pending until courier marks delivered)
         if ($method === 'cash_on_delivery') {
             $payment = Payment::firstOrCreate(
                 ['order_id' => $order->id],
@@ -112,62 +123,71 @@ class PaymentWebController extends Controller
                 ->with('success', "To'lov usuli: Yetkazib berilganda to'lash (Naqd yoki Karta) tanlandi! Buyurtmangiz tasdiqlandi va yetkazishga tayyorlanmoqda.");
         }
 
-        // 2. Handle Online Payments (Click / Payme / Uzum)
-        $payment = Payment::firstOrCreate(
-            ['order_id' => $order->id],
-            [
-                'amount' => $order->grand_total,
-                'currency' => $order->currency,
-                'transaction_id' => 'TXN-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4))),
-                'status' => 'pending',
-            ]
-        );
+        // 2. Real Production Click Redirect
+        if ($method === 'click') {
+            if (!$this->paymentManager->isProviderConfigured('click')) {
+                return back()->with('error', "Click to'lov tizimi hozircha sozlanmagan (Merchant rekvizitlari kiritilmagan). Iltimos, boshqa to'lov usulini tanlang yoki do'kon ma'muriyati bilan bog'laning.");
+            }
 
-        $payment->update([
-            'payment_method' => $method,
-        ]);
-
-        // If real production Click is configured
-        if ($method === 'click' && config('services.click.service_id') && config('services.click.merchant_id')) {
-            $serviceId = config('services.click.service_id');
-            $merchantId = config('services.click.merchant_id');
-            $returnUrl = route('order.success', ['orderNumber' => $order->order_number]);
-            return redirect()->away("https://my.click.uz/services/pay?service_id={$serviceId}&merchant_id={$merchantId}&amount={$order->grand_total}&transaction_param={$order->id}&return_url=" . urlencode($returnUrl));
+            try {
+                $session = $this->paymentManager->click()->initializePayment($order);
+                return redirect()->away($session['payment_url']);
+            } catch (\Throwable $e) {
+                return back()->with('error', "Click to'lov tizimiga ulanishda xatolik: " . $e->getMessage());
+            }
         }
 
-        // If real production Payme is configured
-        if ($method === 'payme' && config('services.payme.merchant_id')) {
-            $merchantId = config('services.payme.merchant_id');
-            $amountInTiyin = $order->grand_total * 100;
-            $paymeParams = "m={$merchantId};ac.order_id={$order->id};a={$amountInTiyin}";
-            return redirect()->away("https://checkout.paycom.uz/" . base64_encode($paymeParams));
+        // 3. Real Production Payme Redirect
+        if ($method === 'payme') {
+            if (!$this->paymentManager->isProviderConfigured('payme')) {
+                return back()->with('error', "Payme to'lov tizimi hozircha sozlanmagan (Merchant rekvizitlari kiritilmagan). Iltimos, boshqa to'lov usulini tanlang yoki do'kon ma'muriyati bilan bog'laning.");
+            }
+
+            try {
+                $session = $this->paymentManager->payme()->initializePayment($order);
+                return redirect()->away($session['payment_url']);
+            } catch (\Throwable $e) {
+                return back()->with('error', "Payme to'lov tizimiga ulanishda xatolik: " . $e->getMessage());
+            }
         }
 
-        // 3. Instant Safe Settlement (Sandbox / Simulation with Cryptographic HMAC verification)
-        try {
-            $eventId = 'EVT-WEB-' . strtoupper(bin2hex(random_bytes(6)));
-            $secretKey = config('services.payment.demo_secret', 'marketplace-sandbox-hmac-secret-key-2026');
-            $signature = hash_hmac('sha256', "{$eventId}:{$payment->transaction_id}:{$order->id}:{$payment->amount}", $secretKey);
+        // 4. Demo Sandbox Settlement (Strictly allowed ONLY in local/dev test mode when explicitly enabled)
+        if ($method === 'demo') {
+            if (!$this->paymentManager->isProviderConfigured('demo')) {
+                return back()->with('error', "Demo sinov to'lovi faol emas yoki ishlab chiqarish (production) tizimida taqiqlangan!");
+            }
 
-            $this->paymentAdapter->processWebhook([
-                'event_id' => $eventId,
-                'transaction_id' => $payment->transaction_id,
-                'order_id' => $order->id,
-                'amount' => $payment->amount,
-                'provider' => $method,
-            ], $signature);
+            try {
+                $payment = Payment::firstOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'amount' => $order->grand_total,
+                        'currency' => $order->currency,
+                        'transaction_id' => 'TXN-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4))),
+                        'status' => 'pending',
+                    ]
+                );
 
-            $methodName = match($method) {
-                'click' => 'Click Up',
-                'payme' => 'Payme',
-                'uzum' => 'Uzum Bank',
-                default => 'Onlayn To\'lov',
-            };
+                $eventId = 'EVT-WEB-' . strtoupper(bin2hex(random_bytes(6)));
+                $secretKey = config('services.payment.demo_secret', 'marketplace-sandbox-hmac-secret-key-2026');
+                $signature = hash_hmac('sha256', "{$eventId}:{$payment->transaction_id}:{$order->id}:{$payment->amount}", $secretKey);
 
-            return redirect()->route('order.success', ['orderNumber' => $order->order_number])
-                ->with('success', "{$methodName} orqali to'lov muvaffaqiyatli amalga oshirildi! Chek raqami: #{$payment->transaction_id}");
-        } catch (\Throwable $e) {
-            return back()->with('error', "To'lovni tasdiqlashda xatolik yuz berdi: " . $e->getMessage());
+                $this->paymentManager->demo()->processWebhook([
+                    'event_id' => $eventId,
+                    'transaction_id' => $payment->transaction_id,
+                    'order_id' => $order->id,
+                    'amount' => $payment->amount,
+                    'provider' => 'demo_sandbox',
+                ], $signature);
+
+                return redirect()->route('order.success', ['orderNumber' => $order->order_number])
+                    ->with('success', "Sandbox Demo to'lovi muvaffaqiyatli yakunlandi! Chek raqami: #{$payment->transaction_id}");
+            } catch (\Throwable $e) {
+                return back()->with('error', "Demo to'lovda xatolik: " . $e->getMessage());
+            }
         }
+
+        // 5. Fallback for unintegrated providers
+        return back()->with('error', "Tanlangan to'lov usuli hozirda faol emas. Iltimos, Click, Payme yoki Kuryerga to'lash usulini tanlang.");
     }
 }

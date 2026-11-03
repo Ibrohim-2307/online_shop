@@ -666,6 +666,11 @@ function imageMagnifier(imgUrl) {
                 <span>{{ session('success_review') }}</span>
             </div>
         @endif
+        @if(session('error'))
+            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold shadow-xs">
+                {{ session('error') }}
+            </div>
+        @endif
 
         <!-- Summary & Rating Breakdown Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -769,9 +774,16 @@ function imageMagnifier(imgUrl) {
                         </div>
                     </div>
 
+                    @guest
+                        <div class="p-4 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs text-[#64748B]">
+                            Sharh qoldirish uchun
+                            <a href="{{ route('login') }}" class="font-bold text-[#123C2F] underline">tizimga kiring</a>
+                            yoki <a href="{{ route('register') }}" class="font-bold text-[#123C2F] underline">ro'yxatdan o'ting</a>.
+                        </div>
+                    @else
                     <form method="POST" action="{{ route('product.reviews.store', ['slug' => $product->slug]) }}" class="space-y-4">
                         @csrf
-                        
+
                         <!-- Interactive Star Rating Picker -->
                         <div>
                             <label class="block text-xs font-bold text-[#172326] mb-1.5">Mahsulotni baholang:</label>
@@ -811,6 +823,7 @@ function imageMagnifier(imgUrl) {
                             Sharhni e'lon qilish →
                         </button>
                     </form>
+                    @endguest
                 </div>
 
             </div>

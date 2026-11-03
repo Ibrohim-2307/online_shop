@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Seller;
+use App\Models\SellerMember;
 use App\Models\User;
 use App\Services\Audit\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -69,6 +74,94 @@ class AuthController extends Controller
         }
 
         return redirect()->intended('/profile');
+    }
+
+    /**
+     * Show the web registration form (customer, wholesale customer, or seller).
+     */
+    public function showRegisterForm(): View|RedirectResponse
+    {
+        if (Auth::check()) {
+            return redirect()->route('profile');
+        }
+
+        return view('auth.register');
+    }
+
+    /**
+     * Register a new account from the web storefront and sign the user in.
+     * Role is derived only from the whitelisted account_type, never from raw input.
+     */
+    public function register(Request $request): RedirectResponse
+    {
+        $request->merge([
+            'phone' => $request->filled('phone') ? preg_replace('/[^\d+]/', '', (string) $request->input('phone')) : null,
+        ]);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:255'],
+            'phone' => ['required', 'string', 'regex:/^\+?998\d{9}$/', 'unique:users,phone'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'account_type' => ['required', 'string', Rule::in(['customer', 'wholesale_customer', 'seller'])],
+            'store_name' => ['required_if:account_type,seller', 'nullable', 'string', 'max:255'],
+            'tax_id' => ['nullable', 'string', 'max:50'],
+            'terms' => ['accepted'],
+        ], [
+            'phone.regex' => "Telefon raqami +998XXXXXXXXX formatida bo'lishi kerak.",
+            'phone.unique' => "Bu telefon raqami allaqachon ro'yxatdan o'tgan. Tizimga kiring.",
+            'email.unique' => "Bu email allaqachon ro'yxatdan o'tgan.",
+            'password.confirmed' => 'Parollar mos kelmadi.',
+            'store_name.required_if' => "Do'kon nomini kiriting.",
+            'terms.accepted' => 'Foydalanish shartlariga rozilik bildiring.',
+        ]);
+
+        $user = DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'] ?? (ltrim($validated['phone'], '+') . '@placeholder.local'),
+                'phone' => $validated['phone'],
+                'password' => $validated['password'],
+                'is_active' => true,
+            ]);
+
+            if ($validated['account_type'] === 'seller') {
+                $seller = Seller::create([
+                    'name' => $validated['store_name'],
+                    'slug' => Str::slug($validated['store_name']) . '-' . Str::lower(Str::random(5)),
+                    'tax_id' => $validated['tax_id'] ?? null,
+                    'status' => 'pending', // Requires admin approval before products go live
+                    'phone' => $user->phone,
+                    'email' => $user->email,
+                ]);
+
+                SellerMember::create([
+                    'seller_id' => $seller->id,
+                    'user_id' => $user->id,
+                    'role' => 'owner',
+                    'permissions' => ['*'],
+                    'is_active' => true,
+                ]);
+
+                $user->assignRole('seller_owner');
+            } else {
+                $user->assignRole($validated['account_type']);
+            }
+
+            return $user;
+        });
+
+        AuditService::log('web.registered', $user, null, ['account_type' => $validated['account_type']]);
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        if ($validated['account_type'] === 'seller') {
+            return redirect('/profile?tab=seller_products')
+                ->with('success', "Do'koningiz yaratildi va moderatsiyaga yuborildi. Tasdiqlangach mahsulotlaringiz saytda ko'rinadi.");
+        }
+
+        return redirect()->intended('/profile')->with('success', "Xush kelibsiz! Hisobingiz muvaffaqiyatli yaratildi.");
     }
 
     /**

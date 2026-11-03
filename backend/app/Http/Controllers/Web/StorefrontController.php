@@ -8,7 +8,6 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Seller;
 use App\Models\Address;
-use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Services\Cart\CartService;
@@ -105,13 +104,38 @@ class StorefrontController extends Controller
             $query->whereHas('seller', fn($sq) => $sq->where('slug', $sellerSlug));
         }
 
+        // Retail (single-unit) price = base tier (lowest min_quantity) of the cheapest active variant
+        $retailPriceSql = '(SELECT MIN(pt.unit_price) FROM price_tiers pt
+            JOIN product_variants pv ON pv.id = pt.product_variant_id
+            WHERE pv.product_id = products.id AND pv.is_active = 1
+              AND pt.min_quantity = (SELECT MIN(pt2.min_quantity) FROM price_tiers pt2 WHERE pt2.product_variant_id = pv.id))';
+
+        // Filter by price range
+        if ($minPrice = $request->integer('min_price')) {
+            $query->whereRaw("{$retailPriceSql} >= ?", [$minPrice]);
+        }
+        if ($maxPrice = $request->integer('max_price')) {
+            $query->whereRaw("{$retailPriceSql} <= ?", [$maxPrice]);
+        }
+
+        // Filter: only items with sellable stock
+        if ($request->boolean('in_stock')) {
+            $query->whereHas('variants.inventoryBalances', fn($bq) => $bq->whereColumn('quantity', '>', 'reserved_quantity'));
+        }
+
         // Sort
+        $query->select('products.*')->selectRaw("{$retailPriceSql} as min_price");
+
         switch ($request->input('sort')) {
             case 'price_asc':
-                $query->orderBy('id', 'asc');
+                $query->orderByRaw('min_price IS NULL')->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
-                $query->orderBy('id', 'desc');
+                $query->orderBy('min_price', 'desc');
+                break;
+            case 'rating':
+                $query->withAvg(['reviews' => fn($rq) => $rq->where('is_approved', true)], 'rating')
+                    ->orderByDesc('reviews_avg_rating');
                 break;
             case 'name_asc':
                 $query->orderBy('name', 'asc');
@@ -149,18 +173,18 @@ class StorefrontController extends Controller
                              ->orWhere('name', 'like', "%{$q}%");
                       });
             })
-            ->with(['category:id,name,slug', 'defaultVariant'])
+            ->with(['category:id,name,slug', 'defaultVariant.priceTiers'])
             ->take(6)
             ->get()
             ->map(function ($product) {
-                $variant = $product->defaultVariant;
+                $baseTier = $product->defaultVariant?->priceTiers->sortBy('min_quantity')->first();
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'slug' => $product->slug,
                     'url' => route('product.show', $product->slug),
                     'category' => $product->category?->name,
-                    'price' => $variant ? number_format($variant->retail_price, 0, '.', ' ') . ' UZS' : null,
+                    'price' => $baseTier ? number_format($baseTier->unit_price, 0, '.', ' ') . ' UZS' : null,
                     'trade_mode' => $product->trade_mode,
                 ];
             });
@@ -203,28 +227,37 @@ class StorefrontController extends Controller
     {
         $product = Product::where('slug', $slug)->firstOrFail();
 
+        // Only signed-in customers may review, so ratings can't be flooded anonymously
+        $user = $request->user();
+        if (!$user) {
+            return redirect()->guest(route('login'))
+                ->with('error', "Sharh qoldirish uchun tizimga kiring.");
+        }
+
         $validated = $request->validate([
             'rating' => 'required|integer|between:1,5',
-            'author_name' => 'required|string|min:2|max:100',
+            'author_name' => 'nullable|string|min:2|max:100',
             'comment' => 'required|string|min:3|max:1000',
         ]);
 
-        $user = $request->user();
-        $isVerifiedPurchase = false;
-
-        if ($user) {
-            $isVerifiedPurchase = \App\Models\OrderItem::where('product_id', $product->id)
-                ->whereHas('suborder.order', function ($query) use ($user) {
-                    $query->where('user_id', $user->id)
-                        ->whereIn('status', ['processing', 'completed']);
-                })
-                ->exists();
+        $alreadyReviewed = \App\Models\ProductReview::where('product_id', $product->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if ($alreadyReviewed) {
+            return back()->with('error', "Siz bu mahsulotga allaqachon sharh qoldirgansiz.");
         }
+
+        $isVerifiedPurchase = \App\Models\OrderItem::where('product_id', $product->id)
+            ->whereHas('suborder.order', function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->whereIn('status', ['processing', 'completed']);
+            })
+            ->exists();
 
         \App\Models\ProductReview::create([
             'product_id' => $product->id,
-            'user_id' => $user?->id,
-            'author_name' => $validated['author_name'],
+            'user_id' => $user->id,
+            'author_name' => $validated['author_name'] ?? $user->name,
             'rating' => (int) $validated['rating'],
             'comment' => $validated['comment'],
             'is_verified_purchase' => $isVerifiedPurchase,
@@ -266,29 +299,9 @@ class StorefrontController extends Controller
     public function cart(Request $request): View
     {
         $user = $request->user();
-        $sessionId = $request->session()->getId();
+        $sessionId = $this->cartSessionId($request);
 
         $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
-
-        // If current cart is empty, check for recently created orphan guest cart items and adopt them
-        if ($cart->items->isEmpty()) {
-            $orphan = Cart::where('status', 'active')
-                ->where('id', '!=', $cart->id)
-                ->whereNull('user_id')
-                ->whereHas('items')
-                ->where('created_at', '>=', now()->subHours(2))
-                ->latest()
-                ->first();
-
-            if ($orphan) {
-                foreach ($orphan->items as $it) {
-                    $this->cartService->addItem($cart, $it->product_variant_id, (float) $it->quantity);
-                }
-                $orphan->items()->delete();
-                $orphan->delete();
-                $cart->refresh();
-            }
-        }
 
         $quote = $this->cartService->getCartQuote($cart);
 
@@ -306,7 +319,7 @@ class StorefrontController extends Controller
         ]);
 
         $user = $request->user();
-        $sessionId = $request->session()->getId();
+        $sessionId = $this->cartSessionId($request);
 
         try {
             $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
@@ -352,7 +365,7 @@ class StorefrontController extends Controller
         ]);
 
         $user = $request->user();
-        $sessionId = $request->session()->getId();
+        $sessionId = $this->cartSessionId($request);
 
         try {
             $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
@@ -383,7 +396,7 @@ class StorefrontController extends Controller
     public function removeCartItem(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $user = $request->user();
-        $sessionId = $request->session()->getId();
+        $sessionId = $this->cartSessionId($request);
 
         try {
             $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
@@ -414,7 +427,7 @@ class StorefrontController extends Controller
     public function checkout(Request $request): View|RedirectResponse
     {
         $user = $request->user();
-        $sessionId = $request->session()->getId();
+        $sessionId = $this->cartSessionId($request);
 
         $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
         $quote = $this->cartService->getCartQuote($cart);
@@ -446,20 +459,26 @@ class StorefrontController extends Controller
 
         $user = $request->user();
         if (!$user) {
-            // Find or create guest customer user
             $phone = preg_replace('/[^\d+]/', '', $validated['phone']);
-            $user = \App\Models\User::firstOrCreate(
-                ['phone' => $phone],
-                [
-                    'name' => $validated['recipient_name'],
-                    'email' => 'guest_' . uniqid() . '@example.uz',
-                    'password' => bcrypt(Str::random(16)),
-                    'is_active' => true,
-                ]
-            );
+            $existing = \App\Models\User::where('phone', $phone)->first();
+
+            // A guest must not be able to place orders into someone else's registered account
+            if ($existing && !str_starts_with((string) $existing->email, 'guest_')) {
+                return redirect()->guest(route('login'))
+                    ->withInput(['login' => $phone])
+                    ->with('error', "Bu telefon raqami ro'yxatdan o'tgan. Buyurtmani yakunlash uchun hisobingizga kiring — savatchangiz saqlanib qoladi.");
+            }
+
+            $user = $existing ?? \App\Models\User::create([
+                'phone' => $phone,
+                'name' => $validated['recipient_name'],
+                'email' => 'guest_' . uniqid() . '@example.uz',
+                'password' => bcrypt(Str::random(16)),
+                'is_active' => true,
+            ]);
         }
 
-        $sessionId = $request->session()->getId();
+        $sessionId = $this->cartSessionId($request);
         $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
 
         $paymentMethod = $validated['payment_method'] ?? 'cash_on_delivery';
@@ -485,6 +504,9 @@ class StorefrontController extends Controller
 
             $order = $result['order'];
 
+            // Remember orders placed in this browser so a guest can open their own confirmation / payment pages
+            $request->session()->push('placed_orders', $order->order_number);
+
             // If customer picked online payment (Click / Payme), take them directly to payment checkout
             if (in_array($paymentMethod, ['click', 'payme', 'uzum'])) {
                 return redirect()->route('payment.checkout', ['orderNumber' => $order->order_number]);
@@ -500,11 +522,13 @@ class StorefrontController extends Controller
     /**
      * Order confirmation and success view.
      */
-    public function orderSuccess(string $orderNumber): View
+    public function orderSuccess(Request $request, string $orderNumber): View
     {
         $order = Order::where('order_number', $orderNumber)
             ->with(['suborders.items', 'suborders.seller', 'suborders.shipments', 'payments'])
             ->firstOrFail();
+
+        abort_unless(self::canAccessOrder($request, $order), 404);
 
         return view('storefront.order_success', compact('order'));
     }
@@ -523,17 +547,25 @@ class StorefrontController extends Controller
             'events' => fn($q) => $q->orderBy('created_at', 'desc'),
         ]);
 
+        $user = $request->user();
+
         if ($trackingNumber) {
-            $shipment = $query->where('tracking_number', $trackingNumber)->first();
+            $shipment = (clone $query)->where('tracking_number', $trackingNumber)->first();
         } else {
-            $shipment = $query->where('tracking_number', 'TRK-UZ-778899')->first()
-                     ?? $query->where('status', 'in_transit')->latest()->first()
-                     ?? $query->latest()->first();
+            // Without a number, only the signed-in customer's own latest parcel is shown — never a stranger's
+            $shipment = $user
+                ? (clone $query)->whereHas('suborder.order', fn($q) => $q->where('user_id', $user->id))->latest()->first()
+                : null;
         }
 
         if (!$shipment) {
             return view('storefront.tracking_empty', ['trackingNumber' => $trackingNumber]);
         }
+
+        // Anyone with a tracking number sees progress; personal details only for the order's owner / staff
+        $order = $shipment->suborder?->order;
+        $canSeeDetails = ($order && self::canAccessOrder($request, $order))
+            || ($user && $shipment->courier_id === $user->id);
 
         // Warehouse / Origin
         $warehouse = [
@@ -551,6 +583,14 @@ class StorefrontController extends Controller
             'lat' => (float) ($shipment->delivery_address['latitude'] ?? ($shipment->suborder?->order?->shipping_address['latitude'] ?? 41.3111)),
             'lng' => (float) ($shipment->delivery_address['longitude'] ?? ($shipment->suborder?->order?->shipping_address['longitude'] ?? 69.2797)),
         ];
+
+        if (!$canSeeDetails) {
+            $destination['recipient'] = Str::limit($destination['recipient'], 1, '***');
+            $destination['phone'] = preg_replace('/\d(?=\d{2})/', '*', (string) $destination['phone']);
+            $destination['address'] = $shipment->delivery_address['city']
+                ?? $order?->shipping_address['city']
+                ?? 'Manzil yashirilgan';
+        }
 
         // Courier locations path
         $locations = $shipment->courierLocations->map(fn($loc) => [
@@ -578,10 +618,10 @@ class StorefrontController extends Controller
                 'tracking_number' => $shipment->tracking_number,
                 'status' => $shipment->status,
                 'courier' => [
-                    'name' => $shipment->courier?->name ?? 'Rustam Kuryer',
-                    'phone' => '+998 97 123 45 67',
-                    'vehicle' => 'Labo / Damas (Kamyon)',
-                    'plate' => '01 A 777 AA',
+                    'name' => $shipment->courier?->name ?? 'Kuryer hali tayinlanmagan',
+                    'phone' => $canSeeDetails ? $shipment->courier?->phone : null,
+                    'vehicle' => null,
+                    'plate' => null,
                 ],
                 'warehouse' => $warehouse,
                 'destination' => $destination,
@@ -591,11 +631,54 @@ class StorefrontController extends Controller
             ]);
         }
 
-        $allShipments = Shipment::select('tracking_number', 'status', 'created_at')
-            ->orderBy('id', 'desc')
-            ->take(8)
-            ->get();
+        // "Other parcels" list: only the viewer's own shipments
+        $allShipments = $user
+            ? Shipment::select('shipments.tracking_number', 'shipments.status', 'shipments.created_at')
+                ->whereHas('suborder.order', fn($q) => $q->where('user_id', $user->id))
+                ->orderBy('shipments.id', 'desc')
+                ->take(8)
+                ->get()
+            : collect();
 
-        return view('storefront.tracking', compact('shipment', 'warehouse', 'destination', 'locations', 'latest', 'allShipments'));
+        return view('storefront.tracking', compact('shipment', 'warehouse', 'destination', 'locations', 'latest', 'allShipments', 'canSeeDetails'));
+    }
+
+    /**
+     * Guest carts are keyed by a long-lived cookie so they survive session expiry and the
+     * session-id regeneration that happens on login (which is when the guest cart gets merged).
+     */
+    protected function cartSessionId(Request $request): string
+    {
+        return (string) ($request->cookie('cart_session_id') ?: $request->session()->getId());
+    }
+
+    /**
+     * Whether the current visitor may see an order's details: its buyer, a guest who placed it in
+     * this browser session, staff, the courier carrying it, or a seller fulfilling part of it.
+     */
+    public static function canAccessOrder(Request $request, Order $order): bool
+    {
+        if (in_array($order->order_number, (array) $request->session()->get('placed_orders', []), true)) {
+            return true;
+        }
+
+        $user = $request->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($order->user_id === $user->id || $user->hasRole(['superadmin', 'admin', 'moderator', 'logistics_operator'])) {
+            return true;
+        }
+
+        $order->loadMissing('suborders.shipments');
+
+        if ($order->suborders->flatMap->shipments->contains('courier_id', $user->id)) {
+            return true;
+        }
+
+        return $order->suborders->contains(
+            fn($sub) => $user->seller_id === $sub->seller_id || $user->belongsToSeller($sub->seller_id)
+        );
     }
 }

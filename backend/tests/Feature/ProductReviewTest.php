@@ -69,7 +69,7 @@ class ProductReviewTest extends TestCase
         return $product;
     }
 
-    public function test_guest_can_submit_product_review(): void
+    public function test_guest_is_asked_to_log_in_before_reviewing(): void
     {
         $product = $this->createProductFixture();
 
@@ -79,24 +79,58 @@ class ProductReviewTest extends TestCase
             'comment' => 'Mahsulot sifati juda zo\'r, o\'z vaqtida yetkazib berildi.',
         ]);
 
+        $response->assertRedirect(route('login'));
+        $this->assertEquals(0, ProductReview::count());
+    }
+
+    public function test_signed_in_customer_can_review_once(): void
+    {
+        $product = $this->createProductFixture();
+        $user = User::create([
+            'name' => 'Akmal Rahimov',
+            'email' => 'akmal@example.uz',
+            'password' => 'Secret123!',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('product.reviews.store', $product->slug), [
+            'rating' => 5,
+            'comment' => 'Mahsulot sifati juda zo\'r, o\'z vaqtida yetkazib berildi.',
+        ]);
+
         $response->assertRedirect();
         $response->assertSessionHas('success_review');
 
         $this->assertDatabaseHas('product_reviews', [
             'product_id' => $product->id,
+            'user_id' => $user->id,
             'author_name' => 'Akmal Rahimov',
             'rating' => 5,
             'is_verified_purchase' => false,
             'is_approved' => true,
         ]);
+
+        // Second review for the same product is rejected
+        $this->actingAs($user)->post(route('product.reviews.store', $product->slug), [
+            'rating' => 1,
+            'comment' => 'Takroriy sharh',
+        ])->assertSessionHas('error');
+
+        $this->assertEquals(1, ProductReview::count());
     }
 
     public function test_review_validation_rules(): void
     {
         $product = $this->createProductFixture();
+        $user = User::create([
+            'name' => 'Validator',
+            'email' => 'validator@example.uz',
+            'password' => 'Secret123!',
+            'is_active' => true,
+        ]);
 
-        $response = $this->post(route('product.reviews.store', $product->slug), [
-            'author_name' => '',
+        $response = $this->actingAs($user)->post(route('product.reviews.store', $product->slug), [
+            'author_name' => 'A', // too short (<2)
             'rating' => 6, // invalid > 5
             'comment' => 'Hi', // too short (<3)
         ]);

@@ -26,6 +26,13 @@ class PaymentWebController extends Controller
             ->with(['payments', 'suborders.seller', 'suborders.items'])
             ->firstOrFail();
 
+        abort_unless(StorefrontController::canAccessOrder($request, $order), 404);
+
+        if ($order->status === 'cancelled') {
+            return redirect()->route('order.success', ['orderNumber' => $order->order_number])
+                ->with('error', "Bu buyurtma bekor qilingan, unga to'lov qilib bo'lmaydi.");
+        }
+
         // If order already paid or completed
         if ($order->status === 'completed' || ($order->latest_payment && $order->latest_payment->status === 'paid')) {
             return redirect()->route('order.success', ['orderNumber' => $order->order_number])
@@ -91,6 +98,13 @@ class PaymentWebController extends Controller
         ]);
 
         $order = Order::where('order_number', $orderNumber)->firstOrFail();
+        abort_unless(StorefrontController::canAccessOrder($request, $order), 404);
+
+        if ($order->status !== 'pending_payment') {
+            return redirect()->route('order.success', ['orderNumber' => $order->order_number])
+                ->with('error', "Bu buyurtma uchun to'lov usulini endi o'zgartirib bo'lmaydi.");
+        }
+
         $method = $validated['payment_method'];
 
         // 1. Handle Cash on Delivery (Payment remains pending until courier marks delivered)

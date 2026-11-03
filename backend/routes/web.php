@@ -10,7 +10,7 @@ Route::get('/', [StorefrontController::class, 'index'])->name('home');
 Route::get('/catalog', [StorefrontController::class, 'catalog'])->name('catalog');
 Route::get('/search/live', [StorefrontController::class, 'liveSearch'])->name('search.live');
 Route::get('/products/{slug}', [StorefrontController::class, 'product'])->name('product.show');
-Route::post('/products/{slug}/reviews', [StorefrontController::class, 'storeReview'])->name('product.reviews.store');
+Route::post('/products/{slug}/reviews', [StorefrontController::class, 'storeReview'])->middleware('throttle:10,1')->name('product.reviews.store');
 Route::get('/sellers/{slug}', [StorefrontController::class, 'seller'])->name('seller.show');
 Route::get('/wishlist', [\App\Http\Controllers\Web\WishlistController::class, 'index'])->name('wishlist');
 Route::post('/wishlist/toggle/{productId}', [\App\Http\Controllers\Web\WishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -20,10 +20,11 @@ Route::post('/cart/items', [StorefrontController::class, 'addToCart'])->name('ca
 Route::post('/cart/items/{id}', [StorefrontController::class, 'updateCartItem'])->name('cart.update');
 Route::delete('/cart/items/{id}', [StorefrontController::class, 'removeCartItem'])->name('cart.remove');
 Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
-Route::post('/checkout', [StorefrontController::class, 'processCheckout'])->name('checkout.post');
+Route::post('/checkout', [StorefrontController::class, 'processCheckout'])->middleware('throttle:10,1')->name('checkout.post');
 Route::get('/orders/{orderNumber}/success', [StorefrontController::class, 'orderSuccess'])->name('order.success');
 Route::get('/orders', [\App\Http\Controllers\Web\OrderHubController::class, 'index'])->name('orders.hub');
 Route::get('/orders/{orderNumber}', [\App\Http\Controllers\Web\OrderHubController::class, 'show'])->name('orders.detail');
+Route::post('/orders/{orderNumber}/cancel', [\App\Http\Controllers\Web\OrderHubController::class, 'cancel'])->name('orders.cancel');
 Route::get('/tracking/{trackingNumber?}', [StorefrontController::class, 'tracking'])->name('tracking');
 
 // Customer Service, Legal & Policy Pages
@@ -53,7 +54,9 @@ Route::post('/profile/seller/orders/{id}/status', [\App\Http\Controllers\Web\Pro
 Route::post('/profile/courier/shipments/{id}/status', [\App\Http\Controllers\Web\ProfileController::class, 'updateCourierShipmentStatus'])->name('profile.courier.shipments.status');
 
 Route::get('/login', [WebAuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');
+Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
+Route::get('/register', [WebAuthController::class, 'showRegisterForm'])->name('register');
+Route::post('/register', [WebAuthController::class, 'register'])->middleware('throttle:5,1')->name('register.post');
 Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
 // Installation routes

@@ -239,9 +239,9 @@
                         </div>
                     @else
                         <div class="flex items-center gap-1.5">
-                            <a href="{{ route('profile') }}" class="px-3 py-2 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] flex items-center gap-1.5 transition whitespace-nowrap" title="Profil — Mening profilim">
+                            <a href="{{ route('register') }}" class="px-3 py-2 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] hover:border-[#123C2F] text-xs font-bold text-[#172326] flex items-center gap-1.5 transition whitespace-nowrap">
                                 <span>👤</span>
-                                <span>Profil</span>
+                                <span>Ro'yxatdan o'tish</span>
                             </a>
                             <a href="{{ route('login') }}" class="px-3.5 py-2 rounded-2xl bg-[#123C2F] text-white font-bold text-xs hover:bg-[#0d2a21] transition whitespace-nowrap">
                                 Kirish

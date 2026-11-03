@@ -7,8 +7,12 @@ use App\Models\Order;
 use App\Models\Seller;
 use App\Models\Suborder;
 use App\Models\User;
+use App\Services\Audit\AuditService;
+use App\Services\Checkout\InventoryReservationService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class OrderHubController extends Controller
@@ -57,8 +61,9 @@ class OrderHubController extends Controller
 
         if ($user->hasRole(['seller_owner', 'seller_manager', 'seller_operator', 'admin'])) {
             $isSeller = true;
+            // Never fall back to another store: a user without a store simply has no sales
             $sellerId = $user->seller_id;
-            $seller = $sellerId ? Seller::find($sellerId) : Seller::first();
+            $seller = $sellerId ? Seller::find($sellerId) : null;
 
             if ($seller) {
                 $salesQuery = Suborder::where('seller_id', $seller->id)
@@ -110,7 +115,7 @@ class OrderHubController extends Controller
     /**
      * Show detailed single order view.
      */
-    public function show(string $orderNumber): View|\Illuminate\Http\RedirectResponse
+    public function show(Request $request, string $orderNumber): View|\Illuminate\Http\RedirectResponse
     {
         $user = Auth::user();
         if (!$user) {
@@ -126,11 +131,83 @@ class OrderHubController extends Controller
             ])
             ->firstOrFail();
 
-        // Security check: Customer can only view their own orders unless they have staff/admin/seller/courier roles
-        if (!$user->hasRole(['admin', 'superadmin', 'moderator', 'seller_owner', 'seller_manager', 'courier', 'logistics_operator']) && $order->user_id !== $user->id) {
+        // Security check: buyer, staff, the assigned courier, or a seller fulfilling part of this order
+        if (!StorefrontController::canAccessOrder($request, $order)) {
             abort(403, "Ushbu buyurtmani ko'rishga ruxsat berilmagan.");
         }
 
-        return view('storefront.order_detail', compact('order'));
+        $canCancel = $order->user_id === $user->id && $this->isCancellable($order);
+
+        return view('storefront.order_detail', compact('order', 'canCancel'));
+    }
+
+    /**
+     * Customer cancels their own order before it leaves the warehouse.
+     * Reserved stock is returned; orders already paid online go through the refund flow instead.
+     */
+    public function cancel(Request $request, string $orderNumber, InventoryReservationService $reservations): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->guest(route('login'));
+        }
+
+        $order = Order::where('order_number', $orderNumber)
+            ->where('user_id', $user->id)
+            ->with(['suborders.shipments', 'payments', 'reservations'])
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        if (!$this->isCancellable($order)) {
+            return back()->with('error', "Bu buyurtmani endi bekor qilib bo'lmaydi. Agar mahsulot yetib kelgan bo'lsa, qaytarish so'rovini yuboring.");
+        }
+
+        DB::transaction(function () use ($order, $reservations, $validated, $user) {
+            $previousStatus = $order->status;
+
+            foreach ($order->reservations as $reservation) {
+                $reservations->releaseReservation($reservation, 'Customer cancelled order ' . $order->order_number, true);
+            }
+
+            $order->update(['status' => 'cancelled']);
+            foreach ($order->suborders as $suborder) {
+                $suborder->update(['status' => 'cancelled']);
+                foreach ($suborder->shipments as $shipment) {
+                    $shipment->update(['status' => 'failed', 'delay_reason' => 'Mijoz buyurtmani bekor qildi']);
+                }
+            }
+            $order->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
+
+            AuditService::log(
+                'order.cancelled_by_customer',
+                $order,
+                ['status' => $previousStatus],
+                ['status' => 'cancelled', 'reason' => $validated['reason'] ?? null],
+                $user
+            );
+        });
+
+        return redirect()->route('orders.detail', $order->order_number)
+            ->with('success', "Buyurtma bekor qilindi.");
+    }
+
+    /**
+     * Cancellable while unpaid online or cash-on-delivery, and no parcel has been picked up yet.
+     */
+    protected function isCancellable(Order $order): bool
+    {
+        if (!in_array($order->status, ['pending_payment', 'processing'], true)) {
+            return false;
+        }
+
+        if ($order->payments->contains('status', 'paid')) {
+            return false;
+        }
+
+        return $order->suborders->flatMap->shipments
+            ->every(fn($shipment) => in_array($shipment->status, ['pending', 'assigned'], true));
     }
 }

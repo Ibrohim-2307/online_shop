@@ -29,7 +29,12 @@
             </div>
 
             <div>
-                @if($isPaid)
+                @if($order->status === 'cancelled')
+                    <span class="px-3.5 py-1.5 rounded-xl bg-rose-100 text-rose-800 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                        <span>✕</span>
+                        <span>Bekor qilingan</span>
+                    </span>
+                @elseif($isPaid)
                     <span class="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
                         <span>✓</span>
                         <span>To'langan</span>
@@ -48,8 +53,37 @@
             </div>
         </div>
 
+        @if(session('success'))
+            <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold">{{ session('error') }}</div>
+        @endif
+
+        @if($canCancel ?? false)
+            <form method="POST" action="{{ route('orders.cancel', $order->order_number) }}"
+                  onsubmit="return confirm('Buyurtmani bekor qilmoqchimisiz?')"
+                  class="mb-8 p-5 rounded-3xl bg-white border border-[#E8ECE4] flex flex-col sm:flex-row sm:items-center gap-3">
+                @csrf
+                <div class="flex-1">
+                    <h3 class="font-bold text-sm text-[#172326]">Fikringiz o'zgardimi?</h3>
+                    <p class="text-xs text-[#64748B] mt-0.5">Buyurtma kuryerga topshirilgunga qadar uni bepul bekor qilishingiz mumkin.</p>
+                </div>
+                <select name="reason" class="px-3 py-2.5 rounded-xl border border-[#E8ECE4] text-xs">
+                    <option value="">Sababni tanlang (ixtiyoriy)</option>
+                    <option>Fikrimni o'zgartirdim</option>
+                    <option>Boshqa joydan arzonroq topdim</option>
+                    <option>Yetkazish muddati to'g'ri kelmaydi</option>
+                    <option>Xato buyurtma berdim</option>
+                </select>
+                <button type="submit" class="px-5 py-2.5 rounded-xl border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-xs transition">
+                    Buyurtmani bekor qilish
+                </button>
+            </form>
+        @endif
+
         <!-- Pending Payment Banner -->
-        @if(!$isPaid && !$isCod)
+        @if(!$isPaid && !$isCod && $order->status !== 'cancelled')
             <div class="mb-8 p-6 rounded-3xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h3 class="font-bold text-sm text-amber-950">To'lov hali amalga oshirilmagan</h3>

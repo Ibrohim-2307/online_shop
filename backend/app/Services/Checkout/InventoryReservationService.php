@@ -86,17 +86,20 @@ class InventoryReservationService
 
     /**
      * Release a specific active reservation back to available stock.
+     * Committed (cash-on-delivery, not yet shipped) reservations are released only when explicitly allowed,
+     * e.g. when the customer cancels before pickup.
      */
-    public function releaseReservation(InventoryReservation $reservation, string $reason = 'Manual release'): void
+    public function releaseReservation(InventoryReservation $reservation, string $reason = 'Manual release', bool $includeCommitted = false): void
     {
-        DB::transaction(function () use ($reservation, $reason) {
+        DB::transaction(function () use ($reservation, $reason, $includeCommitted) {
             // Lock reservation row
             $lockedRes = InventoryReservation::where('id', $reservation->id)
                 ->lockForUpdate()
                 ->first();
 
-            if (!$lockedRes || $lockedRes->status !== 'reserved') {
-                return; // Already released, committed, or expired
+            $releasable = $includeCommitted ? ['reserved', 'committed'] : ['reserved'];
+            if (!$lockedRes || !in_array($lockedRes->status, $releasable, true)) {
+                return; // Already released, expired, or committed when not allowed
             }
 
             $balance = InventoryBalance::where('warehouse_id', $lockedRes->warehouse_id)

@@ -41,6 +41,9 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    // Shows one-click demo accounts on the login page. Keep false on a real store.
+    'demo_mode' => (bool) env('APP_DEMO_MODE', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

@@ -431,11 +431,128 @@ class CartAndCheckoutTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
+        $cartCookie = $response->json('data.session_id');
 
-        // 2. Visit /cart - it should show the item and NOT be empty!
-        $cartResp = $this->get('/cart');
+        // 2. Visit /cart with the browser's cart cookie - it should show the item and NOT be empty!
+        $cartResp = $this->withCookie('cart_session_id', $cartCookie)->get('/cart');
         $cartResp->assertStatus(200);
         $cartResp->assertDontSee('Savatchangiz hozircha bo\'sh', false);
         $cartResp->assertSee('Gips');
+    }
+
+    public function test_guest_cart_is_never_shown_to_another_visitor(): void
+    {
+        [$seller, $product, $variant] = $this->setupSellerWithProduct(
+            'Private Seller', 'private-seller', 'Shaxsiy Tovar', 'shaxsiy-tovar', 'PRIV-01', 500
+        );
+
+        $this->withCookie('cart_session_id', 'visitor-a')->postJson('/cart/items', [
+            'variant_id' => $variant->id,
+            'quantity' => 3,
+        ])->assertStatus(200);
+
+        // A different browser must get its own empty cart, not visitor A's items
+        $otherResp = $this->withCookie('cart_session_id', 'visitor-b')->get('/cart');
+        $otherResp->assertStatus(200);
+        $otherResp->assertDontSee('Shaxsiy Tovar');
+    }
+
+    public function test_guest_cannot_checkout_into_a_registered_users_account(): void
+    {
+        [$seller, $product, $variant] = $this->setupSellerWithProduct(
+            'Guard Seller', 'guard-seller', 'Tovar', 'tovar-guard', 'GRD-01', 500
+        );
+        $owner = User::create([
+            'name' => 'Real Owner',
+            'email' => 'owner@example.uz',
+            'phone' => '+998901112233',
+            'password' => 'Secret123!',
+            'is_active' => true,
+        ]);
+
+        $this->withCookie('cart_session_id', 'guest-x')->postJson('/cart/items', [
+            'variant_id' => $variant->id,
+            'quantity' => 1,
+        ])->assertStatus(200);
+
+        $resp = $this->withCookie('cart_session_id', 'guest-x')->post('/checkout', [
+            'recipient_name' => 'Impostor',
+            'phone' => '+998901112233',
+            'region' => 'Toshkent',
+            'city' => 'Toshkent',
+            'address_line' => 'Biror joy',
+            'payment_method' => 'cash_on_delivery',
+        ]);
+
+        $resp->assertRedirect(route('login'));
+        $this->assertEquals(0, Order::where('user_id', $owner->id)->count());
+    }
+
+    public function test_order_confirmation_page_is_private(): void
+    {
+        [$seller, $product, $variant] = $this->setupSellerWithProduct(
+            'Priv Seller', 'priv-seller', 'Tovar P', 'tovar-p', 'PRV-01', 500
+        );
+        $customer = User::create([
+            'name' => 'Buyer', 'email' => 'buyer-priv@example.uz', 'phone' => '+998907770011',
+            'password' => 'Secret123!', 'is_active' => true,
+        ]);
+        $stranger = User::create([
+            'name' => 'Stranger', 'email' => 'stranger@example.uz', 'phone' => '+998907770022',
+            'password' => 'Secret123!', 'is_active' => true,
+        ]);
+
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 1])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Buyer', 'phone' => '+998907770011', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 1', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+
+        $this->actingAs($customer)->get('/orders/' . $order->order_number . '/success')->assertStatus(200);
+
+        // The stranger uses a different browser: fresh session without this order remembered
+        $this->flushSession();
+        $this->actingAs($stranger)->get('/orders/' . $order->order_number . '/success')->assertStatus(404);
+        $this->actingAs($stranger)->get('/orders/' . $order->order_number)->assertStatus(403);
+        $this->actingAs($stranger)->get('/payments/checkout/' . $order->order_number)->assertStatus(404);
+    }
+
+    public function test_customer_can_cancel_unshipped_order_and_stock_is_released(): void
+    {
+        [$seller, $product, $variant] = $this->setupSellerWithProduct(
+            'Cancel Seller', 'cancel-seller', 'Tovar C', 'tovar-c', 'CNL-01', 100
+        );
+        $customer = User::create([
+            'name' => 'Canceller', 'email' => 'cancel@example.uz', 'phone' => '+998907770033',
+            'password' => 'Secret123!', 'is_active' => true,
+        ]);
+
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 4])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Canceller', 'phone' => '+998907770033', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 2', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+        $this->assertEquals('processing', $order->status);
+        $reservedBefore = (float) \App\Models\InventoryBalance::where('product_variant_id', $variant->id)->sum('reserved_quantity');
+        $this->assertEquals(4.0, $reservedBefore);
+
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)
+            ->assertStatus(200)
+            ->assertSee('Buyurtmani bekor qilish');
+
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/cancel', ['reason' => "Fikrimni o'zgartirdim"])
+            ->assertRedirect(route('orders.detail', $order->order_number));
+
+        $this->assertEquals('cancelled', $order->fresh()->status);
+        $reservedAfter = (float) \App\Models\InventoryBalance::where('product_variant_id', $variant->id)->sum('reserved_quantity');
+        $this->assertEquals(0.0, $reservedAfter);
+
+        // A cancelled order cannot be cancelled twice (stock is not released again)
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/cancel')
+            ->assertSessionHas('error');
     }
 }

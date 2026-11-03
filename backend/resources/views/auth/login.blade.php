@@ -54,7 +54,13 @@
             </button>
         </form>
 
-        <!-- Quick Demo Accounts One-Click Fill -->
+        <div class="text-center text-xs text-slate-600 mb-6">
+            Hisobingiz yo'qmi?
+            <a href="{{ route('register') }}" class="font-bold text-[#123C2F] hover:underline">Ro'yxatdan o'ting</a>
+        </div>
+
+        @if(app()->environment('local', 'testing') || config('app.demo_mode'))
+        <!-- Quick Demo Accounts One-Click Fill (never shown in production) -->
         <div class="border-t border-slate-100 pt-5">
             <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 text-center">
                 Tezkor Demo Hisoblar (1-bosishda to'ldirish):
@@ -85,6 +91,7 @@
                 </button>
             </div>
         </div>
+        @endif
 
         <div class="text-center mt-6">
             <a href="/" class="text-xs font-bold text-slate-500 hover:text-[#123C2F] transition">

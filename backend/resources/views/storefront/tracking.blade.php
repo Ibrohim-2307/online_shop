@@ -180,34 +180,21 @@
                             🚚
                         </div>
                         <div class="flex-1">
-                            <h3 class="font-extrabold text-base text-[#172326]">{{ $shipment->courier?->name ?? 'Rustam Kuryer' }}</h3>
-                            <div class="flex items-center gap-2 text-xs text-[#64748B] mt-0.5">
-                                <span class="text-amber-500 font-bold">★ 4.9</span>
-                                <span>•</span>
-                                <span>350+ yetkazilgan</span>
-                            </div>
-                            <p class="text-[11px] font-mono font-semibold text-[#123C2F] mt-1">Labo (01 A 777 AA)</p>
+                            <h3 class="font-extrabold text-base text-[#172326]">{{ $shipment->courier?->name ?? 'Kuryer hali tayinlanmagan' }}</h3>
+                            @unless($shipment->courier)
+                                <p class="text-xs text-[#64748B] mt-0.5">Buyurtma qadoqlangach kuryer biriktiriladi.</p>
+                            @endunless
                         </div>
                     </div>
 
-                    <div class="pt-2 flex items-center gap-2">
-                        <a href="tel:+998971234567" class="flex-1 py-3 px-4 rounded-2xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                            <span>Qo'ng'iroq qilish</span>
-                        </a>
-                        <button type="button" @click="alert('Kuryerga SMS xabar jo\'natildi: Mijoz kutmoqda')" class="p-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-[#123C2F] hover:bg-white text-xs font-bold transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                        </button>
-                    </div>
-
-                    <!-- OTP Code Box for Safe Handover -->
-                    <div class="p-4 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] text-center space-y-1.5">
-                        <span class="text-[11px] font-semibold text-[#64748B]">Qabul qilish tasdiq kodi (OTP):</span>
-                        <div class="text-2xl font-black font-mono tracking-widest text-[#123C2F]">
-                            8492
+                    @if($canSeeDetails && $shipment->courier?->phone)
+                        <div class="pt-2">
+                            <a href="tel:{{ $shipment->courier->phone }}" class="w-full py-3 px-4 rounded-2xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                <span>Kuryerga qo'ng'iroq qilish</span>
+                            </a>
                         </div>
-                        <p class="text-[10px] text-[#64748B]">Tovarni qabul qilganingizda ushbu kodni kuryerga ayting.</p>
-                    </div>
+                    @endif
                 </div>
 
                 <!-- Package & Delivery Address Details -->
@@ -347,19 +334,24 @@
             const destIcon = createHtmlIcon('📍', '#EF4444');
 
             // 4. Add Warehouse Marker
+            // Addresses are user-entered: escape before putting them into popup HTML
+            const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const courierName = @json($shipment->courier?->name ?? 'Kuryer');
+
             const warehouseMarker = L.marker(warehouseLatLng, { icon: warehouseIcon })
                 .addTo(map)
-                .bindPopup(`<strong>${warehouse.name}</strong><br><span style="font-size: 11px; color: #64748B;">${warehouse.address}</span>`);
+                .bindPopup(`<strong>${esc(warehouse.name)}</strong><br><span style="font-size: 11px; color: #64748B;">${esc(warehouse.address)}</span>`);
 
             // 5. Add Destination Marker
             const destMarker = L.marker(destLatLng, { icon: destIcon })
                 .addTo(map)
-                .bindPopup(`<strong>Yetkazish manzili</strong><br><span style="font-size: 11px; color: #64748B;">${destination.address}</span>`);
+                .bindPopup(`<strong>Yetkazish manzili</strong><br><span style="font-size: 11px; color: #64748B;">${esc(destination.address)}</span>`);
 
             // 6. Add Courier Live Marker
+            const courierPopup = (p) => `<strong>${esc(courierName)}</strong><br><span style="font-size: 11px; color: #059669;">Yangilangan: ${esc(p.recorded_at || '—')}${p.speed ? ' • ' + Math.round(p.speed) + ' km/soat' : ''}</span>`;
             const courierMarker = L.marker(courierLatLng, { icon: courierIcon })
                 .addTo(map)
-                .bindPopup(`<strong>Kuryer: Rustam</strong><br><span style="font-size: 11px; color: #059669;">Harakat tezligi: ${latest.speed || 35} km/soat</span>`);
+                .bindPopup(courierPopup(latest));
 
             // Open courier popup initially
             courierMarker.openPopup();
@@ -393,46 +385,38 @@
                 map.fitBounds(L.latLngBounds(allCoords), { padding: [50, 50], animate: true });
             });
 
-            // 8. Live Real-time Simulation & Polling
-            let step = 0;
-            const simulatedSteps = [
-                { lat: 41.2995, lng: 69.2725, speed: 34, note: 'Amir Temur shoh ko\'chasida' },
-                { lat: 41.3025, lng: 69.2745, speed: 38, note: 'Toshkent Davlat Universiteti yaqinida' },
-                { lat: 41.3060, lng: 69.2768, speed: 32, note: 'Mustaqillik maydoni chorrahasida' },
-                { lat: 41.3090, lng: 69.2785, speed: 28, note: 'Manzilga yaqinlashmoqda (~500m)' },
-                { lat: 41.3111, lng: 69.2797, speed: 15, note: 'Manzilga yetib keldi!' }
-            ];
+            // 8. Live polling of the courier's real GPS position (no simulated movement)
+            const pollUrl = @json(route('tracking', $shipment->tracking_number) . '?json=1');
 
-            function advanceCourier() {
-                step = (step + 1) % simulatedSteps.length;
-                const nextPt = simulatedSteps[step];
-                courierLatLng = [nextPt.lat, nextPt.lng];
+            async function refreshCourier() {
+                try {
+                    const res = await fetch(pollUrl, { headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (!data.latest) return;
 
-                // Smooth marker pan
-                courierMarker.setLatLng(courierLatLng);
-                courierMarker.setPopupContent(`<strong>Kuryer: Rustam</strong><br><span style="font-size: 11px; color: #059669;">${nextPt.note}<br>Tezlik: ${nextPt.speed} km/soat</span>`);
-                
-                const legendSpeed = document.getElementById('legendSpeedText');
-                if (legendSpeed) {
-                    legendSpeed.textContent = `Tezlik: ${nextPt.speed} km/soat (${nextPt.note})`;
-                }
+                    latest = data.latest;
+                    courierLatLng = [latest.lat, latest.lng];
+                    courierMarker.setLatLng(courierLatLng);
+                    courierMarker.setPopupContent(courierPopup(latest));
+                    routeLine.setLatLngs([warehouseLatLng, ...data.locations.map(p => [p.lat, p.lng]), destLatLng]);
 
-                // If close to destination, update badge
-                if (step === simulatedSteps.length - 1) {
-                    const statusText = document.getElementById('liveStatusText');
-                    if (statusText) statusText.textContent = 'Manzilga yetib keldi!';
-                }
+                    const legendSpeed = document.getElementById('legendSpeedText');
+                    if (legendSpeed && latest.speed) legendSpeed.textContent = `Tezlik: ${Math.round(latest.speed)} km/soat`;
+
+                    if (data.status === 'delivered') {
+                        const statusText = document.getElementById('liveStatusText');
+                        if (statusText) statusText.textContent = 'Yetkazib berildi';
+                        clearInterval(pollTimer);
+                    }
+                } catch (e) { /* network hiccup: try again on next tick */ }
             }
 
             document.getElementById('btnSimulatePing')?.addEventListener('click', function () {
-                advanceCourier();
-                map.panTo(courierLatLng, { animate: true });
+                refreshCourier().then(() => map.panTo(courierLatLng, { animate: true }));
             });
 
-            // Automatic live simulation step every 8 seconds
-            setInterval(function () {
-                advanceCourier();
-            }, 8000);
+            const pollTimer = setInterval(refreshCourier, 15000);
         });
     </script>
 </x-layouts.app>

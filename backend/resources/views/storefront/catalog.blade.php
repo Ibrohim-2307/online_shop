@@ -39,6 +39,7 @@
                         <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Eng yangilari</option>
                         <option value="price_asc" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>Narx: arzondan qimmatga</option>
                         <option value="price_desc" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>Narx: qimmatdan arzonga</option>
+                        <option value="rating" {{ request('sort') === 'rating' ? 'selected' : '' }}>Reyting bo'yicha</option>
                         <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Nomi bo'yicha (A-Z)</option>
                     </select>
                 </form>
@@ -122,6 +123,26 @@
                             @if(request('sort'))
                                 <input type="hidden" name="sort" value="{{ request('sort') }}">
                             @endif
+                            @if(request('category'))
+                                <input type="hidden" name="category" value="{{ request('category') }}">
+                            @endif
+
+                            <!-- Price Range Filter -->
+                            <div>
+                                <label class="block text-xs font-extrabold uppercase tracking-wider text-[#64748B] mb-3">
+                                    Narx (UZS)
+                                </label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="number" name="min_price" min="0" step="1000" inputmode="numeric" value="{{ request('min_price') }}" placeholder="dan"
+                                           class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4] text-xs focus:border-[#123C2F] outline-none">
+                                    <input type="number" name="max_price" min="0" step="1000" inputmode="numeric" value="{{ request('max_price') }}" placeholder="gacha"
+                                           class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4] text-xs focus:border-[#123C2F] outline-none">
+                                </div>
+                                <label class="mt-3 flex items-center gap-2.5 p-2 rounded-xl border border-[#E8ECE4] cursor-pointer hover:bg-[#FAFBF7] text-xs">
+                                    <input type="checkbox" name="in_stock" value="1" {{ request()->boolean('in_stock') ? 'checked' : '' }} class="accent-[#123C2F]">
+                                    <span class="font-medium text-[#172326]">Faqat sotuvda borlari</span>
+                                </label>
+                            </div>
 
                             <!-- Trade Mode Filter -->
                             <div>

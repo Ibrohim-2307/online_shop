@@ -41,6 +41,14 @@ class Product extends Model
         return $this->belongsTo(Seller::class);
     }
 
+    /**
+     * Only stores approved by an admin (and not suspended) may show products to shoppers.
+     */
+    public function scopeFromActiveSeller($query)
+    {
+        return $query->whereHas('seller', fn($q) => $q->where('status', 'active'));
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

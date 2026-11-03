@@ -40,6 +40,7 @@ class StorefrontController extends Controller
 
         $featuredProducts = Product::where('status', 'approved')
             ->where('is_active', true)
+            ->fromActiveSeller()
             ->with(['seller:id,name,slug,rating', 'category:id,name,slug', 'variants.priceTiers'])
             ->latest()
             ->take(8)
@@ -47,6 +48,7 @@ class StorefrontController extends Controller
 
         $wholesaleProducts = Product::where('status', 'approved')
             ->where('is_active', true)
+            ->fromActiveSeller()
             ->whereIn('trade_mode', ['wholesale_only', 'both'])
             ->with(['seller:id,name,slug,rating', 'category:id,name,slug', 'variants.priceTiers'])
             ->take(6)
@@ -67,7 +69,7 @@ class StorefrontController extends Controller
      */
     public function catalog(Request $request): View
     {
-        $query = Product::where('status', 'approved')->where('is_active', true);
+        $query = Product::where('status', 'approved')->where('is_active', true)->fromActiveSeller();
 
         // Filter by Search Query
         if ($search = $request->input('q')) {
@@ -165,6 +167,7 @@ class StorefrontController extends Controller
 
         $products = Product::where('status', 'approved')
             ->where('is_active', true)
+            ->fromActiveSeller()
             ->where(function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
                       ->orWhere('description', 'like', "%{$q}%")
@@ -200,6 +203,7 @@ class StorefrontController extends Controller
         $product = Product::where('slug', $slug)
             ->where('status', 'approved')
             ->where('is_active', true)
+            ->fromActiveSeller()
             ->with([
                 'seller:id,name,slug,rating,phone,email,address',
                 'category:id,name,slug',
@@ -211,6 +215,7 @@ class StorefrontController extends Controller
 
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
+            ->fromActiveSeller()
             ->where('status', 'approved')
             ->where('is_active', true)
             ->with(['seller:id,name,slug,rating', 'variants.priceTiers'])

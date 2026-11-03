@@ -49,6 +49,7 @@ Route::post('/profile/addresses/{id}/default', [\App\Http\Controllers\Web\Profil
 
 // Seller actions inside Profile
 Route::post('/profile/seller/products', [\App\Http\Controllers\Web\ProfileController::class, 'storeSellerProduct'])->name('profile.seller.products.store');
+Route::post('/profile/seller/products/{id}', [\App\Http\Controllers\Web\ProfileController::class, 'updateSellerProduct'])->name('profile.seller.products.update');
 Route::post('/profile/seller/products/{id}/status', [\App\Http\Controllers\Web\ProfileController::class, 'updateSellerProductStatus'])->name('profile.seller.products.status');
 Route::post('/profile/seller/orders/{id}/status', [\App\Http\Controllers\Web\ProfileController::class, 'updateSellerOrderStatus'])->name('profile.seller.orders.status');
 

@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\Audit\AuditService;
 use App\Services\Checkout\InventoryReservationService;
+use App\Services\Inventory\InventoryService;
 use App\Services\Ledger\SellerLedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,8 @@ class ProfileController extends Controller
         $sellerBalance = 0;
         $categories = collect();
         $couriers = collect();
+        $sellerNeedsActionCount = 0;
+        $sellerSalesStats = [];
 
         if ($user->isSeller()) {
             $seller = $user->activeSeller() ?? Seller::where('id', $user->seller_id)->first();
@@ -107,7 +110,8 @@ class ProfileController extends Controller
                     [
                         'name' => $user->name . " Do'koni",
                         'legal_name' => $user->name . " XK",
-                        'status' => 'active',
+                        // A store created implicitly still needs admin approval before it can sell
+                        'status' => 'pending',
                         'commission_rate' => 5.0,
                         'rating' => 5.0,
                         'phone' => $user->phone,
@@ -131,6 +135,34 @@ class ProfileController extends Controller
                 ->latest()
                 ->limit(30)
                 ->get();
+
+            // Orders the seller must act on now (paid or cash-on-delivery, not yet being packed) go to the top
+            $needsAction = fn($sub) => in_array($sub->status, ['pending', 'confirmed'], true)
+                && in_array($sub->order?->status, ['processing'], true);
+            $sellerNeedsActionCount = $sellerSuborders->filter($needsAction)->count();
+            $sellerSuborders = $sellerSuborders->sortBy(fn($sub) => $needsAction($sub) ? 0 : 1)->values();
+
+            // Last 30 days of real sales (not cancelled, not awaiting online payment)
+            $recentSales = Suborder::where('seller_id', $seller->id)
+                ->where('created_at', '>=', now()->subDays(30))
+                ->where('status', '!=', 'cancelled')
+                ->whereHas('order', fn($q) => $q->whereNotIn('status', ['cancelled', 'pending_payment']))
+                ->get(['id', 'status', 'items_subtotal']);
+            $topProducts = \App\Models\OrderItem::whereIn('suborder_id', $recentSales->pluck('id'))
+                ->selectRaw('product_name, SUM(quantity) as qty, SUM(subtotal) as revenue')
+                ->groupBy('product_name')
+                ->orderByDesc('revenue')
+                ->limit(5)
+                ->get();
+            $sellerSalesStats = [
+                'revenue' => (int) $recentSales->sum('items_subtotal'),
+                'orders' => $recentSales->count(),
+                'delivered' => $recentSales->where('status', 'delivered')->count(),
+                'average' => $recentSales->count() ? (int) round($recentSales->avg('items_subtotal')) : 0,
+                'top_products' => $topProducts,
+                'out_of_stock' => $sellerProducts->filter(fn($p) => $p->is_active
+                    && $p->variants->flatMap->inventoryBalances->sum(fn($b) => (float) $b->quantity - (float) $b->reserved_quantity) <= 0)->count(),
+            ];
 
             $sellerWarehouses = Warehouse::where('seller_id', $seller->id)
                 ->with('balances.variant')
@@ -219,6 +251,8 @@ class ProfileController extends Controller
             'sellerBalance',
             'categories',
             'couriers',
+            'sellerNeedsActionCount',
+            'sellerSalesStats',
             'courierShipments',
             'courierActiveShipments',
             'courierFinishedShipments',
@@ -249,11 +283,16 @@ class ProfileController extends Controller
             'stock_quantity' => ['required', 'numeric', 'min:0'],
             'min_order_quantity' => ['nullable', 'numeric', 'min:0.001'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:10240'],
-            'image_url' => ['nullable', 'string', 'max:1000'],
+            // No SVG: an uploaded SVG is served from our domain and can carry scripts
+            'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+            'image_url' => ['nullable', 'string', 'max:1000', 'regex:#^(/images/|https://)#'],
         ]);
 
-        $seller = $user->activeSeller() ?? Seller::where('id', $user->seller_id)->first() ?? Seller::first();
+        // Never fall back to someone else's store
+        $seller = $this->currentSeller($user);
+        if (!$seller) {
+            return back()->with('error', "Hisobingizga do'kon biriktirilmagan. Administrator bilan bog'laning.");
+        }
 
         // Warehouse setup
         $warehouse = Warehouse::firstOrCreate(
@@ -269,15 +308,7 @@ class ProfileController extends Controller
         // Image handling
         $imageUrl = $validated['image_url'] ?? null;
         if ($request->hasFile('image_file')) {
-            $file = $request->file('image_file');
-            $uploadDir = public_path('images/products');
-            if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            $extension = $file->getClientOriginalExtension() ?: 'jpg';
-            $filename = Str::slug($validated['name']) . '-' . time() . '.' . $extension;
-            $file->move($uploadDir, $filename);
-            $imageUrl = '/images/products/' . $filename;
+            $imageUrl = $this->storeProductImage($request->file('image_file'), $validated['name']);
         }
 
         if (!$imageUrl) {
@@ -305,7 +336,8 @@ class ProfileController extends Controller
             'min_order_quantity' => $validated['min_order_quantity'] ?? 1.0,
             'unit_step' => 1.0,
             'image_url' => $imageUrl,
-            'status' => 'approved',
+            // A store the admin hasn't approved yet can prepare products, but they go live only after moderation
+            'status' => $seller->status === 'active' ? 'approved' : 'pending',
             'is_active' => true,
         ]);
 
@@ -314,7 +346,7 @@ class ProfileController extends Controller
             'product_id' => $product->id,
             'sku' => $sku,
             'name' => 'Standart',
-            'status' => 'active',
+            'is_active' => true,
         ]);
 
         PriceTier::create([
@@ -337,7 +369,105 @@ class ProfileController extends Controller
         ]);
 
         return redirect()->route('profile', ['tab' => 'seller_products'])
-            ->with('success', "Mahsulot ({$product->name}) muvaffaqiyatli qo'shildi va do'koningizda sotuvga chiqdi!");
+            ->with('success', $product->status === 'approved'
+                ? "Mahsulot ({$product->name}) muvaffaqiyatli qo'shildi va do'koningizda sotuvga chiqdi!"
+                : "Mahsulot ({$product->name}) saqlandi. Do'koningiz tasdiqlangach saytda ko'rinadi.");
+    }
+
+    /**
+     * Seller: edit an existing product — name, description, retail price, stock on hand, minimum order, photo.
+     */
+    public function updateSellerProduct(Request $request, int $id, InventoryService $inventoryService): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->isSeller()) {
+            abort(403, 'Ruxsat berilmagan.');
+        }
+
+        $seller = $this->currentSeller($user);
+        abort_unless($seller, 403);
+        $product = Product::where('id', $id)->where('seller_id', $seller->id)->with('variants.priceTiers')->firstOrFail();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'price' => ['required', 'integer', 'min:100'],
+            'stock_quantity' => ['required', 'numeric', 'min:0'],
+            'min_order_quantity' => ['nullable', 'numeric', 'min:0.001'],
+            'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+        ]);
+
+        $variant = $product->variants->first();
+        abort_unless($variant, 404);
+
+        $warehouse = Warehouse::firstOrCreate(
+            ['seller_id' => $seller->id],
+            ['name' => 'Asosiy Ombor', 'code' => 'WH-' . $seller->id . '-01', 'address' => 'Toshkent sh.', 'is_active' => true]
+        );
+        $balance = InventoryBalance::where('warehouse_id', $warehouse->id)->where('product_variant_id', $variant->id)->first();
+        $reserved = (float) ($balance?->reserved_quantity ?? 0);
+
+        if ((float) $validated['stock_quantity'] < $reserved) {
+            return back()->with('error', "Qoldiq {$reserved} dan kam bo'lishi mumkin emas: shuncha tovar mijozlar buyurtmalari uchun band qilingan.");
+        }
+
+        DB::transaction(function () use ($request, $product, $variant, $validated, $warehouse, $balance, $inventoryService, $user) {
+            $updates = [
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'min_order_quantity' => $validated['min_order_quantity'] ?? $product->min_order_quantity,
+            ];
+            if ($request->hasFile('image_file')) {
+                $updates['image_url'] = $this->storeProductImage($request->file('image_file'), $validated['name']);
+            }
+            $product->update($updates);
+
+            // Retail price lives in the base tier (smallest minimum quantity)
+            $baseTier = $variant->priceTiers->sortBy('min_quantity')->first();
+            if ($baseTier) {
+                $baseTier->update(['unit_price' => (int) $validated['price']]);
+            } else {
+                PriceTier::create(['product_variant_id' => $variant->id, 'min_quantity' => 1, 'unit_price' => (int) $validated['price']]);
+            }
+
+            $delta = bcsub((string) $validated['stock_quantity'], (string) ($balance?->quantity ?? 0), 3);
+            if (bccomp($delta, '0', 3) !== 0) {
+                $inventoryService->adjustStock($warehouse, $variant, $delta, 'adjustment', "Sotuvchi qoldiqni yangiladi", $user);
+            }
+        });
+
+        AuditService::log('seller.product_updated', $product, null, [
+            'price' => (int) $validated['price'],
+            'stock' => $validated['stock_quantity'],
+        ]);
+
+        return redirect()->route('profile', ['tab' => 'seller_products'])
+            ->with('success', "Mahsulot ({$product->name}) yangilandi.");
+    }
+
+    /**
+     * The store the signed-in seller works for, or null. Never another store.
+     */
+    protected function currentSeller(User $user): ?Seller
+    {
+        return $user->activeSeller()
+            ?? ($user->seller_id ? Seller::find($user->seller_id) : null);
+    }
+
+    /**
+     * Save an uploaded product photo under public/images/products with a server-chosen name and extension.
+     */
+    protected function storeProductImage(\Illuminate\Http\UploadedFile $file, string $name): string
+    {
+        $uploadDir = public_path('images/products');
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        $extension = in_array($file->guessExtension(), ['jpg', 'jpeg', 'png', 'webp'], true) ? $file->guessExtension() : 'jpg';
+        $filename = Str::slug($name) . '-' . time() . '-' . Str::lower(Str::random(4)) . '.' . $extension;
+        $file->move($uploadDir, $filename);
+
+        return '/images/products/' . $filename;
     }
 
     /**
@@ -350,7 +480,8 @@ class ProfileController extends Controller
             abort(403, 'Ruxsat berilmagan.');
         }
 
-        $seller = $user->activeSeller() ?? Seller::where('id', $user->seller_id)->first();
+        $seller = $this->currentSeller($user);
+        abort_unless($seller, 403);
         $product = Product::where('id', $id)->where('seller_id', $seller->id)->firstOrFail();
 
         if ($request->has('toggle_active')) {
@@ -377,7 +508,8 @@ class ProfileController extends Controller
             abort(403, 'Ruxsat berilmagan.');
         }
 
-        $seller = $user->activeSeller() ?? Seller::where('id', $user->seller_id)->first();
+        $seller = $this->currentSeller($user);
+        abort_unless($seller, 403);
         $suborder = Suborder::where('id', $id)->where('seller_id', $seller->id)->firstOrFail();
 
         $validated = $request->validate([

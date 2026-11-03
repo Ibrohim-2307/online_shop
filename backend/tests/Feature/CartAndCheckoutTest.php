@@ -381,6 +381,90 @@ class CartAndCheckoutTest extends TestCase
             ->assertSee('Yakunlangan va bekor qilingan (1)');
     }
 
+    public function test_seller_edits_product_price_and_stock_and_sees_new_order_alert(): void
+    {
+        [$seller, $product, $variant, , $balance] = $this->setupSellerWithProduct('Seller E', 'seller-e', 'Tovar E', 'tovar-e', 'SKU-E', 10);
+        $owner = $this->createUserWithRole('seller_owner', 'owner-e@example.uz');
+        \App\Models\SellerMember::create(['seller_id' => $seller->id, 'user_id' => $owner->id, 'role' => 'owner', 'permissions' => ['*'], 'is_active' => true]);
+        $customer = $this->createCustomer('+998907779999');
+
+        // A cash-on-delivery order reserves 4 units and needs the seller's action
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 4])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Aziz', 'phone' => '+998907779999', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 9', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($owner)->get(route('profile', ['tab' => 'seller_products']))
+            ->assertStatus(200)
+            ->assertSee('1 ta yangi buyurtma tayyorlashni kutmoqda')
+            ->assertSee("So'nggi 30 kun", false)
+            ->assertSee('1 200 000 UZS')
+            ->assertSee('band (buyurtmalarda)', false);
+
+        // Stock cannot be set below what customers already reserved
+        $this->actingAs($owner)->post(route('profile.seller.products.update', $product->id), [
+            'name' => 'Tovar E', 'price' => 280000, 'stock_quantity' => 3,
+        ])->assertSessionHas('error');
+        $this->assertEquals(10.0, (float) $balance->fresh()->quantity);
+
+        $this->actingAs($owner)->post(route('profile.seller.products.update', $product->id), [
+            'name' => 'Tovar E Yangi', 'price' => 280000, 'stock_quantity' => 25, 'description' => 'Yangilangan tavsif',
+        ])->assertSessionHas('success');
+
+        $this->assertEquals('Tovar E Yangi', $product->fresh()->name);
+        $this->assertEquals(25.0, (float) $balance->fresh()->quantity);
+        $this->assertEquals(280000, (int) $variant->priceTiers()->orderBy('min_quantity')->first()->unit_price);
+        $this->assertDatabaseHas('inventory_movements', ['product_variant_id' => $variant->id, 'type' => 'adjustment']);
+
+        // SVG uploads are refused
+        $this->actingAs($owner)->post(route('profile.seller.products.update', $product->id), [
+            'name' => 'Tovar E Yangi', 'price' => 280000, 'stock_quantity' => 25,
+            'image_file' => \Illuminate\Http\UploadedFile::fake()->createWithContent('x.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'),
+        ])->assertSessionHasErrors('image_file');
+
+        // Another seller cannot edit this product
+        [$otherSeller] = $this->setupSellerWithProduct('Seller F', 'seller-f', 'Tovar F', 'tovar-f', 'SKU-F', 5);
+        $otherOwner = $this->createUserWithRole('seller_owner', 'owner-f@example.uz');
+        \App\Models\SellerMember::create(['seller_id' => $otherSeller->id, 'user_id' => $otherOwner->id, 'role' => 'owner', 'permissions' => ['*'], 'is_active' => true]);
+        $this->actingAs($otherOwner)->post(route('profile.seller.products.update', $product->id), [
+            'name' => 'Hack', 'price' => 100, 'stock_quantity' => 0,
+        ])->assertStatus(404);
+    }
+
+    public function test_unapproved_store_products_stay_hidden_and_storeless_seller_cannot_post_into_another_store(): void
+    {
+        [$existing] = $this->setupSellerWithProduct('First Store', 'first-store', 'Birinchi Tovar', 'birinchi', 'SKU-1ST', 5);
+        $category = \App\Models\Category::firstOrFail();
+
+        // Seller role but no store membership: must not land in "First Store"
+        $storeless = $this->createUserWithRole('seller_owner', 'storeless@example.uz');
+        $this->actingAs($storeless)->post(route('profile.seller.products.store'), [
+            'name' => 'Begona Tovar', 'category_id' => $category->id, 'unit' => 'piece', 'trade_mode' => 'both',
+            'price' => 5000, 'stock_quantity' => 3,
+        ])->assertSessionHas('error');
+        $this->assertDatabaseMissing('products', ['name' => 'Begona Tovar', 'seller_id' => $existing->id]);
+
+        // A pending store can prepare products but they are not shown to shoppers
+        $pending = \App\Models\Seller::create(['name' => 'Pending Store', 'slug' => 'pending-store', 'status' => 'pending']);
+        $pendingOwner = $this->createUserWithRole('seller_owner', 'pending-owner@example.uz');
+        \App\Models\SellerMember::create(['seller_id' => $pending->id, 'user_id' => $pendingOwner->id, 'role' => 'owner', 'permissions' => ['*'], 'is_active' => true]);
+        $this->actingAs($pendingOwner)->post(route('profile.seller.products.store'), [
+            'name' => 'Kutilayotgan Tovar', 'category_id' => $category->id, 'unit' => 'piece', 'trade_mode' => 'both',
+            'price' => 7000, 'stock_quantity' => 3,
+        ])->assertSessionHas('success');
+
+        $pendingProduct = Product::where('name', 'Kutilayotgan Tovar')->firstOrFail();
+        $this->assertEquals('pending', $pendingProduct->status);
+        $this->app['auth']->forgetGuards();
+        $this->get('/catalog?q=Kutilayotgan')->assertDontSee('Kutilayotgan Tovar');
+
+        // Even an approved product disappears if its store is suspended
+        $existing->update(['status' => 'suspended']);
+        $this->get('/catalog')->assertDontSee('Birinchi Tovar');
+        $this->get('/products/birinchi')->assertStatus(404);
+    }
+
     public function test_two_parallel_checkouts_cannot_double_sell_last_sku(): void
     {
         // Setup product with exactly 5 units in stock

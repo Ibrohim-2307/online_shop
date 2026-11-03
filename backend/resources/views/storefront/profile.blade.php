@@ -4,6 +4,7 @@
              activeTab: '{{ $activeTab ?? 'orders' }}',
              showAddressModal: false,
              showAddProductModal: false,
+             editProductId: null,
          }">
 
         <!-- Breadcrumbs Navigation -->
@@ -269,6 +270,9 @@
                         class="px-3 py-2 rounded-xl font-bold whitespace-nowrap border shadow-2xs flex items-center gap-1.5">
                     <span>🛒</span>
                     <span>Buyurtmalar ({{ $sellerSuborders->count() }})</span>
+                    @if($sellerNeedsActionCount > 0)
+                        <span class="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black">{{ $sellerNeedsActionCount }} yangi</span>
+                    @endif
                 </button>
                 <button @click="activeTab = 'seller_shipping'" 
                         :class="activeTab === 'seller_shipping' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#E8ECE4]'" 
@@ -352,9 +356,13 @@
                                 <span class="text-sm">🛒</span>
                                 <span>Kelgan Buyurtmalar</span>
                             </div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'seller_orders' ? 'bg-[#C9F46B] text-[#123C2F]' : 'bg-[#FAFBF7] text-[#64748B]'">
-                                {{ $sellerSuborders->count() }}
-                            </span>
+                            @if($sellerNeedsActionCount > 0)
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white">{{ $sellerNeedsActionCount }} yangi</span>
+                            @else
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'seller_orders' ? 'bg-[#C9F46B] text-[#123C2F]' : 'bg-[#FAFBF7] text-[#64748B]'">
+                                    {{ $sellerSuborders->count() }}
+                                </span>
+                            @endif
                         </button>
 
                         <button @click="activeTab = 'seller_shipping'" 
@@ -491,6 +499,55 @@
                 @if($user->isSeller())
                     <!-- TAB: SELLER PRODUCTS -->
                     <div x-show="activeTab === 'seller_products'" class="space-y-6">
+                        @if($sellerNeedsActionCount > 0)
+                            <button type="button" @click="activeTab = 'seller_orders'" class="w-full text-left p-4 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 font-bold text-sm flex items-center justify-between gap-3">
+                                <span>🔔 {{ $sellerNeedsActionCount }} ta yangi buyurtma tayyorlashni kutmoqda</span>
+                                <span class="text-xs underline whitespace-nowrap">Ko'rish →</span>
+                            </button>
+                        @endif
+
+                        @if(!empty($sellerSalesStats))
+                            <div class="bg-white rounded-3xl border border-[#E8ECE4] p-5 space-y-4">
+                                <h3 class="font-black text-sm text-[#172326]">So'nggi 30 kun</h3>
+                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                                    <div class="p-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                                        <span class="text-[10px] font-bold uppercase text-[#64748B] block">Savdo</span>
+                                        <span class="text-base font-black text-[#123C2F]">{{ number_format($sellerSalesStats['revenue'], 0, '.', ' ') }} UZS</span>
+                                    </div>
+                                    <div class="p-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                                        <span class="text-[10px] font-bold uppercase text-[#64748B] block">Buyurtmalar</span>
+                                        <span class="text-base font-black text-[#172326]">{{ $sellerSalesStats['orders'] }}</span>
+                                        <span class="text-[10px] text-[#64748B]">({{ $sellerSalesStats['delivered'] }} yetkazildi)</span>
+                                    </div>
+                                    <div class="p-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                                        <span class="text-[10px] font-bold uppercase text-[#64748B] block">O'rtacha chek</span>
+                                        <span class="text-base font-black text-[#172326]">{{ number_format($sellerSalesStats['average'], 0, '.', ' ') }} UZS</span>
+                                    </div>
+                                    <div class="p-3 rounded-2xl border {{ $sellerSalesStats['out_of_stock'] > 0 ? 'bg-rose-50 border-rose-200' : 'bg-[#FAFBF7] border-[#E8ECE4]' }}">
+                                        <span class="text-[10px] font-bold uppercase text-[#64748B] block">Tugagan mahsulotlar</span>
+                                        <span class="text-base font-black {{ $sellerSalesStats['out_of_stock'] > 0 ? 'text-rose-700' : 'text-[#172326]' }}">{{ $sellerSalesStats['out_of_stock'] }}</span>
+                                    </div>
+                                </div>
+                                @if($sellerSalesStats['top_products']->isNotEmpty())
+                                    @php $topMax = max(1, (int) $sellerSalesStats['top_products']->max('revenue')); @endphp
+                                    <div class="space-y-1.5">
+                                        <span class="text-[10px] font-bold uppercase text-[#64748B]">Eng ko'p sotilganlar</span>
+                                        @foreach($sellerSalesStats['top_products'] as $tp)
+                                            <div class="text-xs">
+                                                <div class="flex justify-between gap-2">
+                                                    <span class="font-semibold text-[#172326] truncate">{{ $tp->product_name }} <span class="text-[#64748B] font-normal">×{{ (float) $tp->qty }}</span></span>
+                                                    <span class="font-bold text-[#123C2F] whitespace-nowrap">{{ number_format($tp->revenue, 0, '.', ' ') }} UZS</span>
+                                                </div>
+                                                <div class="h-1.5 rounded-full bg-[#E8ECE4] mt-1">
+                                                    <div class="h-1.5 rounded-full bg-[#123C2F]" style="width: {{ round($tp->revenue / $topMax * 100) }}%"></div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <h2 class="text-xl font-black text-[#172326]">Mening Do'konim Mahsulotlari</h2>
@@ -518,8 +575,10 @@
                                     <tbody class="divide-y divide-[#E8ECE4]">
                                         @forelse($sellerProducts as $prod)
                                             @php
-                                                $firstTier = $prod->variants->first()?->priceTiers->first();
+                                                $firstTier = $prod->variants->first()?->priceTiers->sortBy('min_quantity')->first();
                                                 $totalStock = $prod->variants->flatMap->inventoryBalances->sum('quantity');
+                                                $reservedStock = $prod->variants->flatMap->inventoryBalances->sum('reserved_quantity');
+                                                $availableStock = max(0, $totalStock - $reservedStock);
                                             @endphp
                                             <tr class="hover:bg-[#FAFBF7]/60">
                                                 <td class="p-3.5">
@@ -547,11 +606,29 @@
                                                     {{ $firstTier ? number_format($firstTier->unit_price, 0, '.', ' ') . ' UZS' : '—' }}
                                                 </td>
                                                 <td class="p-3.5">
-                                                    <span class="font-bold text-[#172326]">{{ number_format($totalStock) }} {{ $prod->unit }}</span>
-                                                    <span class="block text-[10px] text-[#64748B]">MOQ: {{ $prod->min_order_quantity }}</span>
+                                                    <span class="font-bold {{ $availableStock <= 0 ? 'text-rose-700' : ($availableStock < 5 ? 'text-amber-700' : 'text-[#172326]') }}">
+                                                        {{ rtrim(rtrim(number_format($availableStock, 3, '.', ' '), '0'), '.') }} {{ $prod->unit }}
+                                                    </span>
+                                                    @if($availableStock <= 0)
+                                                        <span class="block text-[10px] font-bold text-rose-700">Tugagan!</span>
+                                                    @elseif($availableStock < 5)
+                                                        <span class="block text-[10px] font-bold text-amber-700">Kam qoldi</span>
+                                                    @endif
+                                                    @if($reservedStock > 0)
+                                                        <span class="block text-[10px] text-[#64748B]">+ {{ (float) $reservedStock }} band (buyurtmalarda)</span>
+                                                    @endif
+                                                    <span class="block text-[10px] text-[#64748B]">Min. buyurtma: {{ (float) $prod->min_order_quantity }}</span>
                                                 </td>
                                                 <td class="p-3.5">
-                                                    @if($prod->is_active)
+                                                    @if($prod->status === 'pending')
+                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">
+                                                            ⏳ Moderatsiyada
+                                                        </span>
+                                                    @elseif($prod->status === 'rejected')
+                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                                                            ✕ Rad etilgan
+                                                        </span>
+                                                    @elseif($prod->is_active)
                                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                                                             ● Faol (Sotuvda)
                                                         </span>
@@ -568,6 +645,46 @@
                                                         <button type="submit" class="px-2.5 py-1 rounded-lg border border-[#E8ECE4] hover:bg-[#FAFBF7] text-[#172326] font-bold text-[11px] transition">
                                                             {{ $prod->is_active ? 'Yashirish' : 'Faollashtirish' }}
                                                         </button>
+                                                    </form>
+                                                    <button type="button" @click="editProductId = editProductId === {{ $prod->id }} ? null : {{ $prod->id }}"
+                                                            class="px-2.5 py-1 rounded-lg bg-[#123C2F] text-[#C9F46B] font-bold text-[11px]">
+                                                        ✏️ Tahrirlash
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr x-show="editProductId === {{ $prod->id }}" x-cloak class="bg-[#FAFBF7]">
+                                                <td colspan="6" class="p-4">
+                                                    <form action="{{ route('profile.seller.products.update', $prod->id) }}" method="POST" enctype="multipart/form-data"
+                                                          class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                                                        @csrf
+                                                        <label class="sm:col-span-2 space-y-1">
+                                                            <span class="font-bold text-[#172326]">Nomi</span>
+                                                            <input type="text" name="name" value="{{ $prod->name }}" required maxlength="255" class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4]">
+                                                        </label>
+                                                        <label class="space-y-1">
+                                                            <span class="font-bold text-[#172326]">Narx (1 {{ $prod->unit }}, UZS)</span>
+                                                            <input type="number" name="price" value="{{ (int) ($firstTier?->unit_price ?? 0) }}" min="100" step="1" required inputmode="numeric" class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4]">
+                                                        </label>
+                                                        <label class="space-y-1">
+                                                            <span class="font-bold text-[#172326]">Ombordagi jami qoldiq</span>
+                                                            <input type="number" name="stock_quantity" value="{{ (float) $totalStock }}" min="{{ (float) $reservedStock }}" step="any" required inputmode="decimal" class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4]">
+                                                        </label>
+                                                        <label class="sm:col-span-2 space-y-1">
+                                                            <span class="font-bold text-[#172326]">Tavsif</span>
+                                                            <textarea name="description" rows="2" maxlength="2000" class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4]">{{ $prod->description }}</textarea>
+                                                        </label>
+                                                        <label class="space-y-1">
+                                                            <span class="font-bold text-[#172326]">Minimal buyurtma</span>
+                                                            <input type="number" name="min_order_quantity" value="{{ (float) $prod->min_order_quantity }}" min="0.001" step="any" class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4]">
+                                                        </label>
+                                                        <label class="space-y-1">
+                                                            <span class="font-bold text-[#172326]">Yangi rasm (JPG, PNG, WEBP)</span>
+                                                            <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp" class="w-full text-[11px]">
+                                                        </label>
+                                                        <div class="sm:col-span-2 lg:col-span-4 flex items-center justify-end gap-2">
+                                                            <button type="button" @click="editProductId = null" class="px-4 py-2 rounded-xl border border-[#E8ECE4] font-bold">Bekor</button>
+                                                            <button type="submit" class="px-4 py-2 rounded-xl bg-[#123C2F] text-[#C9F46B] font-bold">Saqlash</button>
+                                                        </div>
                                                     </form>
                                                 </td>
                                             </tr>
@@ -1447,7 +1564,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-[#172326] mb-1">Mahsulot Rasmini Yuklash</label>
-                            <input type="file" name="image_file" accept="image/*" class="w-full h-11 px-2.5 py-2 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-[#123C2F] file:text-white file:font-bold">
+                            <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp" class="w-full h-11 px-2.5 py-2 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-[#123C2F] file:text-white file:font-bold">
                         </div>
                     </div>
 

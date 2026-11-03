@@ -52,6 +52,12 @@
                 <span>{{ session('success') }}</span>
             </div>
         @endif
+        @if(session('error'))
+            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800 flex items-center gap-2">
+                <span>!</span>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
 
         @if($errors->any())
             <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 space-y-1">
@@ -591,8 +597,23 @@
                                     <div>
                                         <div class="flex items-center gap-2">
                                             <span class="font-mono font-black text-sm text-[#172326]">#{{ $sub->suborder_number }}</span>
-                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                                {{ $sub->status }}
+                                            @php
+                                                $subShipment = $sub->shipments->first();
+                                                $isUnpaid = $sub->order?->status === 'pending_payment';
+                                                $isLocked = in_array($sub->status, ['cancelled', 'shipped', 'delivered'], true) || $sub->order?->status === 'cancelled';
+                                                $statusLabel = match (true) {
+                                                    $sub->status === 'cancelled' || $sub->order?->status === 'cancelled' => ['Bekor qilingan', 'bg-rose-50 text-rose-800 border-rose-200'],
+                                                    $isUnpaid => ["To'lov kutilmoqda", 'bg-amber-50 text-amber-900 border-amber-200'],
+                                                    $sub->status === 'delivered' => ['Yetkazildi', 'bg-emerald-50 text-emerald-800 border-emerald-200'],
+                                                    $sub->status === 'shipped' => ["Yo'lda", 'bg-blue-50 text-blue-800 border-blue-200'],
+                                                    $sub->status === 'preparing' && $subShipment?->courier_id => ['Kuryerga tayyor', 'bg-indigo-50 text-indigo-800 border-indigo-200'],
+                                                    $sub->status === 'preparing' => ['Qadoqlanmoqda', 'bg-indigo-50 text-indigo-800 border-indigo-200'],
+                                                    $sub->status === 'confirmed' => ['Tasdiqlandi', 'bg-emerald-50 text-emerald-800 border-emerald-200'],
+                                                    default => ['Yangi', 'bg-slate-50 text-slate-700 border-slate-200'],
+                                                };
+                                            @endphp
+                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border {{ $statusLabel[1] }}">
+                                                {{ $statusLabel[0] }}
                                             </span>
                                         </div>
                                         <p class="text-[11px] text-[#64748B] mt-0.5">Sana: {{ $sub->created_at->format('Y-m-d H:i') }}</p>
@@ -620,18 +641,23 @@
                                     </div>
 
                                     <!-- Status Update Actions for Seller -->
+                                    @if($isLocked)
+                                        <span class="text-[11px] text-[#64748B]">Bu buyurtma bo'yicha amal talab qilinmaydi.</span>
+                                    @elseif($isUnpaid)
+                                        <span class="text-[11px] text-amber-800 font-semibold">Mijoz to'lovni tugatgach tayyorlashni boshlang.</span>
+                                    @else
                                     <form action="{{ route('profile.seller.orders.status', $sub->id) }}" method="POST" class="flex flex-wrap items-center gap-2">
                                         @csrf
                                         <select name="status" class="h-9 px-3 rounded-xl bg-white border border-[#E8ECE4] text-xs font-bold text-[#172326] outline-none">
-                                            <option value="confirmed" {{ $sub->status === 'confirmed' ? 'selected' : '' }}>1. Tasdiqlash (Tayyorlanmoqda)</option>
-                                            <option value="packed" {{ $sub->status === 'packed' ? 'selected' : '' }}>2. Qadoqlash (Qadoqlandi)</option>
-                                            <option value="ready_for_shipping" {{ $sub->status === 'ready_for_shipping' ? 'selected' : '' }}>3. Kuryerga berishga tayyor</option>
+                                            <option value="confirmed" {{ in_array($sub->status, ['pending', 'confirmed']) ? 'selected' : '' }}>1. Tasdiqlash</option>
+                                            <option value="preparing" {{ $sub->status === 'preparing' && !$subShipment?->courier_id ? 'selected' : '' }}>2. Qadoqlanmoqda</option>
+                                            <option value="ready_for_shipping" {{ $sub->status === 'preparing' && $subShipment?->courier_id ? 'selected' : '' }}>3. Kuryerga berishga tayyor</option>
                                         </select>
 
                                         <select name="courier_id" class="h-9 px-3 rounded-xl bg-white border border-[#E8ECE4] text-xs font-medium text-[#172326] outline-none">
                                             <option value="">-- Kuryer tanlang --</option>
                                             @foreach($couriers as $c)
-                                                <option value="{{ $c->id }}">🛵 {{ $c->name }} ({{ $c->phone ?? $c->email }})</option>
+                                                <option value="{{ $c->id }}" {{ $subShipment?->courier_id === $c->id ? 'selected' : '' }}>🛵 {{ $c->name }} ({{ $c->phone ?? $c->email }})</option>
                                             @endforeach
                                         </select>
 
@@ -639,6 +665,7 @@
                                             Saqlash
                                         </button>
                                     </form>
+                                    @endif
                                 </div>
 
                                 <!-- Ordered Items -->

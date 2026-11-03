@@ -20,9 +20,12 @@ use App\Models\Suborder;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\Audit\AuditService;
+use App\Services\Checkout\InventoryReservationService;
+use App\Services\Ledger\SellerLedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -355,23 +358,50 @@ class ProfileController extends Controller
         $suborder = Suborder::where('id', $id)->where('seller_id', $seller->id)->firstOrFail();
 
         $validated = $request->validate([
-            'status' => ['required', 'in:confirmed,packed,ready_for_shipping'],
-            'courier_id' => ['nullable', 'exists:users,id'],
+            // "packed" is kept for old forms; it is the same stage as "preparing"
+            'status' => ['required', 'in:confirmed,preparing,packed,ready_for_shipping'],
+            'courier_id' => ['nullable', 'integer'],
         ]);
 
-        $suborder->update(['status' => $validated['status']]);
+        // Only orders that are actually going ahead may be worked on
+        if (in_array($suborder->status, ['cancelled', 'shipped', 'delivered'], true) || $suborder->order->status === 'cancelled') {
+            return redirect()->route('profile', ['tab' => 'seller_orders'])
+                ->with('error', "Buyurtma #{$suborder->suborder_number} holatini endi o'zgartirib bo'lmaydi.");
+        }
+        if ($suborder->order->status === 'pending_payment') {
+            return redirect()->route('profile', ['tab' => 'seller_orders'])
+                ->with('error', "Buyurtma #{$suborder->suborder_number} hali to'lanmagan. To'lov tushgach tayyorlashni boshlang.");
+        }
 
-        // If shipment exists or needs creation for courier
+        $courierId = null;
+        if (!empty($validated['courier_id'])) {
+            $courierId = User::where('id', $validated['courier_id'])
+                ->whereHas('roles', fn($q) => $q->whereIn('name', ['courier', 'logistics_operator']))
+                ->value('id');
+            if (!$courierId) {
+                return back()->with('error', "Tanlangan foydalanuvchi kuryer emas.");
+            }
+        }
+
+        // Suborder status column only knows: pending, confirmed, preparing, shipped, delivered, cancelled
+        $newStatus = $validated['status'] === 'confirmed' ? 'confirmed' : 'preparing';
+        $suborder->update(['status' => $newStatus]);
+
         $shipment = Shipment::where('suborder_id', $suborder->id)->first();
+
+        if ($validated['status'] === 'ready_for_shipping' && !$courierId && !$shipment?->courier_id) {
+            return redirect()->route('profile', ['tab' => 'seller_orders'])
+                ->with('error', "Kuryerga berish uchun kuryerni tanlang.");
+        }
+
         if (!$shipment) {
             $trackingNumber = 'TRK-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
-            $courierId = $validated['courier_id'] ?? User::whereHas('roles', fn($q) => $q->where('name', 'courier'))->value('id');
 
             $shipment = Shipment::create([
                 'suborder_id' => $suborder->id,
                 'tracking_number' => $trackingNumber,
                 'courier_id' => $courierId,
-                'status' => 'assigned',
+                'status' => $courierId ? 'assigned' : 'pending',
                 'shipping_method' => 'courier_express',
                 'shipping_cost' => $suborder->shipping_cost ?? 20000,
                 'pickup_address' => [
@@ -389,19 +419,28 @@ class ProfileController extends Controller
 
             ShipmentEvent::create([
                 'shipment_id' => $shipment->id,
-                'event_type' => 'assigned',
-                'notes' => "Buyurtma do'kon tomonidan tasdiqlandi va kuryerga biriktirildi.",
+                'event_type' => $shipment->status,
+                'notes' => $courierId
+                    ? "Buyurtma do'kon tomonidan tasdiqlandi va kuryerga biriktirildi."
+                    : "Buyurtma do'kon tomonidan tasdiqlandi.",
                 'payload' => [
-                    'status' => 'assigned',
+                    'status' => $shipment->status,
                     'location' => 'Sotuvchi ombori',
                 ],
             ]);
-        } elseif (!empty($validated['courier_id'])) {
-            $shipment->update(['courier_id' => $validated['courier_id']]);
+        } elseif ($courierId && in_array($shipment->status, ['pending', 'assigned'], true)) {
+            $shipment->update(['courier_id' => $courierId, 'status' => 'assigned']);
         }
 
+        $labels = [
+            'confirmed' => 'Tasdiqlandi',
+            'preparing' => 'Qadoqlanmoqda',
+            'packed' => 'Qadoqlanmoqda',
+            'ready_for_shipping' => 'Kuryerga berishga tayyor',
+        ];
+
         return redirect()->route('profile', ['tab' => 'seller_orders'])
-            ->with('success', "Buyurtma #{$suborder->suborder_number} holati '{$validated['status']}' ga yangilandi!");
+            ->with('success', "Buyurtma #{$suborder->suborder_number}: {$labels[$validated['status']]}.");
     }
 
     /**
@@ -427,34 +466,83 @@ class ProfileController extends Controller
         ]);
 
         $status = $validated['status'];
-        $shipment->status = $status;
-        $shipment->courier_id = $user->id; // Ensure courier is assigned
+        $suborder = $shipment->suborder;
+        $order = $suborder?->order;
 
-        if ($status === 'delivered') {
-            $shipment->delivered_at = now();
+        if ($order && in_array($order->status, ['cancelled', 'pending_payment'], true)) {
+            return redirect()->route('profile', ['tab' => 'courier_shipments'])
+                ->with('error', $order->status === 'cancelled'
+                    ? "Bu buyurtma mijoz tomonidan bekor qilingan. Tovarni olmang."
+                    : "Bu buyurtma hali to'lanmagan. Sotuvchi tayyorlaguncha kuting.");
+        }
+        if ($shipment->status === 'delivered') {
+            return redirect()->route('profile', ['tab' => 'courier_shipments'])
+                ->with('error', "Jo'natma #{$shipment->tracking_number} allaqachon yetkazilgan.");
+        }
 
-            // If cash on delivery, mark payment as paid
-            $order = $shipment->suborder?->order;
-            if ($order) {
-                $payment = Payment::where('order_id', $order->id)->latest()->first();
-                if ($payment && $payment->payment_method === 'cash_on_delivery') {
-                    $payment->update([
-                        'status' => 'paid',
-                        'payload_snapshot' => array_merge($payment->payload_snapshot ?? [], [
-                            'collected_by_courier_id' => $user->id,
-                            'collected_at' => now()->toIso8601String(),
-                        ]),
-                    ]);
-                }
-                $order->update(['status' => 'completed']);
+        DB::transaction(function () use ($shipment, $suborder, $order, $status, $validated, $user) {
+            $shipment->status = $status;
+            $shipment->courier_id = $user->id; // Ensure courier is assigned
+
+            if ($status === 'failed' && !empty($validated['delay_reason'])) {
+                $shipment->delay_reason = $validated['delay_reason'];
             }
-        }
 
-        if ($status === 'failed' && !empty($validated['delay_reason'])) {
-            $shipment->delay_reason = $validated['delay_reason'];
-        }
+            if (in_array($status, ['picked_up', 'in_transit', 'delivered'], true) && $suborder) {
+                // Goods left the seller's warehouse: deduct stock once
+                app(InventoryReservationService::class)->fulfillForSuborder($suborder, $user->id);
+                if (!in_array($suborder->status, ['shipped', 'delivered'], true)) {
+                    $suborder->update(['status' => 'shipped']);
+                }
+            }
 
-        $shipment->save();
+            if ($status === 'delivered' && $suborder && $order) {
+                $shipment->delivered_at = now();
+                $suborder->update(['status' => 'delivered']);
+
+                $payment = Payment::where('order_id', $order->id)->latest()->first();
+                $isCod = $payment && $payment->payment_method === 'cash_on_delivery';
+
+                // Online payments credited the seller at payment time; cash is credited when the courier collects it
+                if ($isCod) {
+                    $alreadyCredited = SellerLedger::where('suborder_id', $suborder->id)
+                        ->where('entry_type', 'order_sale')
+                        ->exists();
+                    if (!$alreadyCredited) {
+                        app(SellerLedgerService::class)->recordOrderSale($suborder);
+                    }
+
+                    $snapshot = $payment->payload_snapshot ?? [];
+                    $snapshot['collected'][] = [
+                        'suborder_id' => $suborder->id,
+                        'amount' => (int) $suborder->total_amount,
+                        'courier_id' => $user->id,
+                        'collected_at' => now()->toIso8601String(),
+                    ];
+                    $snapshot['collected_by_courier_id'] = $user->id;
+                    $snapshot['collected_at'] = now()->toIso8601String();
+                    $payment->payload_snapshot = $snapshot;
+                }
+
+                // The whole order is complete only when every seller's part has arrived
+                $allDelivered = $order->suborders()->where('id', '!=', $suborder->id)
+                    ->whereNotIn('status', ['delivered', 'cancelled'])
+                    ->doesntExist();
+
+                if ($allDelivered) {
+                    $order->update(['status' => 'completed']);
+                    if ($isCod) {
+                        $payment->status = 'paid';
+                    }
+                }
+
+                if ($isCod) {
+                    $payment->save();
+                }
+            }
+
+            $shipment->save();
+        });
 
         // Record tracking event
         $statusDescriptions = [

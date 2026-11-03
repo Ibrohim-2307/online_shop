@@ -124,6 +124,113 @@ class CartAndCheckoutTest extends TestCase
         return [$seller, $product, $variant, $warehouse, $balance];
     }
 
+    protected function createUserWithRole(string $roleName, string $email): User
+    {
+        $role = Role::firstOrCreate(['name' => $roleName], ['label' => $roleName]);
+        $user = User::create([
+            'name' => ucfirst($roleName) . ' User',
+            'email' => $email,
+            'password' => bcrypt('Secret123!'),
+            'is_active' => true,
+        ]);
+        $user->roles()->attach($role->id);
+
+        return $user->fresh();
+    }
+
+    public function test_cod_fulfillment_flow_deducts_stock_credits_sellers_and_completes_only_when_all_parts_arrive(): void
+    {
+        [$sellerA, , $variantA, , $balanceA] = $this->setupSellerWithProduct('Seller A', 'seller-a', 'Tovar A', 'tovar-a', 'SKU-A', 100);
+        [$sellerB, , $variantB, , $balanceB] = $this->setupSellerWithProduct('Seller B', 'seller-b', 'Tovar B', 'tovar-b', 'SKU-B', 100);
+
+        $ownerA = $this->createUserWithRole('seller_owner', 'owner-a@example.uz');
+        \App\Models\SellerMember::create(['seller_id' => $sellerA->id, 'user_id' => $ownerA->id, 'role' => 'owner', 'permissions' => ['*'], 'is_active' => true]);
+        $courier = $this->createUserWithRole('courier', 'kuryer@example.uz');
+        $customer = $this->createCustomer('+998907771234');
+
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variantA->id, 'quantity' => 3])->assertStatus(201);
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variantB->id, 'quantity' => 2])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Aziz', 'phone' => '+998907771234', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 5', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+        $subA = $order->suborders()->where('seller_id', $sellerA->id)->firstOrFail();
+        $subB = $order->suborders()->where('seller_id', $sellerB->id)->firstOrFail();
+
+        // Seller: "packed" stage is stored as a valid status; a non-courier can't be assigned
+        $this->actingAs($ownerA)->post(route('profile.seller.orders.status', $subA->id), ['status' => 'preparing'])
+            ->assertSessionHas('success');
+        $this->assertEquals('preparing', $subA->fresh()->status);
+
+        $this->actingAs($ownerA)->post(route('profile.seller.orders.status', $subA->id), ['status' => 'ready_for_shipping'])
+            ->assertSessionHas('error');
+        $this->actingAs($ownerA)->post(route('profile.seller.orders.status', $subA->id), ['status' => 'ready_for_shipping', 'courier_id' => $customer->id])
+            ->assertSessionHas('error');
+        $this->actingAs($ownerA)->post(route('profile.seller.orders.status', $subA->id), ['status' => 'ready_for_shipping', 'courier_id' => $courier->id])
+            ->assertSessionHas('success');
+
+        $shipmentA = $subA->shipments()->firstOrFail();
+        $this->assertEquals($courier->id, $shipmentA->fresh()->courier_id);
+        $this->assertEquals('assigned', $shipmentA->fresh()->status);
+
+        // Courier picks up: stock leaves the warehouse exactly once
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipmentA->id), ['status' => 'picked_up'])->assertRedirect();
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipmentA->id), ['status' => 'in_transit'])->assertRedirect();
+        $this->assertEquals(97.0, (float) $balanceA->fresh()->quantity);
+        $this->assertEquals(0.0, (float) $balanceA->fresh()->reserved_quantity);
+        $this->assertEquals('shipped', $subA->fresh()->status);
+
+        // First part delivered: seller A credited, but order not complete and cash not fully collected yet
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipmentA->id), ['status' => 'delivered'])->assertRedirect();
+        $this->assertEquals('delivered', $subA->fresh()->status);
+        $this->assertEquals('processing', $order->fresh()->status);
+        $this->assertEquals('pending', $order->payments()->latest()->first()->status);
+        $this->assertEquals(1, \App\Models\SellerLedger::where('suborder_id', $subA->id)->where('entry_type', 'order_sale')->count());
+
+        // Delivering twice does nothing more
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipmentA->id), ['status' => 'delivered'])->assertSessionHas('error');
+        $this->assertEquals(1, \App\Models\SellerLedger::where('suborder_id', $subA->id)->where('entry_type', 'order_sale')->count());
+
+        // Second part delivered: order completes and COD payment is paid
+        $shipmentB = $subB->shipments()->firstOrFail();
+        $shipmentB->update(['courier_id' => $courier->id, 'status' => 'assigned']);
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipmentB->id), ['status' => 'delivered'])->assertRedirect();
+
+        $this->assertEquals('completed', $order->fresh()->status);
+        $this->assertEquals('paid', $order->payments()->latest()->first()->status);
+        $this->assertEquals(98.0, (float) $balanceB->fresh()->quantity);
+        $this->assertEquals(1, \App\Models\SellerLedger::where('suborder_id', $subB->id)->where('entry_type', 'order_sale')->count());
+    }
+
+    public function test_seller_and_courier_cannot_work_on_cancelled_order(): void
+    {
+        [$seller, , $variant] = $this->setupSellerWithProduct('Seller C', 'seller-c', 'Tovar X', 'tovar-x', 'SKU-X', 10);
+        $owner = $this->createUserWithRole('seller_owner', 'owner-c@example.uz');
+        \App\Models\SellerMember::create(['seller_id' => $seller->id, 'user_id' => $owner->id, 'role' => 'owner', 'permissions' => ['*'], 'is_active' => true]);
+        $courier = $this->createUserWithRole('courier', 'kuryer-c@example.uz');
+        $customer = $this->createCustomer('+998907775555');
+
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 1])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Aziz', 'phone' => '+998907775555', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 6', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/cancel')->assertSessionHas('success');
+
+        $sub = $order->suborders()->firstOrFail();
+        $this->actingAs($owner)->post(route('profile.seller.orders.status', $sub->id), ['status' => 'confirmed'])
+            ->assertSessionHas('error');
+        $this->assertEquals('cancelled', $sub->fresh()->status);
+
+        $shipment = $sub->shipments()->firstOrFail();
+        $shipment->update(['courier_id' => $courier->id]);
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipment->id), ['status' => 'picked_up'])
+            ->assertSessionHas('error');
+    }
+
     public function test_two_parallel_checkouts_cannot_double_sell_last_sku(): void
     {
         // Setup product with exactly 5 units in stock

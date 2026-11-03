@@ -7,6 +7,7 @@ use App\Models\InventoryMovement;
 use App\Models\InventoryReservation;
 use App\Models\Order;
 use App\Models\ProductVariant;
+use App\Models\Suborder;
 use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -131,6 +132,59 @@ class InventoryReservationService
             }
 
             $lockedRes->update(['status' => 'released']);
+        });
+    }
+
+    /**
+     * Goods for a suborder physically left the warehouse (courier picked them up):
+     * deduct them from on-hand stock and drop the matching reservations. Safe to call twice.
+     */
+    public function fulfillForSuborder(Suborder $suborder, ?int $userId = null): void
+    {
+        $variantIds = $suborder->items()->pluck('product_variant_id');
+
+        DB::transaction(function () use ($suborder, $variantIds, $userId) {
+            $reservations = InventoryReservation::where('order_id', $suborder->order_id)
+                ->whereIn('product_variant_id', $variantIds)
+                ->whereIn('status', ['reserved', 'committed'])
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($reservations as $reservation) {
+                $balance = InventoryBalance::where('warehouse_id', $reservation->warehouse_id)
+                    ->where('product_variant_id', $reservation->product_variant_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($balance) {
+                    $qty = (string) $reservation->quantity;
+                    $beforeQty = (string) $balance->quantity;
+                    $afterQty = bcsub($beforeQty, $qty, 3);
+                    $afterReserved = bcsub((string) $balance->reserved_quantity, $qty, 3);
+
+                    $balance->update([
+                        'quantity' => bccomp($afterQty, '0', 3) < 0 ? '0.000' : $afterQty,
+                        'reserved_quantity' => bccomp($afterReserved, '0', 3) < 0 ? '0.000' : $afterReserved,
+                    ]);
+
+                    InventoryMovement::create([
+                        'warehouse_id' => $balance->warehouse_id,
+                        'product_variant_id' => $balance->product_variant_id,
+                        'type' => 'outflow',
+                        'quantity' => $qty,
+                        'balance_before' => $beforeQty,
+                        'balance_after' => $balance->quantity,
+                        'reason' => "Sotildi: {$suborder->suborder_number} kuryerga topshirildi",
+                        'reference_type' => 'Suborder',
+                        'reference_id' => $suborder->id,
+                        'user_id' => $userId,
+                        'created_at' => now(),
+                    ]);
+                }
+
+                // The reservation status enum has no "fulfilled"; "released" ends it without restocking twice
+                $reservation->update(['status' => 'released']);
+            }
         });
     }
 

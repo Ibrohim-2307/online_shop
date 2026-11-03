@@ -338,6 +338,49 @@ class CartAndCheckoutTest extends TestCase
         $this->assertEquals(20.0, (float) $balance->fresh()->quantity);
     }
 
+    public function test_courier_panel_shows_recipient_contact_notes_and_requires_failure_reason(): void
+    {
+        [$seller, , $variant] = $this->setupSellerWithProduct('Seller K', 'seller-k', 'Tovar K', 'tovar-k', 'SKU-K', 20);
+        $customer = $this->createCustomer('+998901110000');
+        $courier = $this->createUserWithRole('courier', 'kuryer-k@example.uz');
+
+        // Ordered for someone else: the courier must call the recipient, not the account owner
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 1])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Onam Karimova', 'phone' => '+998935557799', 'region' => 'Toshkent',
+            'city' => 'Chilonzor', 'address_line' => "Bunyodkor 5-uy", 'notes' => "Domofon ishlamaydi, qo'ng'iroq qiling",
+            'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+        $shipment = $order->suborders()->firstOrFail()->shipments()->firstOrFail();
+        $shipment->update(['courier_id' => $courier->id, 'status' => 'assigned']);
+
+        $this->actingAs($courier)->get(route('profile', ['tab' => 'courier_shipments']))
+            ->assertStatus(200)
+            ->assertSee('Onam Karimova')
+            ->assertSee('tel:+998935557799', false)
+            ->assertSee('yandex.uz/maps', false)
+            ->assertSee('Domofon ishlamaydi')
+            ->assertSee("Do'kondan oldim", false)
+            ->assertSee('Undirilishi kerak');
+
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipment->id), ['status' => 'picked_up'])->assertSessionHas('success');
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipment->id), ['status' => 'failed'])
+            ->assertSessionHasErrors('delay_reason');
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipment->id), ['status' => 'failed', 'delay_reason' => "Mijoz manzilda yo'q"])
+            ->assertSessionHas('success');
+        $this->assertEquals('failed', $shipment->fresh()->status);
+
+        // A failed delivery can be retried
+        $this->actingAs($courier)->get(route('profile', ['tab' => 'courier_shipments']))->assertSee("Qayta yo'lga chiqdim");
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipment->id), ['status' => 'in_transit'])->assertSessionHas('success');
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipment->id), ['status' => 'delivered'])->assertSessionHas('success');
+
+        $this->actingAs($courier)->get(route('profile', ['tab' => 'courier_shipments']))
+            ->assertSee("Hozircha faol yetkazishlar yo'q", false)
+            ->assertSee('Yakunlangan va bekor qilingan (1)');
+    }
+
     public function test_two_parallel_checkouts_cannot_double_sell_last_sku(): void
     {
         // Setup product with exactly 5 units in stock

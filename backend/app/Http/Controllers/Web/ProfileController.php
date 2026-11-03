@@ -147,9 +147,12 @@ class ProfileController extends Controller
 
         // 5. Courier Context & Data (if courier)
         $courierShipments = collect();
+        $courierActiveShipments = collect();
+        $courierFinishedShipments = collect();
         $courierActiveCount = 0;
         $courierDeliveredCount = 0;
         $courierTotalCashToCollect = 0;
+        $courierStats = [];
 
         if ($user->isCourier()) {
             $courierShipments = Shipment::where('courier_id', $user->id)
@@ -162,13 +165,30 @@ class ProfileController extends Controller
                 ->latest()
                 ->get();
 
-            $courierActiveCount = $courierShipments->whereIn('status', ['assigned', 'picked_up', 'in_transit', 'out_for_delivery'])->count();
-            $courierDeliveredCount = $courierShipments->where('status', 'delivered')->count();
+            $isCod = fn($s) => $s->suborder?->order?->latest_payment?->payment_method === 'cash_on_delivery';
+            $isCancelled = fn($s) => $s->suborder?->order?->status === 'cancelled' || $s->suborder?->status === 'cancelled';
 
-            $courierTotalCashToCollect = $courierShipments->filter(function ($s) {
-                return $s->status !== 'delivered' && 
-                       $s->suborder?->order?->latest_payment?->payment_method === 'cash_on_delivery';
-            })->sum(fn($s) => $s->suborder?->total_amount ?? 0);
+            // Work to do now: on the road first, then picked up, then waiting at the store
+            $priority = ['in_transit' => 0, 'out_for_delivery' => 0, 'picked_up' => 1, 'failed' => 2, 'assigned' => 3, 'pending' => 4];
+            $courierActiveShipments = $courierShipments
+                ->filter(fn($s) => !in_array($s->status, ['delivered'], true) && !$isCancelled($s))
+                ->sortBy(fn($s) => $priority[$s->status] ?? 9)
+                ->values();
+            $courierFinishedShipments = $courierShipments
+                ->filter(fn($s) => $s->status === 'delivered' || $isCancelled($s))
+                ->values();
+
+            $courierActiveCount = $courierActiveShipments->count();
+            $courierDeliveredCount = $courierShipments->where('status', 'delivered')->count();
+            $courierTotalCashToCollect = $courierActiveShipments->filter($isCod)->sum(fn($s) => $s->suborder?->total_amount ?? 0);
+
+            $deliveredToday = $courierShipments->filter(fn($s) => $s->status === 'delivered' && $s->delivered_at?->isToday());
+            $courierStats = [
+                'active' => $courierActiveCount,
+                'delivered_today' => $deliveredToday->count(),
+                'cash_to_collect' => $courierTotalCashToCollect,
+                'cash_collected_today' => $deliveredToday->filter($isCod)->sum(fn($s) => $s->suborder?->total_amount ?? 0),
+            ];
         }
 
         // 6. Superadmin / Admin Quick Stats
@@ -200,6 +220,9 @@ class ProfileController extends Controller
             'categories',
             'couriers',
             'courierShipments',
+            'courierActiveShipments',
+            'courierFinishedShipments',
+            'courierStats',
             'courierActiveCount',
             'courierDeliveredCount',
             'courierTotalCashToCollect',
@@ -462,7 +485,9 @@ class ProfileController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', 'in:picked_up,in_transit,delivered,failed'],
-            'delay_reason' => ['nullable', 'string', 'max:255'],
+            'delay_reason' => ['nullable', 'string', 'max:255', 'required_if:status,failed'],
+        ], [
+            'delay_reason.required_if' => "Nima uchun yetkazib bo'lmaganini tanlang.",
         ]);
 
         $status = $validated['status'];
@@ -570,7 +595,12 @@ class ProfileController extends Controller
         ]);
 
         return redirect()->route('profile', ['tab' => 'courier_shipments'])
-            ->with('success', "Jo'natma #{$shipment->tracking_number} holati muvaffaqiyatli '{$status}' ga yangilandi!");
+            ->with('success', "Jo'natma #{$shipment->tracking_number}: " . [
+                'picked_up' => "do'kondan olindi",
+                'in_transit' => "yo'lda",
+                'delivered' => 'xaridorga topshirildi',
+                'failed' => "yetkazib bo'lmadi deb belgilandi",
+            ][$status] . '.');
     }
 
     /**

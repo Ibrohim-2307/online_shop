@@ -828,21 +828,59 @@
                 @if($user->isCourier())
                     <!-- TAB: COURIER SHIPMENTS -->
                     <div x-show="activeTab === 'courier_shipments'" class="space-y-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div>
-                                <h2 class="text-xl font-black text-[#172326]">Menga Biriktirilgan Yetkazishlar</h2>
-                                <p class="text-xs text-[#64748B]">Do'kondan tovarlarni qabul qilish, manzilga yetkazish va xaridor bilan hisob-kitob qilish</p>
-                            </div>
-                            <a href="{{ route('tracking') }}" target="_blank" class="px-4 py-2.5 rounded-2xl bg-[#123C2F] text-[#C9F46B] font-bold text-xs flex items-center gap-1.5 shadow-xs hover:bg-[#0d2a21] transition">
-                                <span>📍 Jonli Marshrut Xaritasi</span>
-                            </a>
+                        <div>
+                            <h2 class="text-xl font-black text-[#172326]">Menga Biriktirilgan Yetkazishlar</h2>
+                            <p class="text-xs text-[#64748B]">Do'kondan tovarlarni qabul qilish, manzilga yetkazish va xaridor bilan hisob-kitob qilish</p>
                         </div>
 
+                        <!-- Today's shift summary -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="p-4 rounded-2xl bg-white border border-[#E8ECE4]">
+                                <span class="text-[10px] font-bold uppercase text-[#64748B] block">Faol jo'natmalar</span>
+                                <span class="text-xl font-black text-[#172326]">{{ $courierStats['active'] ?? 0 }}</span>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white border border-[#E8ECE4]">
+                                <span class="text-[10px] font-bold uppercase text-[#64748B] block">Bugun yetkazildi</span>
+                                <span class="text-xl font-black text-emerald-700">{{ $courierStats['delivered_today'] ?? 0 }}</span>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+                                <span class="text-[10px] font-bold uppercase text-amber-800 block">Undirilishi kerak (naqd)</span>
+                                <span class="text-base sm:text-lg font-black text-amber-950">{{ number_format($courierStats['cash_to_collect'] ?? 0, 0, '.', ' ') }} UZS</span>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+                                <span class="text-[10px] font-bold uppercase text-emerald-800 block">Bugun olingan naqd</span>
+                                <span class="text-base sm:text-lg font-black text-emerald-900">{{ number_format($courierStats['cash_collected_today'] ?? 0, 0, '.', ' ') }} UZS</span>
+                                <span class="text-[10px] text-emerald-700 block">Kun oxirida do'konga/kassaga topshiring</span>
+                            </div>
+                        </div>
+
+                        @php
+                            $shipLabels = [
+                                'pending' => ['Kutilmoqda', 'bg-slate-100 text-slate-800'],
+                                'assigned' => ["Do'kondan olish kerak", 'bg-blue-100 text-blue-900'],
+                                'picked_up' => ['Qo\'lingizda', 'bg-indigo-100 text-indigo-900'],
+                                'in_transit' => ["Yo'lda", 'bg-amber-100 text-amber-900'],
+                                'out_for_delivery' => ["Yo'lda", 'bg-amber-100 text-amber-900'],
+                                'delivered' => ['Topshirildi', 'bg-emerald-100 text-emerald-900'],
+                                'failed' => ["Yetkazib bo'lmadi", 'bg-rose-100 text-rose-900'],
+                            ];
+                        @endphp
+
                         <div class="space-y-5">
-                            @forelse($courierShipments as $sh)
+                            @forelse($courierActiveShipments as $sh)
                                 @php
                                     $isCOD = $sh->suborder?->order?->latest_payment?->payment_method === 'cash_on_delivery';
                                     $codAmount = $sh->suborder?->total_amount ?? 0;
+                                    $drop = is_array($sh->delivery_address) ? $sh->delivery_address : [];
+                                    $dropName = $drop['recipient_name'] ?? $drop['recipient'] ?? ($sh->suborder?->order?->user?->name ?? 'Xaridor');
+                                    $dropPhone = $drop['phone'] ?? ($sh->suborder?->order?->user?->phone ?? null);
+                                    $dropAddress = collect([$drop['region'] ?? null, $drop['city'] ?? null, $drop['address_line'] ?? ($drop['address'] ?? null)])->filter()->implode(', ');
+                                    $mapQuery = !empty($drop['latitude']) && !empty($drop['longitude'])
+                                        ? $drop['latitude'] . ',' . $drop['longitude']
+                                        : $dropAddress;
+                                    $pickupAddress = $sh->pickup_address['address'] ?? ($sh->suborder?->seller?->address ?? null);
+                                    $pickupPhone = $sh->pickup_address['phone'] ?? ($sh->suborder?->seller?->phone ?? null);
+                                    $orderNotes = $sh->suborder?->order?->notes;
                                 @endphp
 
                                 <div class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all p-5 space-y-4">
@@ -850,17 +888,8 @@
                                         <div>
                                             <div class="flex items-center gap-2">
                                                 <span class="font-mono font-black text-sm text-[#172326]">{{ $sh->tracking_number }}</span>
-                                                @php
-                                                    $courierBadgeColors = [
-                                                        'assigned' => 'bg-blue-100 text-blue-900',
-                                                        'picked_up' => 'bg-indigo-100 text-indigo-900',
-                                                        'in_transit' => 'bg-amber-100 text-amber-900',
-                                                        'delivered' => 'bg-emerald-100 text-emerald-900',
-                                                        'failed' => 'bg-rose-100 text-rose-900',
-                                                    ];
-                                                @endphp
-                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $courierBadgeColors[$sh->status] ?? 'bg-slate-100 text-slate-800' }}">
-                                                    {{ $sh->status }}
+                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $shipLabels[$sh->status][1] ?? 'bg-slate-100 text-slate-800' }}">
+                                                    {{ $shipLabels[$sh->status][0] ?? $sh->status }}
                                                 </span>
                                             </div>
                                             <p class="text-[11px] text-[#64748B] mt-0.5">Buyurtma #{{ $sh->suborder?->suborder_number ?? '—' }}</p>
@@ -895,14 +924,28 @@
                                             </span>
                                             <div>
                                                 <div class="font-extrabold text-[#172326] text-sm">{{ $sh->suborder?->seller?->name ?? 'Do\'kon' }}</div>
-                                                <div class="text-[#64748B] text-[11px]">{{ $sh->pickup_address['address'] ?? ($sh->suborder?->seller?->address ?? 'Toshkent shahri') }}</div>
+                                                <div class="text-[#64748B] text-[11px]">{{ $pickupAddress ?? "Manzil ko'rsatilmagan — do'konga qo'ng'iroq qiling" }}</div>
                                             </div>
-                                            <div class="pt-1">
-                                                <a href="tel:{{ $sh->pickup_address['phone'] ?? ($sh->suborder?->seller?->phone ?? '') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#123C2F] border border-emerald-300 font-bold text-xs hover:bg-[#C9F46B] transition shadow-2xs">
-                                                    <span>📞 Do'konga qo'ng'iroq:</span>
-                                                    <span>{{ $sh->pickup_address['phone'] ?? ($sh->suborder?->seller?->phone ?? 'Mavjud emas') }}</span>
-                                                </a>
+                                            <div class="pt-1 grid grid-cols-2 gap-2">
+                                                @if($pickupPhone)
+                                                    <a href="tel:{{ $pickupPhone }}" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white text-[#123C2F] border border-emerald-300 font-bold text-xs hover:bg-[#C9F46B] transition">
+                                                        📞 Qo'ng'iroq
+                                                    </a>
+                                                @endif
+                                                @if($pickupAddress)
+                                                    <a href="https://yandex.uz/maps/?text={{ urlencode($pickupAddress) }}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white text-[#123C2F] border border-emerald-300 font-bold text-xs hover:bg-[#C9F46B] transition">
+                                                        🗺️ Xaritada
+                                                    </a>
+                                                @endif
                                             </div>
+                                            @if($sh->suborder?->items?->isNotEmpty())
+                                                <div class="pt-1 text-[11px] text-[#172326]">
+                                                    <span class="text-[#64748B]">Olinadigan tovarlar:</span>
+                                                    @foreach($sh->suborder->items as $it)
+                                                        <b>{{ $it->product_name }}</b> ×{{ (float) $it->quantity }}@if(!$loop->last), @endif
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                         </div>
 
                                         <!-- Step 2: Dropoff Location -->
@@ -911,64 +954,104 @@
                                                 <span>🏠</span> 2. XARIDORGA TOPSHIRISH (DROPOFF)
                                             </span>
                                             <div>
-                                                <div class="font-extrabold text-[#172326] text-sm">{{ $sh->suborder?->order?->user?->name ?? 'Xaridor' }}</div>
-                                                <div class="text-[#64748B] text-[11px]">{{ is_array($sh->delivery_address) ? ($sh->delivery_address['address_line'] ?? 'Toshkent sh.') : 'Toshkent sh.' }}</div>
+                                                <div class="font-extrabold text-[#172326] text-sm">{{ $dropName }}</div>
+                                                <div class="text-[#64748B] text-[11px]">{{ $dropAddress ?: "Manzil ko'rsatilmagan" }}</div>
                                             </div>
-                                            <div class="pt-1">
-                                                <a href="tel:{{ $sh->suborder?->order?->user?->phone ?? '' }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-blue-900 border border-blue-300 font-bold text-xs hover:bg-blue-100 transition shadow-2xs">
-                                                    <span>📞 Xaridorga qo'ng'iroq:</span>
-                                                    <span>{{ $sh->suborder?->order?->user?->phone ?? 'Mavjud emas' }}</span>
-                                                </a>
+                                            <div class="pt-1 grid grid-cols-2 gap-2">
+                                                @if($dropPhone)
+                                                    <a href="tel:{{ $dropPhone }}" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white text-blue-900 border border-blue-300 font-bold text-xs hover:bg-blue-100 transition">
+                                                        📞 {{ $dropPhone }}
+                                                    </a>
+                                                @endif
+                                                @if($mapQuery)
+                                                    <a href="https://yandex.uz/maps/?text={{ urlencode($mapQuery) }}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white text-blue-900 border border-blue-300 font-bold text-xs hover:bg-blue-100 transition">
+                                                        🗺️ Xaritada
+                                                    </a>
+                                                @endif
                                             </div>
+                                            @if($orderNotes)
+                                                <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-950">
+                                                    <b>Mijoz izohi:</b> {{ $orderNotes }}
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
 
                                     <!-- Courier Action Buttons -->
-                                    <div class="pt-3 border-t border-[#E8ECE4] flex flex-wrap items-center justify-between gap-3">
-                                        <div class="text-[11px] text-[#64748B]">
-                                            Amaldagi holat: <strong class="text-[#172326] font-bold">{{ $sh->status }}</strong>
-                                        </div>
+                                    <div class="pt-3 border-t border-[#E8ECE4] space-y-2">
+                                        @if($sh->status === 'failed' && $sh->delay_reason)
+                                            <div class="text-[11px] text-rose-700">Oldingi urinish: {{ $sh->delay_reason }}</div>
+                                        @endif
 
-                                        <form action="{{ route('profile.courier.shipments.status', $sh->id) }}" method="POST" class="flex flex-wrap items-center gap-2">
+                                        <form action="{{ route('profile.courier.shipments.status', $sh->id) }}" method="POST" class="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
                                             @csrf
                                             @if($sh->status === 'assigned')
-                                                <button type="submit" name="status" value="picked_up" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5">
-                                                    <span>📦</span>
-                                                    <span>Do'kondan qabul qildim</span>
+                                                <button type="submit" name="status" value="picked_up" class="w-full sm:w-auto px-5 py-3.5 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-xs transition shadow-xs">
+                                                    📦 Do'kondan oldim
                                                 </button>
-                                            @elseif($sh->status === 'picked_up')
-                                                <button type="submit" name="status" value="in_transit" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5">
-                                                    <span>🚚</span>
-                                                    <span>Yo'lga chiqdim (Yetkazmoqdaman)</span>
+                                            @elseif($sh->status === 'picked_up' || $sh->status === 'failed')
+                                                <button type="submit" name="status" value="in_transit" class="w-full sm:w-auto px-5 py-3.5 sm:py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm sm:text-xs transition shadow-xs">
+                                                    🚚 {{ $sh->status === 'failed' ? "Qayta yo'lga chiqdim" : "Yo'lga chiqdim" }}
                                                 </button>
                                             @elseif($sh->status === 'in_transit' || $sh->status === 'out_for_delivery')
-                                                <button type="submit" name="status" value="delivered" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5">
-                                                    <span>✓</span>
-                                                    <span>Xaridorga yetkazildi (Topshirildi)</span>
+                                                <button type="submit" name="status" value="delivered"
+                                                        @if($isCOD) onclick="return confirm('Xaridordan {{ number_format($codAmount, 0, '.', ' ') }} UZS naqd oldingizmi?')" @endif
+                                                        class="w-full sm:w-auto px-5 py-3.5 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm sm:text-xs transition shadow-xs">
+                                                    ✓ Topshirdim{{ $isCOD ? ' va ' . number_format($codAmount, 0, '.', ' ') . ' UZS oldim' : '' }}
                                                 </button>
-                                                <button type="submit" name="status" value="failed" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs transition">
-                                                    Yetkazib bo'lmadi
-                                                </button>
-                                            @elseif($sh->status === 'delivered')
-                                                <span class="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-900 font-bold text-xs">
-                                                    ✓ Muvaffaqiyatli topshirilgan
-                                                </span>
                                             @endif
-
-                                            <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="px-3 py-2 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] hover:bg-[#E8ECE4] text-[#172326] font-bold text-xs transition">
-                                                Xarita →
-                                            </a>
                                         </form>
+
+                                        @if(in_array($sh->status, ['picked_up', 'in_transit', 'out_for_delivery'], true))
+                                            <details class="text-xs">
+                                                <summary class="cursor-pointer text-rose-700 font-bold py-1">Yetkazib bo'lmadimi?</summary>
+                                                <form action="{{ route('profile.courier.shipments.status', $sh->id) }}" method="POST" class="mt-2 grid gap-2 sm:flex sm:items-center">
+                                                    @csrf
+                                                    <input type="hidden" name="status" value="failed">
+                                                    <select name="delay_reason" required class="px-3 py-2.5 rounded-xl border border-rose-300 bg-white text-xs">
+                                                        <option value="">Sababni tanlang</option>
+                                                        <option>Mijoz telefonga javob bermadi</option>
+                                                        <option>Mijoz manzilda yo'q</option>
+                                                        <option>Manzil noto'g'ri yoki topilmadi</option>
+                                                        <option>Mijoz qabul qilishdan bosh tortdi</option>
+                                                        <option>Mijoz boshqa vaqtni so'radi</option>
+                                                    </select>
+                                                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs">Belgilash</button>
+                                                </form>
+                                            </details>
+                                        @endif
                                     </div>
                                 </div>
                             @empty
                                 <div class="bg-white rounded-3xl border border-[#E8ECE4] p-12 text-center shadow-xs">
                                     <div class="text-3xl mb-2">🛵</div>
-                                    <h3 class="font-extrabold text-base text-[#172326]">Hozircha biriktirilgan yetkazishlar yo'q</h3>
+                                    <h3 class="font-extrabold text-base text-[#172326]">Hozircha faol yetkazishlar yo'q</h3>
                                     <p class="text-xs text-[#64748B]">Administrator yoki do'konlar sizga yangi buyurtmalarni biriktirganda shu yerda ko'rinadi.</p>
                                 </div>
                             @endforelse
                         </div>
+
+                        @if($courierFinishedShipments->isNotEmpty())
+                            <details class="bg-white rounded-3xl border border-[#E8ECE4] p-5">
+                                <summary class="cursor-pointer font-extrabold text-sm text-[#172326]">
+                                    Yakunlangan va bekor qilingan ({{ $courierFinishedShipments->count() }})
+                                </summary>
+                                <div class="mt-3 divide-y divide-[#E8ECE4] text-xs">
+                                    @foreach($courierFinishedShipments as $sh)
+                                        @php $cancelled = $sh->suborder?->order?->status === 'cancelled' || $sh->suborder?->status === 'cancelled'; @endphp
+                                        <div class="py-2.5 flex flex-wrap items-center justify-between gap-2">
+                                            <span class="font-mono font-bold text-[#172326]">{{ $sh->tracking_number }}</span>
+                                            <span class="text-[#64748B]">{{ $sh->suborder?->seller?->name }}</span>
+                                            @if($cancelled)
+                                                <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">Bekor qilingan — tovarni olmang</span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[10px]">Topshirildi {{ $sh->delivered_at?->format('d.m H:i') }}</span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
                     </div>
                 @endif
 

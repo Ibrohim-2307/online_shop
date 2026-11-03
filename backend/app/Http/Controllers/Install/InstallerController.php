@@ -23,7 +23,7 @@ class InstallerController extends Controller
      */
     public function show(Request $request)
     {
-        if (File::exists($this->lockFile)) {
+        if ($this->isInstalled()) {
             return response()->view('install.locked', [], 403);
         }
 
@@ -69,7 +69,7 @@ class InstallerController extends Controller
      */
     public function install(Request $request)
     {
-        if (File::exists($this->lockFile)) {
+        if ($this->isInstalled()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Loyiha allaqachon o\'rnatilgan. Qayta o\'rnatish qat\'iyan taqiqlangan.',
@@ -156,5 +156,22 @@ class InstallerController extends Controller
             'message' => 'Bozor tizimi muvaffaqiyatli o\'rnatildi va o\'rnatuvchi bloklandi.',
             'redirect' => route('login'),
         ]);
+    }
+
+    /**
+     * Installed = lock file present, or an administrator already exists. The lock file alone is not
+     * enough: on container hosting it lives on an ephemeral disk and disappears on every redeploy.
+     */
+    protected function isInstalled(): bool
+    {
+        if (File::exists($this->lockFile)) {
+            return true;
+        }
+
+        try {
+            return User::whereHas('roles', fn($q) => $q->whereIn('name', ['superadmin', 'admin']))->exists();
+        } catch (\Throwable) {
+            return false; // no database yet: a genuine first install
+        }
     }
 }

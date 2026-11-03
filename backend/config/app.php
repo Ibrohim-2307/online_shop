@@ -44,6 +44,10 @@ return [
     // Shows one-click demo accounts on the login page. Keep false on a real store.
     'demo_mode' => (bool) env('APP_DEMO_MODE', false),
 
+    // Administrator account managed by `php artisan app:secure-accounts` (run on every deploy).
+    'admin_email' => env('ADMIN_EMAIL', 'admin@market.uz'),
+    'admin_password' => env('ADMIN_PASSWORD'),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

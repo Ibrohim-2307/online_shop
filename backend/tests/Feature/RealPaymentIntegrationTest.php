@@ -333,6 +333,43 @@ class RealPaymentIntegrationTest extends TestCase
     }
 
     /**
+     * A customer-cancelled order must be refused by both Click and Payme so no money is taken.
+     */
+    public function test_cancelled_order_is_refused_by_click_and_payme(): void
+    {
+        $this->order->update(['status' => 'cancelled']);
+
+        $secretKey = 'click_secret_key_test_123';
+        $merchantTransId = (string) $this->order->id;
+        $amount = '520000.00';
+        $signTime = '2026-10-26 12:00:00';
+
+        $clickRes = $this->postJson(route('api.v1.payments.click'), [
+            'click_trans_id' => '3003',
+            'service_id' => '12345',
+            'click_paydoc_id' => '4004',
+            'merchant_trans_id' => $merchantTransId,
+            'amount' => $amount,
+            'action' => '0',
+            'error' => '0',
+            'error_note' => '',
+            'sign_time' => $signTime,
+            'sign_string' => md5('3003' . '12345' . $secretKey . $merchantTransId . $amount . '0' . $signTime),
+        ]);
+        $clickRes->assertStatus(200)->assertJson(['error' => -9]);
+        $this->assertDatabaseMissing('click_transactions', ['click_trans_id' => '3003']);
+
+        $paymeRes = $this->withHeaders([
+            'Authorization' => 'Basic ' . base64_encode('Paycom:payme_secret_key_test_123'),
+        ])->postJson(route('api.v1.payments.payme'), [
+            'id' => 77,
+            'method' => 'CheckPerformTransaction',
+            'params' => ['amount' => 520000 * 100, 'account' => ['order_id' => $this->order->id]],
+        ]);
+        $paymeRes->assertStatus(200)->assertJsonPath('error.code', -31008);
+    }
+
+    /**
      * Test Payme JSON-RPC: unauthorized request rejected with error code -32504.
      */
     public function test_payme_rejects_unauthorized_request(): void

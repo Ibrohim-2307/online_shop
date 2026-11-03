@@ -145,9 +145,20 @@ class PaymePaymentService implements PaymentAdapterInterface
         return $order;
     }
 
+    /**
+     * A cancelled order must never accept money (the customer may cancel before paying).
+     */
+    protected function ensureOrderPayable(Order $order): void
+    {
+        if ($order->status === 'cancelled') {
+            throw new InvalidArgumentException("Buyurtma bekor qilingan", -31008);
+        }
+    }
+
     protected function checkPerformTransaction(array $params): array
     {
         $order = $this->findOrder($params);
+        $this->ensureOrderPayable($order);
         $amount = (int) ($params['amount'] ?? 0);
         $expectedAmountInTiyin = (int) ($order->grand_total * 100);
 
@@ -182,6 +193,7 @@ class PaymePaymentService implements PaymentAdapterInterface
 
         // Validate order and amount
         $order = $this->findOrder($params);
+        $this->ensureOrderPayable($order);
         $expectedAmountInTiyin = (int) ($order->grand_total * 100);
         if ($amount !== $expectedAmountInTiyin) {
             throw new InvalidArgumentException("To'lov summasi noto'g'ri (tiyinlarda)", -31008);
@@ -224,6 +236,11 @@ class PaymePaymentService implements PaymentAdapterInterface
 
         if ($transaction->state !== 1) {
             throw new InvalidArgumentException("Tranzaksiya bekor qilingan yoki yakunlangan", -31008);
+        }
+
+        // Order may have been cancelled between CreateTransaction and PerformTransaction
+        if ($transaction->order) {
+            $this->ensureOrderPayable($transaction->order);
         }
 
         return DB::transaction(function () use ($transaction) {

@@ -120,6 +120,14 @@ class ClickPaymentService implements PaymentAdapterInterface
             ];
         }
 
+        // A cancelled order must never accept money
+        if ($order->status === 'cancelled') {
+            return [
+                'error' => -9,
+                'error_note' => 'Transaction cancelled',
+            ];
+        }
+
         // Check already paid
         if ($order->status === 'completed' || $order->status === 'processing') {
             $payment = Payment::where('order_id', $order->id)->where('status', 'paid')->first();
@@ -234,6 +242,18 @@ class ClickPaymentService implements PaymentAdapterInterface
                 'merchant_confirm_id' => $clickTrans->id,
                 'error' => 0,
                 'error_note' => 'Success',
+            ];
+        }
+
+        // Order cancelled between Prepare and Complete: refuse so Click does not charge the customer
+        if ($order->status === 'cancelled') {
+            $clickTrans->update(['status' => 'cancelled', 'error' => -9, 'error_note' => 'Order cancelled']);
+
+            return [
+                'click_trans_id' => $clickTransId,
+                'merchant_trans_id' => (string) $order->id,
+                'error' => -9,
+                'error_note' => 'Transaction cancelled',
             ];
         }
 

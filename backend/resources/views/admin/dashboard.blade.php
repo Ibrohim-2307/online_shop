@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: 'sellers' }">
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: '{{ $initialTab ?? 'sellers' }}' }" x-init="$watch('currentTab', t => history.replaceState(null, '', '?tab=' + t))">
 
     <!-- Top Admin Header -->
     <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
@@ -61,6 +61,13 @@
                 <span>⚠️ {{ session('error') }}</span>
             </div>
         @endif
+        @if($errors->any())
+            <div class="mb-6 p-4 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-sm font-medium">
+                @foreach($errors->all() as $error)
+                    <div>⚠️ {{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
 
         <!-- Summary Stats Grid (7 Key Metrics) -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
@@ -111,6 +118,12 @@
             </button>
             <button @click="currentTab = 'orders'" :class="currentTab === 'orders' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 🛒 Buyurtmalar ({{ $recentOrders->count() }})
+            </button>
+            <button @click="currentTab = 'refunds'" :class="currentTab === 'refunds' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                ↩ Qaytarishlar
+                @if(($stats['open_refunds'] ?? 0) > 0)
+                    <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_refunds'] }}</span>
+                @endif
             </button>
             <button @click="currentTab = 'audit'" :class="currentTab === 'audit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 🔍 Audit Jurnali
@@ -523,6 +536,89 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- TAB: RETURNS / REFUNDS -->
+        <div x-show="currentTab === 'refunds'" x-cloak class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-4 border-b border-slate-100">
+                <h3 class="font-bold text-slate-900 text-sm">Qaytarish So'rovlari</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">
+                    1) So'rovni tasdiqlang yoki sababini yozib rad eting.
+                    2) Tovar qaytib kelgach va mijozga pul qaytarilgach (Click/Payme kabineti yoki naqd), "Pul qaytarildi" ni bosing — tovar omborga qaytadi va summa sotuvchi hisobidan ayiriladi.
+                </p>
+            </div>
+            @php
+                $refundStatus = [
+                    'requested' => ['Yangi', 'bg-amber-100 text-amber-900'],
+                    'approved' => ['Tasdiqlangan — tovar kutilmoqda', 'bg-blue-100 text-blue-800'],
+                    'goods_returned' => ['Tovar qaytdi', 'bg-blue-100 text-blue-800'],
+                    'completed' => ['Pul qaytarildi', 'bg-emerald-100 text-emerald-800'],
+                    'rejected' => ['Rad etilgan', 'bg-rose-100 text-rose-800'],
+                ];
+            @endphp
+            <div class="divide-y divide-slate-100">
+                @forelse($refunds as $refund)
+                    <div class="p-4 grid gap-3 lg:grid-cols-12 text-xs">
+                        <div class="lg:col-span-5 space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-mono font-bold text-slate-900">{{ $refund->refund_number }}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $refundStatus[$refund->status][1] ?? 'bg-slate-100' }}">
+                                    {{ $refundStatus[$refund->status][0] ?? $refund->status }}
+                                </span>
+                                <span class="text-slate-400">{{ $refund->created_at->format('Y-m-d H:i') }}</span>
+                            </div>
+                            <div class="text-slate-600">
+                                Mijoz: <b class="text-slate-900">{{ $refund->user->name ?? '—' }}</b>
+                                @if($refund->user?->phone) • <a href="tel:{{ $refund->user->phone }}" class="underline">{{ $refund->user->phone }}</a> @endif
+                            </div>
+                            <div class="text-slate-600">
+                                Buyurtma:
+                                @if($refund->order)
+                                    <a href="{{ route('orders.detail', $refund->order->order_number) }}" target="_blank" class="font-mono font-bold text-slate-900 underline">{{ $refund->order->order_number }}</a>
+                                @endif
+                                • Do'kon: <b class="text-slate-900">{{ $refund->suborder->seller->name ?? '—' }}</b>
+                            </div>
+                            @if($refund->suborder)
+                                <div class="text-slate-500">
+                                    @foreach($refund->suborder->items as $it)
+                                        {{ $it->product_name }} ×{{ (float) $it->quantity }}@if(!$loop->last), @endif
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                        <div class="lg:col-span-3 space-y-1">
+                            <div class="font-black text-slate-900 text-sm">{{ number_format($refund->amount, 0, '.', ' ') }} UZS</div>
+                            <div class="text-slate-700"><span class="text-slate-400">Sabab:</span> {{ $refund->reason }}</div>
+                            @if($refund->moderator_notes)
+                                <div class="text-slate-500"><span class="text-slate-400">Izoh ({{ $refund->moderator->name ?? 'moderator' }}):</span> {{ $refund->moderator_notes }}</div>
+                            @endif
+                        </div>
+                        <div class="lg:col-span-4 lg:text-right">
+                            @if($refund->status === 'requested')
+                                <form method="POST" action="{{ route('admin.refunds.review', $refund->id) }}" class="space-y-2">
+                                    @csrf
+                                    <input type="text" name="notes" maxlength="500" placeholder="Izoh (rad etishda majburiy)"
+                                           class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs">
+                                    <div class="flex gap-2 lg:justify-end">
+                                        <button name="decision" value="approve" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold">✓ Tasdiqlash</button>
+                                        <button name="decision" value="reject" class="px-3 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold">✕ Rad etish</button>
+                                    </div>
+                                </form>
+                            @elseif(in_array($refund->status, ['approved', 'goods_returned'], true))
+                                <form method="POST" action="{{ route('admin.refunds.complete', $refund->id) }}"
+                                      onsubmit="return confirm('Tovar qaytib keldi va mijozga {{ number_format($refund->amount, 0, '.', ' ') }} UZS qaytarildimi?')">
+                                    @csrf
+                                    <button class="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold">💸 Tovar qaytdi, pul qaytarildi</button>
+                                </form>
+                            @else
+                                <span class="text-slate-400">Yakunlangan</span>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="p-8 text-center text-slate-400">Hozircha qaytarish so'rovlari yo'q</div>
+                @endforelse
             </div>
         </div>
 

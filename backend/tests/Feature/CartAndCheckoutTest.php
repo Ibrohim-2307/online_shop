@@ -284,6 +284,60 @@ class CartAndCheckoutTest extends TestCase
         $this->actingAs($customer)->get('/orders/' . $order->order_number)->assertDontSee('Tovarni qaytarish');
     }
 
+    public function test_admin_reviews_and_completes_customer_return_from_web_panel(): void
+    {
+        [$seller, , $variant, , $balance] = $this->setupSellerWithProduct('Seller Q', 'seller-q', 'Tovar Q', 'tovar-q', 'SKU-Q', 20);
+        $customer = $this->createCustomer('+998907778888');
+        $admin = $this->createUserWithRole('admin', 'admin-q@example.uz');
+        $courier = $this->createUserWithRole('courier', 'kuryer-q@example.uz');
+
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 2])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Aziz', 'phone' => '+998907778888', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 8', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+        $sub = $order->suborders()->firstOrFail();
+        $shipment = $sub->shipments()->firstOrFail();
+        $shipment->update(['courier_id' => $courier->id, 'status' => 'assigned']);
+        $this->actingAs($courier)->post(route('profile.courier.shipments.status', $shipment->id), ['status' => 'delivered'])->assertRedirect();
+        $this->assertEquals(18.0, (float) $balance->fresh()->quantity);
+
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/returns', [
+            'suborder_id' => $sub->id, 'reason' => 'Boshqa tovar keldi',
+        ])->assertSessionHas('success');
+        $refund = \App\Models\Refund::where('order_id', $order->id)->firstOrFail();
+
+        // Admin sees the open request with a badge
+        $this->actingAs($admin)->get('/admin?tab=refunds')->assertStatus(200)
+            ->assertSee($refund->refund_number)->assertSee('Boshqa tovar keldi')->assertSee("currentTab: 'refunds'", false);
+
+        // Customers and couriers cannot act on returns
+        $this->actingAs($customer)->post(route('admin.refunds.review', $refund->id), ['decision' => 'approve'])->assertStatus(403);
+
+        // Rejecting needs a reason shown to the customer
+        $this->actingAs($admin)->post(route('admin.refunds.review', $refund->id), ['decision' => 'reject'])
+            ->assertSessionHasErrors('notes');
+        $this->assertEquals('requested', $refund->fresh()->status);
+
+        $this->actingAs($admin)->post(route('admin.refunds.review', $refund->id), ['decision' => 'approve', 'notes' => 'Kuryer olib ketadi'])
+            ->assertRedirect(route('admin.dashboard', ['tab' => 'refunds']));
+        $this->assertEquals('approved', $refund->fresh()->status);
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)->assertSee('Kuryer olib ketadi');
+
+        // Completing restocks the goods, debits the seller and marks the payment refunded
+        $this->actingAs($admin)->post(route('admin.refunds.complete', $refund->id))->assertSessionHas('success');
+        $this->assertEquals('completed', $refund->fresh()->status);
+        $this->assertEquals(20.0, (float) $balance->fresh()->quantity);
+        // Goods are refunded, delivery is not, so the payment is partially refunded
+        $this->assertEquals('partially_refunded', $order->payments()->latest()->first()->status);
+        $this->assertEquals(0, app(\App\Services\Ledger\SellerLedgerService::class)->getSellerBalance($seller) + (int) $sub->commission_amount);
+
+        // Completing twice changes nothing
+        $this->actingAs($admin)->post(route('admin.refunds.complete', $refund->id))->assertSessionHas('success');
+        $this->assertEquals(20.0, (float) $balance->fresh()->quantity);
+    }
+
     public function test_two_parallel_checkouts_cannot_double_sell_last_sku(): void
     {
         // Setup product with exactly 5 units in stock

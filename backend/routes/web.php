@@ -73,6 +73,8 @@ Route::post('/admin/users/{id}/status', [\App\Http\Controllers\Web\AdminDashboar
 Route::post('/admin/users/{id}/role', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateUserRole'])->name('admin.users.role');
 Route::post('/admin/products/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateProductStatus'])->name('admin.products.status');
 Route::post('/admin/shipments/{id}/assign', [\App\Http\Controllers\Web\AdminDashboardController::class, 'assignCourier'])->name('admin.shipments.assign');
+Route::post('/admin/refunds/{id}/review', [\App\Http\Controllers\Web\AdminDashboardController::class, 'reviewRefund'])->name('admin.refunds.review');
+Route::post('/admin/refunds/{id}/complete', [\App\Http\Controllers\Web\AdminDashboardController::class, 'completeRefund'])->name('admin.refunds.complete');
 
 // Seller Web Dashboard
 Route::get('/seller', [\App\Http\Controllers\Web\SellerDashboardController::class, 'index'])->name('seller.dashboard');

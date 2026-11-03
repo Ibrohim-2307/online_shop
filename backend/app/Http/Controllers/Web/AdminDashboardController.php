@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Refund;
 use App\Models\Role;
 use App\Models\Seller;
 use App\Models\SellerMember;
@@ -13,6 +14,7 @@ use App\Models\SellerPayout;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Services\Audit\AuditService;
+use App\Services\Refund\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -53,7 +55,21 @@ class AdminDashboardController extends Controller
         $auditLogs = AuditLog::with('user')->latest()->limit(20)->get();
         $payouts = SellerPayout::with('seller')->latest()->limit(10)->get();
 
+        // Open return requests first, then the most recent decisions
+        $refunds = Refund::with(['order', 'suborder.seller', 'suborder.items', 'user', 'moderator'])
+            ->orderByRaw("CASE status WHEN 'requested' THEN 0 WHEN 'approved' THEN 1 WHEN 'goods_returned' THEN 1 ELSE 2 END")
+            ->latest()
+            ->limit(50)
+            ->get();
+        $stats['open_refunds'] = Refund::whereIn('status', ['requested', 'approved', 'goods_returned'])->count();
+
+        $initialTab = in_array($request->query('tab'), ['sellers', 'products', 'users', 'shipments', 'orders', 'refunds', 'audit'], true)
+            ? $request->query('tab')
+            : 'sellers';
+
         return view('admin.dashboard', compact(
+            'refunds',
+            'initialTab',
             'stats',
             'sellers',
             'users',
@@ -206,6 +222,63 @@ class AdminDashboardController extends Controller
         ]);
 
         return back()->with('success', "Foydalanuvchi ({$targetUser->name}) roli '{$role->label}' ga muvaffaqiyatli o'zgartirildi.");
+    }
+
+    /**
+     * Moderator approves or rejects a customer's return request.
+     */
+    public function reviewRefund(Request $request, int $id, RefundService $refundService): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin', 'moderator'])) {
+            abort(403, "Faqat moderator yoki administrator qaytarish so'rovini ko'rib chiqa oladi.");
+        }
+
+        $validated = $request->validate([
+            'decision' => ['required', 'in:approve,reject'],
+            'notes' => ['nullable', 'string', 'max:500', 'required_if:decision,reject'],
+        ], [
+            'notes.required_if' => "Rad etish sababini yozing — u mijozga ko'rsatiladi.",
+        ]);
+
+        $refund = Refund::findOrFail($id);
+
+        try {
+            $refundService->reviewRefund($refund, $user, $validated['decision'] === 'approve', $validated['notes'] ?? null);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->route('admin.dashboard', ['tab' => 'refunds'])->with('error', $e->getMessage());
+        }
+
+        $message = $validated['decision'] === 'approve'
+            ? "So'rov #{$refund->refund_number} tasdiqlandi. Tovar qaytib kelgach \"Pul qaytarildi\" ni bosing."
+            : "So'rov #{$refund->refund_number} rad etildi.";
+
+        return redirect()->route('admin.dashboard', ['tab' => 'refunds'])->with('success', $message);
+    }
+
+    /**
+     * Goods are back and the customer has been paid back: restock, debit the seller, close the request.
+     */
+    public function completeRefund(int $id, RefundService $refundService): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin', 'moderator'])) {
+            abort(403, "Faqat moderator yoki administrator qaytarishni yakunlay oladi.");
+        }
+
+        $refund = Refund::findOrFail($id);
+
+        try {
+            $result = $refundService->completeRefundWithGoodsRestock($refund, $user);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->route('admin.dashboard', ['tab' => 'refunds'])->with('error', $e->getMessage());
+        }
+
+        $message = $result['status'] === 'already_completed'
+            ? "So'rov #{$refund->refund_number} avval yakunlangan."
+            : "Qaytarish #{$refund->refund_number} yakunlandi: tovar omborga qaytdi, summa sotuvchi hisobidan ayirildi.";
+
+        return redirect()->route('admin.dashboard', ['tab' => 'refunds'])->with('success', $message);
     }
 
     /**

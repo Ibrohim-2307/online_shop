@@ -18,6 +18,28 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
+# Write KEY=VALUE into .env (replace or append). Real environment variables set in the
+# hosting dashboard still take precedence over .env, so these are only safe defaults.
+set_env() {
+    if grep -q "^$1=" .env; then
+        sed -i "s|^$1=.*|$1=$2|" .env
+    else
+        echo "$1=$2" >> .env
+    fi
+}
+
+# The public site must never run in local/debug mode: that exposes demo passwords,
+# OTP and password-reset codes, fake "demo" payments, and stack traces to visitors.
+set_env APP_ENV production
+set_env APP_DEBUG false
+
+# Keep the SQLite database on the persistent data directory so orders and accounts survive redeploys
+set_env DB_DATABASE /var/www/html/storage/data/database.sqlite
+
+if [ -n "$RENDER_EXTERNAL_URL" ]; then
+    set_env APP_URL "$RENDER_EXTERNAL_URL"
+fi
+
 # SQLite configuration handling
 if [ "$DB_CONNECTION" = "sqlite" ] || grep -q "^DB_CONNECTION=sqlite" .env; then
     DB_PATH="${DB_DATABASE:-/var/www/html/storage/data/database.sqlite}"
@@ -31,9 +53,17 @@ fi
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Ensure APP_KEY exists
-if ! grep -q "APP_KEY=base64:" .env; then
-    php artisan key:generate --force
+# Ensure APP_KEY exists and stays the same across redeploys (a new key would log every customer out)
+KEY_FILE=/var/www/html/storage/data/app_key
+if [ -z "$APP_KEY" ]; then
+    if [ -f "$KEY_FILE" ]; then
+        set_env APP_KEY "$(cat "$KEY_FILE")"
+    elif ! grep -q "APP_KEY=base64:" .env; then
+        php artisan key:generate --force
+    fi
+    grep "^APP_KEY=" .env | cut -d= -f2- > "$KEY_FILE"
+    chown www-data:www-data "$KEY_FILE"
+    chmod 600 "$KEY_FILE"
 fi
 
 # Configure Nginx port from $PORT (Render / Cloud standard)

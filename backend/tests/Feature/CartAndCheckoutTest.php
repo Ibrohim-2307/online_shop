@@ -231,6 +231,59 @@ class CartAndCheckoutTest extends TestCase
             ->assertSessionHas('error');
     }
 
+    public function test_customer_sees_progress_can_reorder_and_request_return_after_delivery(): void
+    {
+        [$seller, , $variant] = $this->setupSellerWithProduct('Seller R', 'seller-r', 'Tovar R', 'tovar-r', 'SKU-R', 50);
+        $customer = $this->createCustomer('+998907776666');
+
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 2])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Aziz', 'phone' => '+998907776666', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 7', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+        $sub = $order->suborders()->firstOrFail();
+
+        // Progress timeline shows; no return option before delivery
+        $page = $this->actingAs($customer)->get('/orders/' . $order->order_number);
+        $page->assertStatus(200)->assertSee('Qadoqlanmoqda')->assertSee('aria-current="step"', false)
+            ->assertDontSee('Tovarni qaytarish');
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/returns', ['suborder_id' => $sub->id, 'reason' => 'Nuqsonli'])
+            ->assertSessionHas('error');
+
+        // Reorder puts the items back into the (now empty) cart
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/reorder')
+            ->assertRedirect(route('cart'))->assertSessionHas('success');
+        $this->assertEquals(2.0, (float) \App\Models\CartItem::whereHas('cart', fn($q) => $q->where('user_id', $customer->id)->where('status', 'active'))->sum('quantity'));
+
+        // After delivery and payment the customer can ask for a return, once
+        $sub->update(['status' => 'delivered']);
+        $sub->shipments()->update(['status' => 'delivered', 'delivered_at' => now()]);
+        $order->payments()->update(['status' => 'paid']);
+
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)->assertSee('Tovarni qaytarish');
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/returns', [
+            'suborder_id' => $sub->id, 'reason' => 'Tovar nuqsonli yoki singan', 'details' => 'Qopi yirtilgan',
+        ])->assertRedirect(route('orders.detail', $order->order_number));
+
+        $refund = \App\Models\Refund::where('order_id', $order->id)->firstOrFail();
+        $this->assertEquals('requested', $refund->status);
+        $this->assertEquals((int) $sub->items_subtotal, (int) $refund->amount);
+        $this->assertEquals('Tovar nuqsonli yoki singan: Qopi yirtilgan', $refund->reason);
+
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)
+            ->assertSee("Qaytarish so'rovi ko'rib chiqilmoqda")
+            ->assertDontSee('Tovarni qaytarish');
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/returns', ['suborder_id' => $sub->id, 'reason' => 'Yana'])
+            ->assertSessionHas('error');
+        $this->assertEquals(1, \App\Models\Refund::where('order_id', $order->id)->count());
+
+        // Return window closes after 10 days
+        $sub->shipments()->update(['delivered_at' => now()->subDays(11)]);
+        $refund->update(['status' => 'rejected']);
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)->assertDontSee('Tovarni qaytarish');
+    }
+
     public function test_two_parallel_checkouts_cannot_double_sell_last_sku(): void
     {
         // Setup product with exactly 5 units in stock

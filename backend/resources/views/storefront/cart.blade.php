@@ -24,6 +24,12 @@
             </a>
         </div>
 
+        @if(session('success'))
+            <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold">
+                {{ session('success') }}
+            </div>
+        @endif
+
         @if(session('error'))
             <div class="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold flex items-center gap-3">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

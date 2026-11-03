@@ -130,6 +130,57 @@
                             </div>
                         </div>
 
+                        <!-- Progress timeline for this seller's part -->
+                        @php
+                            $steps = ['Qabul qilindi', 'Tasdiqlandi', 'Qadoqlanmoqda', "Yo'lda", 'Yetkazildi'];
+                            $isCancelled = $order->status === 'cancelled' || $suborder->status === 'cancelled';
+                            $shipStatus = $suborder->shipments->first()?->status;
+                            $stepIndex = match (true) {
+                                $suborder->status === 'delivered' || $shipStatus === 'delivered' => 4,
+                                $suborder->status === 'shipped' || in_array($shipStatus, ['picked_up', 'in_transit'], true) => 3,
+                                $suborder->status === 'preparing' => 2,
+                                $suborder->status === 'confirmed' => 1,
+                                default => 0,
+                            };
+                            $subRefund = $order->refunds->where('suborder_id', $suborder->id)->sortByDesc('id')->first();
+                            $refundLabels = [
+                                'requested' => ["Qaytarish so'rovi ko'rib chiqilmoqda", 'bg-amber-50 text-amber-900 border-amber-200'],
+                                'approved' => ["Qaytarish tasdiqlandi — tovarni topshiring", 'bg-blue-50 text-blue-800 border-blue-200'],
+                                'goods_returned' => ['Tovar qabul qilindi, pul qaytarilmoqda', 'bg-blue-50 text-blue-800 border-blue-200'],
+                                'completed' => ['Pul qaytarildi', 'bg-emerald-50 text-emerald-800 border-emerald-200'],
+                                'rejected' => ["Qaytarish rad etildi", 'bg-rose-50 text-rose-800 border-rose-200'],
+                            ];
+                        @endphp
+                        @if($isCancelled)
+                            <div class="px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800">✕ Bu qism bekor qilingan</div>
+                        @else
+                            <ol class="grid grid-cols-5 gap-1" aria-label="Buyurtma holati">
+                                @foreach($steps as $i => $label)
+                                    <li class="flex flex-col items-center text-center gap-1.5">
+                                        <div class="w-full h-1.5 rounded-full {{ $i <= $stepIndex ? 'bg-[#123C2F]' : 'bg-[#E8ECE4]' }}"></div>
+                                        <span class="hidden sm:block text-[11px] leading-tight {{ $i === $stepIndex ? 'font-black text-[#123C2F]' : ($i < $stepIndex ? 'font-semibold text-[#172326]' : 'text-[#94A3B8]') }}"
+                                              @if($i === $stepIndex) aria-current="step" @endif>
+                                            {{ $label }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ol>
+                            <p class="sm:hidden -mt-1 text-xs text-[#64748B]">
+                                Holat: <span class="font-black text-[#123C2F]">{{ $steps[$stepIndex] }}</span>
+                                <span class="text-[#94A3B8]">({{ $stepIndex + 1 }}/{{ count($steps) }})</span>
+                            </p>
+                        @endif
+
+                        @if($subRefund)
+                            <div class="px-4 py-3 rounded-xl border text-xs font-bold {{ $refundLabels[$subRefund->status][1] ?? '' }}">
+                                ↩ {{ $refundLabels[$subRefund->status][0] ?? $subRefund->status }}
+                                <span class="font-mono font-medium opacity-70">#{{ $subRefund->refund_number }}</span>
+                                @if($subRefund->moderator_notes)
+                                    <p class="font-medium mt-1">{{ $subRefund->moderator_notes }}</p>
+                                @endif
+                            </div>
+                        @endif
+
                         <!-- Items in this suborder -->
                         <div class="space-y-2">
                             @foreach($suborder->items as $item)
@@ -153,6 +204,32 @@
                                 </a>
                             </div>
                         @endforeach
+
+                        @if(in_array($suborder->id, $returnableSuborderIds ?? [], true))
+                            <details class="pt-3 border-t border-[#E8ECE4] group">
+                                <summary class="cursor-pointer text-xs font-bold text-[#123C2F] hover:underline list-none">
+                                    ↩ Tovarni qaytarish (yetkazilgandan keyin {{ \App\Http\Controllers\Web\OrderHubController::RETURN_WINDOW_DAYS }} kun ichida)
+                                </summary>
+                                <form method="POST" action="{{ route('orders.returns.store', $order->order_number) }}" class="mt-3 space-y-3">
+                                    @csrf
+                                    <input type="hidden" name="suborder_id" value="{{ $suborder->id }}">
+                                    <select name="reason" required class="w-full px-3 py-2.5 rounded-xl border border-[#E8ECE4] bg-white text-xs">
+                                        <option value="">Sababni tanlang</option>
+                                        <option>Tovar nuqsonli yoki singan</option>
+                                        <option>Boshqa tovar keldi</option>
+                                        <option>Tavsifga mos emas</option>
+                                        <option>O'lchami / rangi to'g'ri kelmadi</option>
+                                        <option>Fikrimni o'zgartirdim</option>
+                                    </select>
+                                    <textarea name="details" rows="2" maxlength="400" placeholder="Qo'shimcha izoh (ixtiyoriy)"
+                                              class="w-full px-3 py-2.5 rounded-xl border border-[#E8ECE4] bg-white text-xs"></textarea>
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <span class="text-[11px] text-[#64748B]">Qaytariladigan summa: <b>{{ number_format($suborder->items_subtotal, 0, '.', ' ') }} UZS</b>. <a href="{{ route('returns') }}" class="underline">Qaytarish shartlari</a></span>
+                                        <button type="submit" class="px-4 py-2.5 rounded-xl bg-[#123C2F] text-[#C9F46B] font-bold text-xs">So'rov yuborish</button>
+                                    </div>
+                                </form>
+                            </details>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -163,6 +240,15 @@
                 <span class="font-black text-2xl text-[#123C2F]">{{ number_format($order->grand_total, 0, '.', ' ') }} UZS</span>
             </div>
         </div>
+
+        @if($isOwner ?? false)
+            <form method="POST" action="{{ route('orders.reorder', $order->order_number) }}" class="mb-6 flex justify-center">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border-2 border-[#123C2F] text-[#123C2F] font-black text-xs hover:bg-[#123C2F] hover:text-[#C9F46B] transition">
+                    🔁 Yana shu tovarlarni buyurtma qilish
+                </button>
+            </form>
+        @endif
 
         <!-- Back to Orders Hub -->
         <div class="text-center">

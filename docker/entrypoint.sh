@@ -86,9 +86,6 @@ if [ "$INITIAL_SEED" = "true" ] || [ "$USER_COUNT" = "0" ]; then
     php artisan db:seed --force
 fi
 
-# Admin password from ADMIN_PASSWORD; lock demo accounts whose passwords are public (skipped with APP_DEMO_MODE=true)
-php artisan app:secure-accounts || echo "WARNING: app:secure-accounts failed"
-
 # Ensure storage symlink
 php artisan storage:link || true
 

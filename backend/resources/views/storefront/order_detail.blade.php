@@ -37,7 +37,7 @@
                 @elseif($isPaid)
                     <span class="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
                         <span>✓</span>
-                        <span>To'langan</span>
+                        <span>To'langan{{ $latestPayment?->payment_method === 'demo' ? ' (test)' : '' }}</span>
                     </span>
                 @elseif($isCod)
                     <span class="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">

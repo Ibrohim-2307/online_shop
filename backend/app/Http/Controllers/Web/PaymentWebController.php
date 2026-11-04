@@ -168,7 +168,7 @@ class PaymentWebController extends Controller
         // 4. Demo Sandbox Settlement (Strictly allowed ONLY in local/dev test mode when explicitly enabled)
         if ($method === 'demo') {
             if (!$this->paymentManager->isProviderConfigured('demo')) {
-                return back()->with('error', "Demo sinov to'lovi faol emas yoki ishlab chiqarish (production) tizimida taqiqlangan!");
+                return back()->with('error', "Test to'lovi o'chirilgan. Uni yoqish uchun server sozlamalarida APP_DEMO_MODE=true bo'lishi kerak.");
             }
 
             try {
@@ -181,6 +181,9 @@ class PaymentWebController extends Controller
                         'status' => 'pending',
                     ]
                 );
+
+                // Record it as a test payment so nobody mistakes it for money received through Click/Payme
+                $payment->update(['payment_method' => 'demo']);
 
                 $eventId = 'EVT-WEB-' . strtoupper(bin2hex(random_bytes(6)));
                 $secretKey = config('services.payment.demo_secret', 'marketplace-sandbox-hmac-secret-key-2026');
@@ -195,7 +198,7 @@ class PaymentWebController extends Controller
                 ], $signature);
 
                 return redirect()->route('order.success', ['orderNumber' => $order->order_number])
-                    ->with('success', "Sandbox Demo to'lovi muvaffaqiyatli yakunlandi! Chek raqami: #{$payment->transaction_id}");
+                    ->with('success', "Test to'lovi muvaffaqiyatli o'tdi (haqiqiy pul yechilmadi). Buyurtma to'langan deb belgilandi. Chek raqami: #{$payment->transaction_id}");
             } catch (\Throwable $e) {
                 return back()->with('error', "Demo to'lovda xatolik: " . $e->getMessage());
             }

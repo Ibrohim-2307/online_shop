@@ -30,7 +30,9 @@ class PaymentManager
         return match (strtolower($provider)) {
             'click' => $this->clickService->isConfigured(),
             'payme' => $this->paymeService->isConfigured(),
-            'demo', 'demo_sandbox' => !app()->environment('production') && (app()->environment('testing', 'local') || config('services.payment.allow_demo_settlement', false)),
+            // Test payments (no real money): local/testing, or a site explicitly running as a demo (APP_DEMO_MODE=true)
+            'demo', 'demo_sandbox' => config('app.demo_mode')
+                || (!app()->environment('production') && (app()->environment('testing', 'local') || config('services.payment.allow_demo_settlement', false))),
             'cash_on_delivery' => true,
             default => false,
         };

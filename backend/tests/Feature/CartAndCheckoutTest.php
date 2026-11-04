@@ -465,6 +465,48 @@ class CartAndCheckoutTest extends TestCase
         $this->get('/products/birinchi')->assertStatus(404);
     }
 
+    public function test_test_payment_works_in_demo_mode_on_production_and_is_refused_otherwise(): void
+    {
+        [, , $variant] = $this->setupSellerWithProduct('Seller T', 'seller-t', 'Tovar T', 'tovar-t', 'SKU-T', 10);
+        $customer = $this->createCustomer('+998907770101');
+        // Outside the "testing" environment Laravel enforces CSRF even in tests
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+
+        $placeOrder = function () use ($customer, $variant) {
+            $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 1])->assertStatus(201);
+            $this->actingAs($customer)->post('/checkout', [
+                'recipient_name' => 'Aziz', 'phone' => '+998907770101', 'region' => 'Toshkent',
+                'city' => 'Toshkent', 'address_line' => 'Uy 10', 'payment_method' => 'click',
+            ])->assertSessionHasNoErrors()->assertSessionMissing('error');
+
+            return Order::where('user_id', $customer->id)->latest('id')->firstOrFail();
+        };
+
+        // Real store (production, no demo mode): no test payment
+        $this->app['env'] = 'production';
+        config(['app.demo_mode' => false]);
+        $order = $placeOrder();
+        $this->actingAs($customer)->get('/payments/checkout/' . $order->order_number)->assertDontSee("Test to'lovini amalga oshirish", false);
+        $this->actingAs($customer)->post('/payments/pay/' . $order->order_number, ['payment_method' => 'demo'])->assertSessionHas('error');
+        $this->assertEquals('pending_payment', $order->fresh()->status);
+
+        // Test site (production + APP_DEMO_MODE): test payment marks the order paid and is labelled as a test
+        config(['app.demo_mode' => true]);
+        $this->actingAs($customer)->get('/payments/checkout/' . $order->order_number)
+            ->assertSee("Test to'lovini amalga oshirish", false)
+            ->assertSee('HAQIQIY PUL YECHILMAYDI');
+        $this->actingAs($customer)->post('/payments/pay/' . $order->order_number, ['payment_method' => 'demo'])
+            ->assertRedirect(route('order.success', $order->order_number));
+        $this->app['env'] = 'testing';
+
+        $order->refresh();
+        $this->assertEquals('processing', $order->status);
+        $payment = $order->payments()->latest('id')->first();
+        $this->assertEquals('paid', $payment->status);
+        $this->assertEquals('demo', $payment->payment_method);
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)->assertSee("To'langan (test)", false);
+    }
+
     public function test_two_parallel_checkouts_cannot_double_sell_last_sku(): void
     {
         // Setup product with exactly 5 units in stock

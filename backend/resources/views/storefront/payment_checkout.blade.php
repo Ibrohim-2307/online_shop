@@ -53,7 +53,31 @@
             
             <!-- Payment Provider Tabs & Interface (8 cols) -->
             <div class="lg:col-span-8 bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-6">
-                
+
+                <!-- TEST PAYMENT (shown while the site runs in test mode; no real money moves) -->
+                @if($isDemoAllowed)
+                    <div class="p-5 rounded-2xl bg-amber-50 border-2 border-dashed border-amber-400 space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-amber-900 font-black text-sm">🧪 Sinov rejimi: test to'lov</span>
+                            <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded">HAQIQIY PUL YECHILMAYDI</span>
+                        </div>
+                        <p class="text-xs text-amber-900 leading-relaxed">
+                            @if(!$isClickConfigured && !$isPaymeConfigured)
+                                Click va Payme hali ulanmagan.
+                            @endif
+                            Bu tugma kartadan pul yechmasdan buyurtmani <b>to'langan</b> deb belgilaydi.
+                            Shundan keyin sotuvchi, kuryer va admin bosqichlarini to'liq sinab ko'rish mumkin.
+                        </p>
+                        <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}">
+                            @csrf
+                            <input type="hidden" name="payment_method" value="demo">
+                            <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-sm transition shadow-sm">
+                                Test to'lovini amalga oshirish ({{ number_format($order->grand_total, 0, '.', ' ') }} UZS)
+                            </button>
+                        </form>
+                    </div>
+                @endif
+
                 <!-- Tab Selector Buttons -->
                 <div class="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
                     <button type="button" @click="activeTab = 'click'"
@@ -205,28 +229,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 4. DEVELOPER SANDBOX SIMULATION (Only shown in local/test mode if explicitly enabled) -->
-                @if($isDemoAllowed)
-                    <div class="p-5 rounded-2xl bg-amber-50 border-2 border-dashed border-amber-300 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-amber-800 font-black text-xs uppercase tracking-wider">⚠️ Dasturchi / Test Rejimi (Sandbox)</span>
-                            </div>
-                            <span class="text-[10px] font-mono bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded font-bold">DEV ONLY</span>
-                        </div>
-                        <p class="text-xs text-amber-800 leading-relaxed">
-                            Ushbu blok faqat mahalliy test va dasturlash bosqichida ko'rinadi. Production (haqiqiy server)da butunlay o'chirilgan.
-                        </p>
-                        <form method="POST" action="{{ route('payment.pay', ['orderNumber' => $order->order_number]) }}">
-                            @csrf
-                            <input type="hidden" name="payment_method" value="demo">
-                            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-sm">
-                                Test to'lovini simulyatsiya qilish (Sandbox Settlement)
-                            </button>
-                        </form>
-                    </div>
-                @endif
 
             </div>
 

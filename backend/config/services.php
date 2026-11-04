@@ -38,6 +38,8 @@ return [
     'payment' => [
         'demo_secret' => env('PAYMENT_DEMO_SECRET', 'marketplace-sandbox-hmac-secret-key-2026'),
         'allow_demo_settlement' => (bool) env('PAYMENT_ALLOW_DEMO', false),
+        // auto = test payments only while Click/Payme are not connected; on/off to force
+        'test_mode' => env('PAYMENT_TEST_MODE', 'auto'),
     ],
 
     'click' => [

@@ -465,7 +465,7 @@ class CartAndCheckoutTest extends TestCase
         $this->get('/products/birinchi')->assertStatus(404);
     }
 
-    public function test_test_payment_works_in_demo_mode_on_production_and_is_refused_otherwise(): void
+    public function test_test_payment_works_while_click_and_payme_are_not_connected_and_can_be_switched_off(): void
     {
         [, , $variant] = $this->setupSellerWithProduct('Seller T', 'seller-t', 'Tovar T', 'tovar-t', 'SKU-T', 10);
         $customer = $this->createCustomer('+998907770101');
@@ -482,16 +482,17 @@ class CartAndCheckoutTest extends TestCase
             return Order::where('user_id', $customer->id)->latest('id')->firstOrFail();
         };
 
-        // Real store (production, no demo mode): no test payment
+        // Real store (production, test payments switched off): no test payment
         $this->app['env'] = 'production';
-        config(['app.demo_mode' => false]);
+        config(['app.demo_mode' => false, 'services.payment.test_mode' => 'off']);
         $order = $placeOrder();
         $this->actingAs($customer)->get('/payments/checkout/' . $order->order_number)->assertDontSee("Test to'lovini amalga oshirish", false);
         $this->actingAs($customer)->post('/payments/pay/' . $order->order_number, ['payment_method' => 'demo'])->assertSessionHas('error');
         $this->assertEquals('pending_payment', $order->fresh()->status);
 
-        // Test site (production + APP_DEMO_MODE): test payment marks the order paid and is labelled as a test
-        config(['app.demo_mode' => true]);
+        // Default "auto": Click/Payme not connected, so a production site offers the test payment
+        config(['services.payment.test_mode' => 'auto', 'services.click.service_id' => null, 'services.payme.merchant_id' => null]);
+        $this->assertTrue(app(\App\Services\Payment\PaymentManager::class)->isTestPaymentAllowed());
         $this->actingAs($customer)->get('/payments/checkout/' . $order->order_number)
             ->assertSee("Test to'lovini amalga oshirish", false)
             ->assertSee('HAQIQIY PUL YECHILMAYDI');

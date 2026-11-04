@@ -168,7 +168,7 @@ class PaymentWebController extends Controller
         // 4. Demo Sandbox Settlement (Strictly allowed ONLY in local/dev test mode when explicitly enabled)
         if ($method === 'demo') {
             if (!$this->paymentManager->isProviderConfigured('demo')) {
-                return back()->with('error', "Test to'lovi o'chirilgan. Uni yoqish uchun server sozlamalarida APP_DEMO_MODE=true bo'lishi kerak.");
+                return back()->with('error', "Test to'lovi o'chirilgan: do'kon haqiqiy to'lov tizimiga (Click/Payme) ulangan.");
             }
 
             try {

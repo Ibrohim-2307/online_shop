@@ -732,6 +732,9 @@
                                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border {{ $statusLabel[1] }}">
                                                 {{ $statusLabel[0] }}
                                             </span>
+                                            @if($sub->order?->latest_payment?->payment_method === 'demo')
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300" title="Haqiqiy pul tushmagan">🧪 Test to'lov</span>
+                                            @endif
                                         </div>
                                         <p class="text-[11px] text-[#64748B] mt-0.5">Sana: {{ $sub->created_at->format('Y-m-d H:i') }}</p>
                                     </div>

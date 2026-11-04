@@ -30,11 +30,29 @@ class PaymentManager
         return match (strtolower($provider)) {
             'click' => $this->clickService->isConfigured(),
             'payme' => $this->paymeService->isConfigured(),
-            // Test payments (no real money): local/testing, or a site explicitly running as a demo (APP_DEMO_MODE=true)
-            'demo', 'demo_sandbox' => config('app.demo_mode')
-                || (!app()->environment('production') && (app()->environment('testing', 'local') || config('services.payment.allow_demo_settlement', false))),
+            'demo', 'demo_sandbox' => $this->isTestPaymentAllowed(),
             'cash_on_delivery' => true,
             default => false,
+        };
+    }
+
+    /**
+     * Test payments (no real money). PAYMENT_TEST_MODE:
+     *  - "auto" (default): on while neither Click nor Payme is connected, so the shop can be tried end to end;
+     *    switches itself off as soon as a real provider is configured
+     *  - "on" / "off": force it
+     * Local and testing environments always allow it.
+     */
+    public function isTestPaymentAllowed(): bool
+    {
+        if (app()->environment('testing', 'local') || config('app.demo_mode') || config('services.payment.allow_demo_settlement')) {
+            return true;
+        }
+
+        return match (strtolower((string) config('services.payment.test_mode', 'auto'))) {
+            'on', 'true', '1' => true,
+            'off', 'false', '0' => false,
+            default => !$this->clickService->isConfigured() && !$this->paymeService->isConfigured(),
         };
     }
 

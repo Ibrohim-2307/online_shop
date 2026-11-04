@@ -60,31 +60,35 @@
         </div>
 
         @if(app()->environment('local', 'testing') || config('app.demo_mode'))
-        <!-- Quick Demo Accounts One-Click Fill (never shown in production) -->
+        @php
+            // Seeded passwords only exist locally; on a hosted demo the password is DEMO_PASSWORD and is typed by hand
+            $fillSeeded = app()->environment('local', 'testing');
+        @endphp
+        <!-- Quick Demo Accounts One-Click Fill (never shown on a real store) -->
         <div class="border-t border-slate-100 pt-5">
             <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 text-center">
                 Tezkor Demo Hisoblar (1-bosishda to'ldirish):
             </span>
             <div class="grid grid-cols-2 gap-2 text-left">
-                <button type="button" onclick="fillLogin('admin@market.uz', 'Admin123!')" 
+                <button type="button" onclick="fillLogin('admin@market.uz', '{{ $fillSeeded ? 'Admin123!' : '' }}')" 
                         class="p-2.5 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100/60 text-left transition">
                     <span class="text-xs font-bold text-rose-900 block">👑 Administrator</span>
                     <span class="text-[10px] text-rose-600 font-mono block">admin@market.uz</span>
                 </button>
 
-                <button type="button" onclick="fillLogin('seller@market.uz', 'Seller123!')" 
+                <button type="button" onclick="fillLogin('seller@market.uz', '{{ $fillSeeded ? 'Seller123!' : '' }}')" 
                         class="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/60 text-left transition">
                     <span class="text-xs font-bold text-emerald-900 block">🏪 Sotuvchi (Do'kon)</span>
                     <span class="text-[10px] text-emerald-600 font-mono block">seller@market.uz</span>
                 </button>
 
-                <button type="button" onclick="fillLogin('customer@market.uz', 'Customer123!')" 
+                <button type="button" onclick="fillLogin('customer@market.uz', '{{ $fillSeeded ? 'Customer123!' : '' }}')" 
                         class="p-2.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100/60 text-left transition">
                     <span class="text-xs font-bold text-blue-900 block">🛍️ Xaridor</span>
                     <span class="text-[10px] text-blue-600 font-mono block">customer@market.uz</span>
                 </button>
 
-                <button type="button" onclick="fillLogin('courier@market.uz', 'Courier123!')" 
+                <button type="button" onclick="fillLogin('courier@market.uz', '{{ $fillSeeded ? 'Courier123!' : '' }}')" 
                         class="p-2.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-100/60 text-left transition">
                     <span class="text-xs font-bold text-amber-900 block">🚚 Kuryer</span>
                     <span class="text-[10px] text-amber-600 font-mono block">courier@market.uz</span>
@@ -105,6 +109,7 @@
         function fillLogin(email, pass) {
             document.getElementById('login').value = email;
             document.getElementById('password').value = pass;
+            if (!pass) document.getElementById('password').focus();
         }
     </script>
 </body>

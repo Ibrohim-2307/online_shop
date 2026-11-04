@@ -75,6 +75,30 @@ class SecureAccountsTest extends TestCase
         $this->assertTrue(Hash::check('Admin123!', User::where('email', 'admin@market.uz')->first()->password));
     }
 
+    public function test_demo_mode_with_demo_password_sets_one_password_for_all_demo_accounts(): void
+    {
+        $this->runInProduction(['app.demo_mode' => true, 'app.demo_password' => 'sinov-parol']);
+
+        foreach (array_keys(\App\Console\Commands\SecureAccountsCommand::DEMO_ACCOUNTS) as $email) {
+            $this->assertTrue(Hash::check('sinov-parol', User::where('email', $email)->first()->password), $email);
+        }
+
+        $this->post('/login', ['login' => 'courier@market.uz', 'password' => 'sinov-parol'])->assertRedirect();
+        $this->assertAuthenticated();
+    }
+
+    public function test_demo_password_is_ignored_outside_demo_mode_and_admin_password_wins(): void
+    {
+        // Not in demo mode: DEMO_PASSWORD does nothing, public passwords are still locked
+        $this->runInProduction(['app.demo_password' => 'sinov-parol']);
+        $this->assertFalse(Hash::check('sinov-parol', User::where('email', 'seller@market.uz')->first()->password));
+
+        // Demo mode with an explicit ADMIN_PASSWORD: admin keeps its own password
+        $this->runInProduction(['app.demo_mode' => true, 'app.demo_password' => 'sinov-parol', 'app.admin_password' => 'Admin-Uchun-Alohida']);
+        $this->assertTrue(Hash::check('Admin-Uchun-Alohida', User::where('email', 'admin@market.uz')->first()->password));
+        $this->assertTrue(Hash::check('sinov-parol', User::where('email', 'seller@market.uz')->first()->password));
+    }
+
     public function test_web_installer_is_closed_once_an_admin_exists(): void
     {
         $this->get('/install')->assertStatus(403);

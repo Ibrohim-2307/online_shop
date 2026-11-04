@@ -59,7 +59,33 @@ class SecureAccountsCommand extends Command
             }
         }
 
-        // 2. On a real store, nobody may log in with a password that is printed in the repository
+        // 2. Demo mode: the owner chose one shared password for all demo accounts (DEMO_PASSWORD in the dashboard)
+        $demoPassword = (string) config('app.demo_password');
+        if (config('app.demo_mode') && $demoPassword !== '') {
+            if (mb_strlen($demoPassword) < 6) {
+                $this->error("DEMO_PASSWORD kamida 6 ta belgidan iborat bo'lishi kerak. Demo parollar o'zgartirilmadi.");
+
+                return self::SUCCESS;
+            }
+
+            foreach (array_keys(self::DEMO_ACCOUNTS) as $email) {
+                // An explicit ADMIN_PASSWORD for this same account wins over the shared demo password
+                if ($email === $adminEmail && $adminPassword !== '' && mb_strlen($adminPassword) >= 10) {
+                    continue;
+                }
+
+                $user = User::where('email', $email)->first();
+                if ($user && !Hash::check($demoPassword, $user->password)) {
+                    $user->update(['password' => $demoPassword, 'is_active' => true]);
+                    $user->tokens()->delete();
+                    $this->info("Demo hisob paroli DEMO_PASSWORD ga o'rnatildi: {$email}");
+                }
+            }
+
+            return self::SUCCESS;
+        }
+
+        // 3. On a real store, nobody may log in with a password that is printed in the repository
         if (!app()->environment('production') || config('app.demo_mode')) {
             $this->line('Demo hisoblar tegilmadi (production emas yoki APP_DEMO_MODE yoqilgan).');
 

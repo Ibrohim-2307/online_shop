@@ -48,6 +48,9 @@ return [
     'admin_email' => env('ADMIN_EMAIL', 'admin@market.uz'),
     'admin_password' => env('ADMIN_PASSWORD'),
 
+    // With APP_DEMO_MODE=true: one shared password for the admin/seller/customer/courier demo accounts.
+    'demo_password' => env('DEMO_PASSWORD'),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

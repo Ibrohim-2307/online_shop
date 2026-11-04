@@ -65,28 +65,32 @@
                 Tezkor Hisoblar (1-bosishda to'ldirish):
             </span>
             <div class="grid grid-cols-2 gap-2 text-left">
-                <button type="button" onclick="fillLogin('admin@market.uz', 'Admin123!')" 
+                <button type="button" onclick="fillLogin('admin@market.uz', 'admin123')" 
                         class="p-2.5 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100/60 text-left transition">
                     <span class="text-xs font-bold text-rose-900 block">👑 Administrator</span>
                     <span class="text-[10px] text-rose-600 font-mono block">admin@market.uz</span>
+                    <span class="text-[9px] text-rose-500 font-mono block">parol: admin123</span>
                 </button>
 
-                <button type="button" onclick="fillLogin('seller@market.uz', 'Seller123!')" 
+                <button type="button" onclick="fillLogin('seller@market.uz', 'admin123')" 
                         class="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/60 text-left transition">
                     <span class="text-xs font-bold text-emerald-900 block">🏪 Sotuvchi (Do'kon)</span>
                     <span class="text-[10px] text-emerald-600 font-mono block">seller@market.uz</span>
+                    <span class="text-[9px] text-emerald-500 font-mono block">parol: admin123</span>
                 </button>
 
-                <button type="button" onclick="fillLogin('customer@market.uz', 'Customer123!')" 
+                <button type="button" onclick="fillLogin('customer@market.uz', 'admin123')" 
                         class="p-2.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100/60 text-left transition">
                     <span class="text-xs font-bold text-blue-900 block">🛍️ Xaridor</span>
                     <span class="text-[10px] text-blue-600 font-mono block">customer@market.uz</span>
+                    <span class="text-[9px] text-blue-500 font-mono block">parol: admin123</span>
                 </button>
 
-                <button type="button" onclick="fillLogin('courier@market.uz', 'Courier123!')" 
+                <button type="button" onclick="fillLogin('courier@market.uz', 'admin123')" 
                         class="p-2.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-100/60 text-left transition">
                     <span class="text-xs font-bold text-amber-900 block">🚚 Kuryer</span>
                     <span class="text-[10px] text-amber-600 font-mono block">courier@market.uz</span>
+                    <span class="text-[9px] text-amber-500 font-mono block">parol: admin123</span>
                 </button>
             </div>
         </div>

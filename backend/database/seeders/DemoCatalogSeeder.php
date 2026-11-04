@@ -35,7 +35,7 @@ class DemoCatalogSeeder extends Seeder
             [
                 'name' => 'Akbar Sotuvchi',
                 'email' => 'seller@market.uz',
-                'password' => Hash::make('Seller123!'),
+                'password' => Hash::make('admin123'),
                 'is_active' => true,
             ]
         );

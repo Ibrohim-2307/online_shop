@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Dilshod Xaridor',
                 'phone' => '+998909876543',
-                'password' => Hash::make('Customer123!'),
+                'password' => Hash::make('admin123'),
                 'is_active' => true,
             ]
         );
@@ -43,7 +43,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Rustam Kuryer',
                 'phone' => '+998905554433',
-                'password' => Hash::make('Courier123!'),
+                'password' => Hash::make('admin123'),
                 'is_active' => true,
             ]
         );
@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Bosh Administrator',
                 'phone' => '+998901112233',
-                'password' => Hash::make('Admin123!'),
+                'password' => Hash::make('admin123'),
                 'is_active' => true,
             ]
         );

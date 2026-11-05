@@ -422,50 +422,84 @@
     </header>
 
     <!-- Main Content Area -->
-    <main id="main-content" class="flex-1 pb-24 md:pb-12">
+    <main id="main-content" class="flex-1 pb-12">
         {{ $slot }}
     </main>
 
     <!-- Mobile Bottom Navigation Bar (Fixed - Exactly 5 Balanced Tabs, No Horizontal Overflow) -->
-    <nav aria-label="Mobil navigatsiya" class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#E8ECE4] z-50 py-1.5 px-1 shadow-lg">
-        <div class="flex items-center justify-between w-full">
-            <a href="{{ route('home') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('home') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-5 h-5" fill="{{ request()->routeIs('home') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Bosh sahifa</span>
-            </a>
-
-            <a href="{{ route('catalog') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('catalog') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-5 h-5" fill="{{ request()->routeIs('catalog') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Katalog</span>
-            </a>
-
-            <a href="{{ route('cart') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 relative {{ request()->routeIs('cart') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Savat</span>
-            </a>
-
-            <a href="{{ route('orders.hub') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('orders.*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <span class="text-base leading-none">📦</span>
-                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5">Buyurtmalar</span>
-            </a>
-
-            <a href="{{ route('profile') }}" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl min-w-0 {{ request()->routeIs('profile*') ? 'text-[#123C2F] font-bold' : 'text-[#64748B]' }}">
-                <svg class="w-5 h-5" fill="{{ request()->routeIs('profile*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span class="text-[10px] truncate max-w-full leading-tight mt-0.5 font-bold">Profil</span>
-            </a>
+    @php
+        // Which bottom-bar section the current page belongs to (related pages light up the same tab)
+        $navActive = match (true) {
+            request()->routeIs('home') => 'home',
+            request()->routeIs('catalog', 'product.show', 'seller.show', 'search.*') => 'catalog',
+            request()->routeIs('cart', 'checkout', 'payment.*') => 'cart',
+            request()->routeIs('orders.*', 'order.success', 'tracking') => 'orders',
+            request()->routeIs('profile*', 'wishlist', 'login', 'register', 'admin.*', 'superadmin.*', 'seller.dashboard') => 'profile',
+            default => null,
+        };
+        $navItems = [
+            'home' => ['Bosh sahifa', route('home'), 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
+            'catalog' => ['Katalog', route('catalog'), 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z'],
+            'cart' => ['Savat', route('cart'), 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z'],
+            'orders' => ['Buyurtmalar', route('orders.hub'), 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
+            'profile' => [auth()->check() ? 'Profil' : 'Kirish', route('profile'), 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
+        ];
+    @endphp
+    <nav aria-label="Mobil navigatsiya" id="mobileBottomNav"
+         class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-[#E8ECE4] z-50 px-1.5 pt-1.5 shadow-[0_-4px_16px_rgba(18,60,47,0.08)]"
+         style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom));">
+        <div class="grid grid-cols-5 gap-1 w-full">
+            @foreach($navItems as $key => [$label, $url, $iconPath])
+                @php $isActive = $navActive === $key; @endphp
+                <a href="{{ $url }}" data-nav-item
+                   @if($isActive) aria-current="page" @endif
+                   class="relative flex flex-col items-center justify-center gap-0.5 h-14 rounded-2xl min-w-0 select-none transition-colors active:scale-95
+                          {{ $isActive ? 'bg-[#123C2F] text-[#C9F46B]' : 'text-[#64748B] hover:bg-[#FAFBF7]' }}">
+                    <span class="relative">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="{{ $isActive ? '2.4' : '1.8' }}" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $iconPath }}" />
+                        </svg>
+                        @if($key === 'cart' && ($navCartCount ?? 0) > 0)
+                            <span class="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black leading-[18px] text-center ring-2 ring-white">
+                                {{ $navCartCount > 99 ? '99+' : $navCartCount }}
+                            </span>
+                        @endif
+                    </span>
+                    <span class="text-[10.5px] leading-tight truncate max-w-full {{ $isActive ? 'font-black' : 'font-semibold' }}">{{ $label }}</span>
+                </a>
+            @endforeach
         </div>
     </nav>
 
+    <!-- Thin progress bar shown the moment a bottom-bar tab is tapped (the server can take a while to answer) -->
+    <div id="navProgress" class="md:hidden fixed top-0 left-0 h-1 bg-[#C9F46B] z-[60] w-0 opacity-0 transition-all duration-700 ease-out"></div>
+    <script>
+        document.querySelectorAll('#mobileBottomNav [data-nav-item]').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                if (e.metaKey || e.ctrlKey || link.getAttribute('aria-current') === 'page') return;
+                // Highlight the tapped tab immediately so the tap is visibly registered
+                document.querySelectorAll('#mobileBottomNav [data-nav-item]').forEach(function (other) {
+                    other.classList.remove('bg-[#123C2F]', 'text-[#C9F46B]');
+                    other.classList.add('text-[#64748B]');
+                });
+                link.classList.remove('text-[#64748B]');
+                link.classList.add('bg-[#123C2F]', 'text-[#C9F46B]');
+                var bar = document.getElementById('navProgress');
+                bar.style.opacity = '1';
+                requestAnimationFrame(function () { bar.style.width = '85%'; });
+            });
+        });
+        // Coming back via the browser's back button restores the page from cache: reset the bar
+        window.addEventListener('pageshow', function () {
+            var bar = document.getElementById('navProgress');
+            if (bar) { bar.style.width = '0'; bar.style.opacity = '0'; }
+        });
+    </script>
+
     <!-- Footer -->
     <footer class="bg-white border-t border-[#E8ECE4] pt-14 pb-8 text-sm">
+        {{-- On phones the fixed bottom bar would otherwise cover the end of the page --}}
+        <style>@media (max-width: 767px) { footer { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)) !important; } }</style>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
                 
@@ -539,7 +573,7 @@
     </footer>
 
     <!-- 24/7 Live Support & Contact Floating Button & Drawer -->
-    <div x-data="{ supportOpen: false }" class="fixed bottom-16 sm:bottom-20 md:bottom-6 right-3 sm:right-6 z-40">
+    <div x-data="{ supportOpen: false }" class="fixed right-3 sm:right-6 z-40 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-6">
         <!-- Floating Trigger Button -->
         <button @click="supportOpen = !supportOpen" 
                 class="flex items-center justify-center w-11 h-11 sm:w-auto sm:px-4 sm:py-3 rounded-full bg-[#123C2F] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-[#C9F46B]/40 group"

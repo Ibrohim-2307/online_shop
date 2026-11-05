@@ -40,6 +40,29 @@ class AppServiceProvider extends ServiceProvider
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
+        // Number of lines in the visitor's active cart, for the badge on the mobile bottom bar
+        \Illuminate\Support\Facades\View::composer('components.layouts.app', function ($view) {
+            $request = request();
+            $sessionKey = $request->cookie('cart_session_id') ?: ($request->hasSession() ? $request->session()->getId() : null);
+            $user = $request->user();
+
+            $count = 0;
+            if ($user || $sessionKey) {
+                $count = \App\Models\CartItem::whereHas('cart', function ($q) use ($user, $sessionKey) {
+                    $q->where('status', 'active')->where(function ($q) use ($user, $sessionKey) {
+                        if ($user) {
+                            $q->where('user_id', $user->id);
+                        }
+                        if ($sessionKey) {
+                            $q->orWhere(fn($q) => $q->whereNull('user_id')->where('session_id', $sessionKey));
+                        }
+                    });
+                })->count();
+            }
+
+            $view->with('navCartCount', $count);
+        });
+
         Gate::policy(Address::class, AddressPolicy::class);
         Gate::policy(Seller::class, SellerPolicy::class);
         Gate::policy(\App\Models\Product::class, \App\Policies\ProductPolicy::class);

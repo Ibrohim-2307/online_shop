@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'seller_id',
@@ -47,6 +48,32 @@ class Product extends Model
     public function scopeFromActiveSeller($query)
     {
         return $query->whereHas('seller', fn($q) => $q->where('status', 'active'));
+    }
+
+    /**
+     * "Frozen" products (nothing left to sell) are kept out of listings automatically
+     * and come back on their own as soon as the seller restocks.
+     */
+    public function scopeInStock($query)
+    {
+        return $query->whereHas('variants', fn($vq) => $vq->where('is_active', true)
+            ->whereHas('inventoryBalances', fn($bq) => $bq->whereColumn('quantity', '>', 'reserved_quantity')));
+    }
+
+    /**
+     * Units that can still be sold across all active variants (on hand minus reserved).
+     */
+    public function availableStock(): float
+    {
+        $this->loadMissing('variants.inventoryBalances');
+
+        return (float) $this->variants->where('is_active', true)->flatMap->inventoryBalances
+            ->sum(fn($b) => max(0, (float) $b->quantity - (float) $b->reserved_quantity));
+    }
+
+    public function isFrozen(): bool
+    {
+        return $this->availableStock() <= 0;
     }
 
     public function category(): BelongsTo

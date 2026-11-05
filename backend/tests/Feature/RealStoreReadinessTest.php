@@ -92,6 +92,9 @@ class RealStoreReadinessTest extends TestCase
             $variant->priceTiers()->create(['min_quantity' => 1, 'max_quantity' => 9, 'unit_price' => $price, 'currency' => 'UZS']);
             // A cheaper bulk tier must not distort the retail price used for sorting
             $variant->priceTiers()->create(['min_quantity' => 10, 'max_quantity' => null, 'unit_price' => (int) ($price * 0.5), 'currency' => 'UZS']);
+            // Products with nothing to sell are frozen and hidden, so give each one stock
+            $warehouse = \App\Models\Warehouse::firstOrCreate(['seller_id' => $seller->id], ['name' => 'Ombor', 'is_active' => true]);
+            \App\Models\InventoryBalance::create(['warehouse_id' => $warehouse->id, 'product_variant_id' => $variant->id, 'quantity' => 10, 'reserved_quantity' => 0]);
         }
 
         $this->get('/catalog?sort=price_asc')->assertStatus(200)->assertSeeInOrder(['Arzon', 'Orta', 'Qimmat']);

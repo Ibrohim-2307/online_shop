@@ -400,7 +400,8 @@ class CartAndCheckoutTest extends TestCase
             ->assertSee('1 ta yangi buyurtma tayyorlashni kutmoqda')
             ->assertSee("So'nggi 30 kun", false)
             ->assertSee('1 200 000 UZS')
-            ->assertSee('band (buyurtmalarda)', false);
+            ->assertSee('+4 band', false)
+            ->assertSee('6 piece sotuvda', false);
 
         // Stock cannot be set below what customers already reserved
         $this->actingAs($owner)->post(route('profile.seller.products.update', $product->id), [
@@ -506,6 +507,62 @@ class CartAndCheckoutTest extends TestCase
         $this->assertEquals('paid', $payment->status);
         $this->assertEquals('demo', $payment->payment_method);
         $this->actingAs($customer)->get('/orders/' . $order->order_number)->assertSee("To'langan (test)", false);
+    }
+
+    public function test_sold_out_product_freezes_automatically_and_returns_after_restock(): void
+    {
+        [$seller, $product, $variant, , $balance] = $this->setupSellerWithProduct('Seller Z', 'seller-z', 'Muzlaydigan Tovar', 'muzlaydigan', 'SKU-Z', 3);
+        $owner = $this->createUserWithRole('seller_owner', 'owner-z@example.uz');
+        \App\Models\SellerMember::create(['seller_id' => $seller->id, 'user_id' => $owner->id, 'role' => 'owner', 'permissions' => ['*'], 'is_active' => true]);
+
+        $this->get('/catalog')->assertSee('Muzlaydigan Tovar');
+
+        // Everything sold out: hidden from listings, product page says it is not for sale
+        $balance->update(['quantity' => 0]);
+        $this->get('/catalog')->assertDontSee('Muzlaydigan Tovar');
+        $this->get('/products/muzlaydigan')->assertStatus(200)->assertSee("Vaqtincha sotuvda yo'q", false)->assertDontSee('@click="addToCart()"', false);
+        $this->actingAs($owner)->get(route('profile', ['tab' => 'seller_products']))->assertSee('Qoldiq tugadi')->assertSee('Avtomatik muzlatildi');
+
+        // Restocking brings it back by itself
+        $this->actingAs($owner)->post(route('profile.seller.products.update', $product->id), [
+            'name' => 'Muzlaydigan Tovar', 'price' => 300000, 'stock_quantity' => 7,
+        ])->assertSessionHas('success');
+        $this->app['auth']->forgetGuards();
+        $this->get('/catalog')->assertSee('Muzlaydigan Tovar');
+
+        // Manual freeze hides it too
+        $this->actingAs($owner)->post(route('profile.seller.products.status', $product->id), ['toggle_active' => 1])->assertSessionHas('success');
+        $this->app['auth']->forgetGuards();
+        $this->get('/catalog')->assertDontSee('Muzlaydigan Tovar');
+    }
+
+    public function test_seller_deletes_product_but_not_while_customers_are_waiting_for_it(): void
+    {
+        [$seller, $product, $variant] = $this->setupSellerWithProduct('Seller D', 'seller-d', "O'chiriladigan Tovar", 'ochiriladigan', 'SKU-D', 10);
+        $owner = $this->createUserWithRole('seller_owner', 'owner-d@example.uz');
+        \App\Models\SellerMember::create(['seller_id' => $seller->id, 'user_id' => $owner->id, 'role' => 'owner', 'permissions' => ['*'], 'is_active' => true]);
+        $customer = $this->createCustomer('+998907770202');
+
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 2])->assertStatus(201);
+        $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Aziz', 'phone' => '+998907770202', 'region' => 'Toshkent',
+            'city' => 'Toshkent', 'address_line' => 'Uy 11', 'payment_method' => 'cash_on_delivery',
+        ])->assertSessionHasNoErrors();
+        $order = Order::where('user_id', $customer->id)->latest('id')->firstOrFail();
+
+        // An open order still needs these goods
+        $this->actingAs($owner)->post(route('profile.seller.products.status', $product->id), ['delete' => 1])->assertSessionHas('error');
+        $this->assertNotNull(Product::find($product->id));
+
+        // Once the order is cancelled (stock released) the seller can delete it
+        $this->actingAs($customer)->post('/orders/' . $order->order_number . '/cancel')->assertSessionHas('success');
+        $this->actingAs($owner)->post(route('profile.seller.products.status', $product->id), ['delete' => 1])->assertSessionHas('success');
+
+        $this->assertNull(Product::find($product->id));
+        $this->assertNotNull(Product::withTrashed()->find($product->id)); // kept for order history
+        $this->app['auth']->forgetGuards();
+        $this->get('/products/ochiriladigan')->assertStatus(404);
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)->assertStatus(200)->assertSee("O&#039;chiriladigan Tovar", false);
     }
 
     public function test_two_parallel_checkouts_cannot_double_sell_last_sku(): void

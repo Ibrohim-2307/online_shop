@@ -138,10 +138,6 @@
                                     <input type="number" name="max_price" min="0" step="1000" inputmode="numeric" value="{{ request('max_price') }}" placeholder="gacha"
                                            class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4] text-xs focus:border-[#123C2F] outline-none">
                                 </div>
-                                <label class="mt-3 flex items-center gap-2.5 p-2 rounded-xl border border-[#E8ECE4] cursor-pointer hover:bg-[#FAFBF7] text-xs">
-                                    <input type="checkbox" name="in_stock" value="1" {{ request()->boolean('in_stock') ? 'checked' : '' }} class="accent-[#123C2F]">
-                                    <span class="font-medium text-[#172326]">Faqat sotuvda borlari</span>
-                                </label>
                             </div>
 
                             <!-- Trade Mode Filter -->

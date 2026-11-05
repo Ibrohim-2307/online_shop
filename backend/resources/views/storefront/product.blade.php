@@ -557,8 +557,14 @@ function imageMagnifier(imgUrl) {
 
                 <!-- Add to Cart CTA -->
                 <div class="pt-2">
-                    <button type="button" 
-                            @click="addToCart()" 
+                    @if($product->isFrozen())
+                    <div class="w-full h-14 rounded-2xl bg-slate-100 border border-slate-300 text-slate-600 font-bold text-base flex items-center justify-center gap-2" role="status">
+                        ❄️ Vaqtincha sotuvda yo'q
+                    </div>
+                    <p class="text-center text-[11px] text-[#64748B] mt-2">Sotuvchi omborni to'ldirgach mahsulot yana sotuvga chiqadi.</p>
+                    @else
+                    <button type="button"
+                            @click="addToCart()"
                             :disabled="addingToCart"
                             class="w-full h-14 rounded-2xl bg-[#123C2F] text-white hover:bg-[#0d2a21] font-bold text-base transition-all shadow-md flex items-center justify-center gap-3">
                         <svg class="w-6 h-6 text-[#C9F46B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -569,6 +575,7 @@ function imageMagnifier(imgUrl) {
                     <p class="text-center text-[11px] text-[#64748B] mt-2">
                         🔒 Xavfsiz ko'p sotuvchili buyurtma va avtomatik zaxira band qilish
                     </p>
+                    @endif
 
                     <!-- Installment / Muddatli to'lov (Nasiya) Kalkulyatori -->
                     <div class="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">

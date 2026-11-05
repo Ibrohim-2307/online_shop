@@ -301,7 +301,7 @@ class ProfileController extends Controller
         );
 
         $slug = Str::slug($validated['name']);
-        if (Product::where('slug', $slug)->exists()) {
+        if (Product::withTrashed()->where('slug', $slug)->exists()) {
             $slug .= '-' . Str::lower(Str::random(5));
         }
 
@@ -486,13 +486,33 @@ class ProfileController extends Controller
 
         if ($request->has('toggle_active')) {
             $product->update(['is_active' => !$product->is_active]);
-            $msg = $product->is_active ? 'Mahsulot yana do\'konda ko\'rinadigan bo\'ldi.' : 'Mahsulot vaqtincha yashirildi.';
+            $msg = $product->is_active ? 'Mahsulot yana sotuvga chiqarildi.' : 'Mahsulot muzlatildi: xaridorlarga ko\'rinmaydi.';
             return back()->with('success', $msg);
         }
 
         if ($request->has('delete')) {
-            $product->update(['is_active' => false, 'status' => 'rejected']);
-            return back()->with('success', 'Mahsulot do\'kondan olib tashlandi.');
+            $variantIds = $product->variants()->pluck('id');
+
+            // Goods already promised to customers must be delivered (or the orders cancelled) first
+            $openReservations = \App\Models\InventoryReservation::whereIn('product_variant_id', $variantIds)
+                ->whereIn('status', ['reserved', 'committed'])
+                ->exists();
+            if ($openReservations) {
+                return back()->with('error', "\"{$product->name}\" faol buyurtmalarda bor. Avval ularni yetkazing yoki bekor qiling, keyin o'chiring.");
+            }
+
+            DB::transaction(function () use ($product, $variantIds, $user) {
+                // Drop it from shoppers' carts so nobody tries to buy a product that no longer exists
+                \App\Models\CartItem::whereIn('product_variant_id', $variantIds)->delete();
+                $product->update(['is_active' => false]);
+                // Soft delete: hidden everywhere, but order history keeps referring to it
+                $product->delete();
+
+                AuditService::log('seller.product_deleted', $product, null, ['name' => $product->name], $user);
+            });
+
+            return redirect()->route('profile', ['tab' => 'seller_products'])
+                ->with('success', "\"{$product->name}\" butunlay o'chirildi.");
         }
 
         return back();

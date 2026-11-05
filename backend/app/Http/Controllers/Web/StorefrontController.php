@@ -40,7 +40,7 @@ class StorefrontController extends Controller
 
         $featuredProducts = Product::where('status', 'approved')
             ->where('is_active', true)
-            ->fromActiveSeller()
+            ->fromActiveSeller()->inStock()
             ->with(['seller:id,name,slug,rating', 'category:id,name,slug', 'variants.priceTiers'])
             ->latest()
             ->take(8)
@@ -48,7 +48,7 @@ class StorefrontController extends Controller
 
         $wholesaleProducts = Product::where('status', 'approved')
             ->where('is_active', true)
-            ->fromActiveSeller()
+            ->fromActiveSeller()->inStock()
             ->whereIn('trade_mode', ['wholesale_only', 'both'])
             ->with(['seller:id,name,slug,rating', 'category:id,name,slug', 'variants.priceTiers'])
             ->take(6)
@@ -69,7 +69,7 @@ class StorefrontController extends Controller
      */
     public function catalog(Request $request): View
     {
-        $query = Product::where('status', 'approved')->where('is_active', true)->fromActiveSeller();
+        $query = Product::where('status', 'approved')->where('is_active', true)->fromActiveSeller()->inStock();
 
         // Filter by Search Query
         if ($search = $request->input('q')) {
@@ -120,11 +120,6 @@ class StorefrontController extends Controller
             $query->whereRaw("{$retailPriceSql} <= ?", [$maxPrice]);
         }
 
-        // Filter: only items with sellable stock
-        if ($request->boolean('in_stock')) {
-            $query->whereHas('variants.inventoryBalances', fn($bq) => $bq->whereColumn('quantity', '>', 'reserved_quantity'));
-        }
-
         // Sort
         $query->select('products.*')->selectRaw("{$retailPriceSql} as min_price");
 
@@ -167,7 +162,7 @@ class StorefrontController extends Controller
 
         $products = Product::where('status', 'approved')
             ->where('is_active', true)
-            ->fromActiveSeller()
+            ->fromActiveSeller()->inStock()
             ->where(function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
                       ->orWhere('description', 'like', "%{$q}%")
@@ -200,6 +195,7 @@ class StorefrontController extends Controller
      */
     public function product(string $slug): View
     {
+        // The product page stays reachable when frozen (out of stock) and says so instead of 404-ing old links
         $product = Product::where('slug', $slug)
             ->where('status', 'approved')
             ->where('is_active', true)
@@ -215,7 +211,7 @@ class StorefrontController extends Controller
 
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->fromActiveSeller()
+            ->fromActiveSeller()->inStock()
             ->where('status', 'approved')
             ->where('is_active', true)
             ->with(['seller:id,name,slug,rating', 'variants.priceTiers'])
@@ -284,6 +280,7 @@ class StorefrontController extends Controller
         $products = Product::where('seller_id', $seller->id)
             ->where('status', 'approved')
             ->where('is_active', true)
+            ->inStock()
             ->with(['variants.priceTiers', 'category:id,name,slug'])
             ->paginate(12);
 

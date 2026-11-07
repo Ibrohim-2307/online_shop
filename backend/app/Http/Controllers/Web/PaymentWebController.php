@@ -94,7 +94,8 @@ class PaymentWebController extends Controller
     public function pay(Request $request, string $orderNumber): RedirectResponse
     {
         $validated = $request->validate([
-            'payment_method' => 'required|string|in:cash_on_delivery,click,payme,uzum,demo',
+            'payment_method' => 'required|string|in:cash_on_delivery,click,payme,uzum,nasiya,demo',
+            'nasiya_months' => 'nullable|integer|in:3,6,12',
         ]);
 
         $order = Order::where('order_number', $orderNumber)->firstOrFail();
@@ -135,6 +136,53 @@ class PaymentWebController extends Controller
 
             return redirect()->route('order.success', ['orderNumber' => $order->order_number])
                 ->with('success', "To'lov usuli: Yetkazib berilganda to'lash (Naqd yoki Karta) tanlandi! Buyurtmangiz tasdiqlandi va yetkazishga tayyorlanmoqda.");
+        }
+
+        // 1b. Handle Muddatli To'lov (Nasiya)
+        if ($method === 'nasiya') {
+            $payment = Payment::firstOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'amount' => $order->grand_total,
+                    'currency' => $order->currency,
+                ]
+            );
+
+            $nasiyaMonths = (int)($validated['nasiya_months'] ?? 6);
+            $totalAmount = (float)$order->grand_total;
+            $monthlyAmount = match ($nasiyaMonths) {
+                3 => ceil($totalAmount / 3),
+                6 => ceil(($totalAmount * 1.08) / 6),
+                12 => ceil(($totalAmount * 1.18) / 12),
+                default => ceil($totalAmount / 6),
+            };
+
+            $payment->update([
+                'payment_method' => 'nasiya',
+                'status' => 'pending',
+                'transaction_id' => $payment->transaction_id ?? ('NASIYA-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)))),
+                'payload_snapshot' => array_merge($payment->payload_snapshot ?? [], [
+                    'nasiya' => [
+                        'months' => $nasiyaMonths,
+                        'monthly_amount' => $monthlyAmount,
+                        'down_payment' => 0,
+                        'first_due_date' => now()->addDays(30)->toDateString(),
+                    ],
+                ]),
+            ]);
+
+            // Confirm order and lock stock for delivery
+            $order->update(['status' => 'processing']);
+            foreach ($order->suborders as $suborder) {
+                $suborder->update(['status' => 'confirmed']);
+            }
+
+            InventoryReservation::where('order_id', $order->id)
+                ->where('status', 'reserved')
+                ->update(['status' => 'committed']);
+
+            return redirect()->route('order.success', ['orderNumber' => $order->order_number])
+                ->with('success', "To'lov usuli: Muddatli to'lov (Nasiya - {$nasiyaMonths} oyga) tanlandi! Buyurtmangiz tasdiqlandi.");
         }
 
         // 2. Real Production Click Redirect

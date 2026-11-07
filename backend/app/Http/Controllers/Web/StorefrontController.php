@@ -455,7 +455,8 @@ class StorefrontController extends Controller
             'city' => 'required|string|max:50',
             'address_line' => 'required|string|max:255',
             'notes' => 'nullable|string|max:500',
-            'payment_method' => 'nullable|string|in:cash_on_delivery,click,payme,uzum,demo',
+            'payment_method' => 'nullable|string|in:cash_on_delivery,click,payme,uzum,nasiya,demo',
+            'nasiya_months' => 'nullable|integer|in:3,6,12',
             'idempotency_key' => 'nullable|string|max:100',
         ]);
 
@@ -495,6 +496,7 @@ class StorefrontController extends Controller
             ],
             'notes' => $validated['notes'] ?? null,
             'payment_method' => $paymentMethod,
+            'nasiya_months' => $validated['nasiya_months'] ?? 6,
         ];
 
         try {
@@ -512,6 +514,12 @@ class StorefrontController extends Controller
             // If customer picked online payment (Click / Payme), take them directly to payment checkout
             if (in_array($paymentMethod, ['click', 'payme', 'uzum'])) {
                 return redirect()->route('payment.checkout', ['orderNumber' => $order->order_number]);
+            }
+
+            if ($paymentMethod === 'nasiya') {
+                $nasiyaMonths = (int)($payload['nasiya_months'] ?? 6);
+                return redirect()->route('order.success', ['orderNumber' => $order->order_number])
+                    ->with('success', "Buyurtmangiz muddatli to'lov (Nasiya - {$nasiyaMonths} oyga) asosida muvaffaqiyatli qabul qilindi! Boshlang'ich to'lov: 0 UZS.");
             }
 
             return redirect()->route('order.success', ['orderNumber' => $order->order_number])

@@ -14,6 +14,10 @@
             $latestPayment = $order->latest_payment;
             $isPaid = $latestPayment && $latestPayment->status === 'paid';
             $isCod = $latestPayment && $latestPayment->payment_method === 'cash_on_delivery';
+            $isNasiya = $latestPayment && $latestPayment->payment_method === 'nasiya';
+            $nasiyaInfo = $isNasiya ? ($latestPayment->payload_snapshot['nasiya'] ?? []) : [];
+            $nasiyaMonths = $nasiyaInfo['months'] ?? 6;
+            $nasiyaMonthly = $nasiyaInfo['monthly_amount'] ?? 0;
         @endphp
 
         <!-- Top Header Card -->
@@ -44,6 +48,11 @@
                         <span>💵</span>
                         <span>Kuryerga to'lanadi</span>
                     </span>
+                @elseif($isNasiya)
+                    <span class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                        <span>⚡</span>
+                        <span>Muddatli To'lov (Nasiya - {{ $nasiyaMonths }} oy)</span>
+                    </span>
                 @else
                     <span class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
                         <span>⏳</span>
@@ -58,6 +67,21 @@
         @endif
         @if(session('error'))
             <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold">{{ session('error') }}</div>
+        @endif
+
+        @if($isNasiya)
+            <div class="mb-8 p-6 rounded-3xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">⚡</span>
+                    <div>
+                        <h3 class="font-bold text-sm text-amber-950">Muddatli to'lov (Nasiya) shartnomasi faollashtirildi</h3>
+                        <p class="text-xs text-amber-800 mt-0.5">{{ $nasiyaMonths }} oyga bo'lingan. Oylik to'lov: <strong>{{ number_format($nasiyaMonthly, 0, '.', ' ') }} UZS/oy</strong>. 0% boshlang'ich to'lov.</p>
+                    </div>
+                </div>
+                <span class="px-3.5 py-1.5 rounded-xl bg-amber-200 text-amber-950 text-xs font-black whitespace-nowrap">
+                    ✓ 0% Boshlang'ich To'lov
+                </span>
+            </div>
         @endif
 
         @if($canCancel ?? false)
@@ -83,7 +107,7 @@
         @endif
 
         <!-- Pending Payment Banner -->
-        @if(!$isPaid && !$isCod && $order->status !== 'cancelled')
+        @if(!$isPaid && !$isCod && !$isNasiya && $order->status !== 'cancelled')
             <div class="mb-8 p-6 rounded-3xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h3 class="font-bold text-sm text-amber-950">To'lov hali amalga oshirilmagan</h3>

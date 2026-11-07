@@ -19,12 +19,16 @@
             $latestPayment = $order->latest_payment;
             $isPaid = $latestPayment && $latestPayment->status === 'paid';
             $isCod = $latestPayment && $latestPayment->payment_method === 'cash_on_delivery';
+            $isNasiya = $latestPayment && $latestPayment->payment_method === 'nasiya';
+            $nasiyaInfo = $isNasiya ? ($latestPayment->payload_snapshot['nasiya'] ?? []) : [];
+            $nasiyaMonths = $nasiyaInfo['months'] ?? 6;
+            $nasiyaMonthly = $nasiyaInfo['monthly_amount'] ?? 0;
         @endphp
 
         <!-- Success Confirmation Card -->
         <div class="bg-white rounded-3xl border border-[#E8ECE4] p-8 sm:p-12 text-center shadow-xs mb-8">
-            <div class="w-20 h-20 rounded-3xl {{ $isPaid ? 'bg-emerald-500 text-white' : ($isCod ? 'bg-[#C9F46B] text-[#123C2F]' : 'bg-amber-400 text-amber-950') }} flex items-center justify-center mx-auto mb-6 text-3xl font-black shadow-sm">
-                {{ $isPaid ? '✓' : ($isCod ? '📦' : '⏳') }}
+            <div class="w-20 h-20 rounded-3xl {{ $isPaid ? 'bg-emerald-500 text-white' : ($isCod ? 'bg-[#C9F46B] text-[#123C2F]' : ($isNasiya ? 'bg-amber-500 text-white' : 'bg-amber-400 text-amber-950')) }} flex items-center justify-center mx-auto mb-6 text-3xl font-black shadow-sm">
+                {{ $isPaid ? '✓' : ($isCod ? '📦' : ($isNasiya ? '⚡' : '⏳')) }}
             </div>
 
             @if($isPaid)
@@ -37,6 +41,11 @@
                     <span>💵</span>
                     <span>Yetkazib berishda to'lanadi (Kuryerga naqd yoki karta)</span>
                 </span>
+            @elseif($isNasiya)
+                <span class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                    <span>⚡</span>
+                    <span>Muddatli To'lov (Nasiya - {{ $nasiyaMonths }} oyga)</span>
+                </span>
             @else
                 <span class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
                     <span>⏳</span>
@@ -45,7 +54,7 @@
             @endif
 
             <h1 class="text-3xl sm:text-4xl font-black text-[#172326] tracking-tight mt-3 mb-2">
-                {{ $isPaid ? 'Xaridingiz uchun rahmat!' : 'Buyurtmangiz qabul qilindi!' }}
+                {{ $isPaid ? 'Xaridingiz uchun rahmat!' : ($isNasiya ? 'Nasiya buyurtmangiz qabul qilindi!' : 'Buyurtmangiz qabul qilindi!') }}
             </h1>
             
             <p class="text-sm text-[#64748B] max-w-md mx-auto mb-6">
@@ -53,6 +62,8 @@
                     To'lov muvaffaqiyatli qabul qilindi. Buyurtmangiz omborga yuborildi va tez orada kuryerga topshiriladi.
                 @elseif($isCod)
                     Rahmat! Buyurtmangiz tasdiqlandi. Kuryer buyurtmani olib borgan vaqtda naqd pul yoki karta orqali to'lov qilasiz.
+                @elseif($isNasiya)
+                    Ajoyib! Buyurtmangiz <strong>0% boshlang'ich to'lov</strong> bilan {{ $nasiyaMonths }} oyga rasmiylashtirildi (oyiga {{ number_format($nasiyaMonthly, 0, '.', ' ') }} UZS). Birinchi to'lov 30 kundan so'ng boshlanadi.
                 @else
                     Buyurtmangiz tizimda ro'yxatga olindi va ombordagi zaxiralar siz uchun 15 daqiqaga band qilindi. To'lovni Click yoki Payme orqali yakunlang.
                 @endif

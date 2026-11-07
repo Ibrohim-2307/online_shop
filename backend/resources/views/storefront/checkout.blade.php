@@ -4,6 +4,15 @@
              minutes: 14,
              seconds: 59,
              timer: null,
+             selectedMethod: '{{ request('payment_method', 'click') }}',
+             nasiyaMonths: {{ (int)request('months', 6) }},
+             grandTotal: {{ (float)$quote['grand_total'] }},
+             getNasiyaMonthly(m) {
+                 if (m === 3) return Math.ceil(this.grandTotal / 3);
+                 if (m === 6) return Math.ceil((this.grandTotal * 1.08) / 6);
+                 if (m === 12) return Math.ceil((this.grandTotal * 1.18) / 12);
+                 return 0;
+             },
              init() {
                  this.timer = setInterval(() => {
                      if (this.seconds > 0) {
@@ -131,19 +140,19 @@
                 </div>
 
                 <!-- Onlayn To'lov Usullari (100% Online Savdo) -->
-                <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-4" x-data="{ selectedMethod: 'click' }">
+                <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-4">
                     <div class="flex items-center justify-between pb-4 border-b border-[#E8ECE4]">
                         <div class="flex items-center gap-3">
                             <div class="w-9 h-9 rounded-xl bg-[#C9F46B] text-[#123C2F] flex items-center justify-center font-black">
                                 2
                             </div>
                             <div>
-                                <h2 class="text-lg font-bold text-[#172326]">Onlayn to'lov usuli</h2>
-                                <p class="text-xs text-[#64748B]">Xarid summasi to'g'ridan-to'g'ri onlayn qabul qilinadi</p>
+                                <h2 class="text-lg font-bold text-[#172326]">To'lov usulini tanlang</h2>
+                                <p class="text-xs text-[#64748B]">Onlayn to'lov, bo'lib to'lash (Nasiya) yoki eshik oldida</p>
                             </div>
                         </div>
                         <span class="text-xs font-bold text-[#123C2F] bg-[#C9F46B] px-3.5 py-1 rounded-full shadow-xs">
-                            ⚡ 100% Onlayn Savdo
+                            ⚡ Xavfsiz Savdo
                         </span>
                     </div>
 
@@ -192,6 +201,74 @@
                             </div>
                             <span class="font-bold text-sm text-[#172326] leading-tight">Uzcard / Humo (SMS bilan)</span>
                             <span class="text-xs text-[#64748B] mt-1">Saytda to'g'ridan-to'g'ri karta va SMS orqali to'lash</span>
+                        </label>
+
+                        <!-- 4. Muddatli To'lov (Nasiya) -->
+                        <label class="relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 sm:col-span-3"
+                               :class="selectedMethod === 'nasiya' ? 'border-amber-500 bg-amber-50/70 shadow-sm ring-2 ring-amber-500/20' : 'border-[#E8ECE4] hover:border-amber-300 bg-white'">
+                            <input type="radio" name="payment_method" value="nasiya" x-model="selectedMethod" class="sr-only">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl">⚡</span>
+                                    <div>
+                                        <span class="font-bold text-sm text-[#172326] block leading-tight">Muddatli To'lov (Nasiya)</span>
+                                        <span class="text-[11px] text-[#64748B]">Uzum Nasiya, Alif va Anorbank bilan</span>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+                                      :class="selectedMethod === 'nasiya' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'">
+                                    0% Boshlang'ich To'lov
+                                </span>
+                            </div>
+                            <span class="text-xs text-[#64748B]">
+                                Xaridni 3, 6 yoki 12 oyga bo'lib to'lang. Qo'shimcha hujjatlarsiz, 1 daqiqada tasdiqlanadi.
+                            </span>
+
+                            <!-- Installment plan selector inside Nasiya -->
+                            <div x-show="selectedMethod === 'nasiya'" x-cloak class="mt-4 pt-3 border-t border-amber-200 space-y-3">
+                                <span class="block text-xs font-bold text-[#172326]">Bo'lib to'lash muddatini tanlang:</span>
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <button type="button" @click.prevent="nasiyaMonths = 3"
+                                            :class="nasiyaMonths === 3 ? 'border-[#123C2F] ring-2 ring-[#123C2F] bg-white font-bold' : 'border-amber-200 bg-white/70'"
+                                            class="p-2.5 rounded-xl border-2 text-xs transition">
+                                        <span class="block text-[10px] text-[#64748B]">3 oyga</span>
+                                        <span class="font-black text-[#123C2F] text-xs block" x-text="getNasiyaMonthly(3).toLocaleString('uz-UZ') + ' UZS'"></span>
+                                        <span class="block text-[9px] text-[#64748B]">oyiga</span>
+                                    </button>
+                                    <button type="button" @click.prevent="nasiyaMonths = 6"
+                                            :class="nasiyaMonths === 6 ? 'border-[#123C2F] ring-2 ring-[#123C2F] bg-white font-bold' : 'border-amber-300 bg-white/70'"
+                                            class="p-2.5 rounded-xl border-2 text-xs transition relative">
+                                        <span class="absolute -top-2 left-1/2 -translate-x-1/2 px-1 rounded text-white text-[8px] font-black"
+                                              :class="nasiyaMonths === 6 ? 'bg-[#123C2F]' : 'bg-amber-500'">XIT</span>
+                                        <span class="block text-[10px] text-[#64748B]">6 oyga</span>
+                                        <span class="font-black text-[#123C2F] text-xs block" x-text="getNasiyaMonthly(6).toLocaleString('uz-UZ') + ' UZS'"></span>
+                                        <span class="block text-[9px] text-[#64748B]">oyiga</span>
+                                    </button>
+                                    <button type="button" @click.prevent="nasiyaMonths = 12"
+                                            :class="nasiyaMonths === 12 ? 'border-[#123C2F] ring-2 ring-[#123C2F] bg-white font-bold' : 'border-amber-200 bg-white/70'"
+                                            class="p-2.5 rounded-xl border-2 text-xs transition">
+                                        <span class="block text-[10px] text-[#64748B]">12 oyga</span>
+                                        <span class="font-black text-[#123C2F] text-xs block" x-text="getNasiyaMonthly(12).toLocaleString('uz-UZ') + ' UZS'"></span>
+                                        <span class="block text-[9px] text-[#64748B]">oyiga</span>
+                                    </button>
+                                </div>
+                                <input type="hidden" name="nasiya_months" :value="nasiyaMonths">
+
+                                <div class="p-3 rounded-xl bg-white/95 border border-amber-200 text-xs text-[#172326] space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[#64748B]">Oylik to'lov miqdori:</span>
+                                        <strong class="text-[#123C2F] text-sm font-black" x-text="getNasiyaMonthly(nasiyaMonths).toLocaleString('uz-UZ') + ' UZS / oyiga'"></strong>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[#64748B]">Bugun to'lanadigan:</span>
+                                        <strong class="text-emerald-700 font-bold">0 UZS (Boshlang'ich to'lovsiz)</strong>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[11px] text-[#64748B]">
+                                        <span>Birinchi to'lov:</span>
+                                        <span>30 kundan so'ng boshlanadi</span>
+                                    </div>
+                                </div>
+                            </div>
                         </label>
 
                     </div>
@@ -256,11 +333,32 @@
                         <span class="font-black text-[#172326]">Jami to'lov:</span>
                         <span class="font-black text-2xl text-[#123C2F]">{{ number_format($quote['grand_total'], 0, '.', ' ') }} UZS</span>
                     </div>
+
+                    <!-- Nasiya breakdown summary inside sidebar -->
+                    <template x-if="selectedMethod === 'nasiya'">
+                        <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 space-y-1.5 mt-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold flex items-center gap-1">
+                                    <span>⚡</span>
+                                    <span>To'lov shakli:</span>
+                                </span>
+                                <span class="font-black text-[#123C2F]">Nasiya (<span x-text="nasiyaMonths"></span> oy)</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[#64748B]">Oylik to'lov:</span>
+                                <strong class="text-sm font-black text-[#123C2F]" x-text="getNasiyaMonthly(nasiyaMonths).toLocaleString('uz-UZ') + ' UZS / oy'"></strong>
+                            </div>
+                            <div class="flex justify-between items-center text-[11px] text-emerald-800">
+                                <span>Boshlang'ich to'lov:</span>
+                                <strong class="font-bold">0 UZS (Bugun to'lanmaydi)</strong>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Submit Button -->
                 <button type="submit" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-[#C9F46B] text-[#123C2F] font-black text-sm hover:brightness-95 transition-all shadow-sm">
-                    <span x-text="selectedMethod === 'cash_on_delivery' ? 'Buyurtmani tasdiqlash' : 'Onlayn to\'lovga o\'tish (Click / Payme) →'">
+                    <span x-text="selectedMethod === 'cash_on_delivery' ? 'Buyurtmani tasdiqlash' : (selectedMethod === 'nasiya' ? ('⚡ Nasiya buyurtmasini tasdiqlash (' + nasiyaMonths + ' oyga) →') : 'Onlayn to\'lovga o\'tish (Click / Payme) →')">
                         Onlayn to'lovga o'tish →
                     </span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

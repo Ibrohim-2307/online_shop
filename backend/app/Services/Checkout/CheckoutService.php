@@ -246,7 +246,18 @@ class CheckoutService
 
             // Create initial Payment record
             $paymentMethod = $payload['payment_method'] ?? 'cash_on_delivery';
-            $transactionId = 'TXN-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
+            $transactionId = $paymentMethod === 'nasiya'
+                ? ('NASIYA-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3))))
+                : ('TXN-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4))));
+
+            $nasiyaMonths = (int)($payload['nasiya_months'] ?? 6);
+            $totalAmount = (float)$order->grand_total;
+            $monthlyAmount = match ($nasiyaMonths) {
+                3 => ceil($totalAmount / 3),
+                6 => ceil(($totalAmount * 1.08) / 6),
+                12 => ceil(($totalAmount * 1.18) / 12),
+                default => ceil($totalAmount / 6),
+            };
 
             \App\Models\Payment::create([
                 'order_id' => $order->id,
@@ -258,11 +269,17 @@ class CheckoutService
                 'payload_snapshot' => [
                     'source' => 'web_checkout',
                     'shipping_address' => $shippingAddress,
+                    'nasiya' => $paymentMethod === 'nasiya' ? [
+                        'months' => $nasiyaMonths,
+                        'monthly_amount' => $monthlyAmount,
+                        'down_payment' => 0,
+                        'first_due_date' => now()->addDays(30)->toDateString(),
+                    ] : null,
                 ],
             ]);
 
-            // If cash on delivery: confirm order immediately for packaging and courier delivery
-            if ($paymentMethod === 'cash_on_delivery') {
+            // If cash on delivery or nasiya: confirm order immediately for packaging and courier delivery
+            if (in_array($paymentMethod, ['cash_on_delivery', 'nasiya'])) {
                 $order->update(['status' => 'processing']);
                 foreach ($order->suborders as $sub) {
                     $sub->update(['status' => 'confirmed']);

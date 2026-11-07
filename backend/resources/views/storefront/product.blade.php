@@ -24,6 +24,48 @@ function productDetails() {
         activeTiers: [],
         addingToCart: false,
         addedSuccess: false,
+        selectedNasiyaMonths: 6,
+        buyingNasiya: false,
+
+        getNasiyaMonthly(months) {
+            const total = parseFloat(this.currentQuote.total_price) || 0;
+            if (months === 3) return Math.ceil(total / 3);
+            if (months === 6) return Math.ceil((total * 1.08) / 6);
+            if (months === 12) return Math.ceil((total * 1.18) / 12);
+            return 0;
+        },
+
+        async buyWithNasiya(months) {
+            if (months) this.selectedNasiyaMonths = months;
+            this.buyingNasiya = true;
+            try {
+                const tokenEl = document.querySelector('meta[name="csrf-token"]');
+                const token = tokenEl ? tokenEl.getAttribute('content') : '';
+                const res = await fetch('/cart/items', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        variant_id: this.selectedVariantId,
+                        quantity: this.quantity
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    window.location.href = '/checkout?payment_method=nasiya&months=' + this.selectedNasiyaMonths;
+                } else {
+                    alert(data.message || 'Xatolik yuz berdi');
+                }
+            } catch (e) {
+                alert('Serverga ulanishda xatolik yuz berdi');
+            } finally {
+                this.buyingNasiya = false;
+            }
+        },
 
         async addToCart() {
             this.addingToCart = true;
@@ -577,32 +619,77 @@ function imageMagnifier(imgUrl) {
                     </p>
                     @endif
 
-                    <!-- Installment / Muddatli to'lov (Nasiya) Kalkulyatori -->
-                    <div class="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
-                        <div class="flex items-center justify-between mb-2.5">
+                    <!-- Installment / Muddatli to'lov (Nasiya) Bo'limi -->
+                    <div class="mt-4 p-4 rounded-2xl bg-amber-50/80 border-2 border-amber-300 shadow-xs">
+                        <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center gap-1.5">
                                 <span class="text-sm">⚡</span>
                                 <span class="text-xs font-black text-amber-950 uppercase tracking-wider">Muddatli To'lov (Nasiya)</span>
                             </div>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-200/70 text-amber-900">0% Boshlang'ich To'lov</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-200 text-amber-900">0% Boshlang'ich To'lov</span>
                         </div>
+                        <p class="text-[11px] text-[#64748B] mb-2.5">
+                            Qulay muddatni tanlang va 1 daqiqada nasiyaga rasmiylashtiring:
+                        </p>
+
+                        <!-- Clickable 3 Duration Cards -->
                         <div class="grid grid-cols-3 gap-2 text-center">
-                            <div class="p-2 rounded-xl bg-white border border-amber-200/80">
+                            <!-- 3 oyga -->
+                            <button type="button" 
+                                    @click="selectedNasiyaMonths = 3"
+                                    :class="selectedNasiyaMonths === 3 ? 'border-[#123C2F] ring-2 ring-[#123C2F] bg-white shadow-sm' : 'border-amber-200 bg-white/70 hover:border-amber-400'"
+                                    class="p-2.5 rounded-xl border-2 transition-all relative cursor-pointer active:scale-95 text-center">
+                                <span x-show="selectedNasiyaMonths === 3" class="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-[#123C2F] text-white text-[8px] font-black tracking-wider whitespace-nowrap">✓ TANLANDI</span>
                                 <span class="block text-[10px] font-bold text-[#64748B]">3 oyga</span>
-                                <span class="text-xs font-black text-[#123C2F]" x-text="formatNumber(Math.ceil(currentQuote.total_price / 3)) + ' UZS'"></span>
+                                <span class="text-xs font-black text-[#123C2F] block mt-0.5" x-text="formatNumber(getNasiyaMonthly(3)) + ' UZS'"></span>
                                 <span class="block text-[9px] text-[#64748B]">oyiga</span>
-                            </div>
-                            <div class="p-2 rounded-xl bg-white border-2 border-amber-400 shadow-xs relative">
-                                <span class="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded bg-amber-500 text-white text-[8px] font-black">XIT</span>
+                            </button>
+
+                            <!-- 6 oyga (XIT) -->
+                            <button type="button" 
+                                    @click="selectedNasiyaMonths = 6"
+                                    :class="selectedNasiyaMonths === 6 ? 'border-[#123C2F] ring-2 ring-[#123C2F] bg-white shadow-sm' : 'border-amber-300 bg-white/70 hover:border-amber-400'"
+                                    class="p-2.5 rounded-xl border-2 transition-all relative cursor-pointer active:scale-95 text-center">
+                                <span class="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded text-white text-[8px] font-black tracking-wider whitespace-nowrap"
+                                      :class="selectedNasiyaMonths === 6 ? 'bg-[#123C2F]' : 'bg-amber-500'"
+                                      x-text="selectedNasiyaMonths === 6 ? '✓ TANLANDI' : 'XIT'"></span>
                                 <span class="block text-[10px] font-bold text-[#64748B]">6 oyga</span>
-                                <span class="text-xs font-black text-[#123C2F]" x-text="formatNumber(Math.ceil((currentQuote.total_price * 1.08) / 6)) + ' UZS'"></span>
+                                <span class="text-xs font-black text-[#123C2F] block mt-0.5" x-text="formatNumber(getNasiyaMonthly(6)) + ' UZS'"></span>
                                 <span class="block text-[9px] text-[#64748B]">oyiga</span>
-                            </div>
-                            <div class="p-2 rounded-xl bg-white border border-amber-200/80">
+                            </button>
+
+                            <!-- 12 oyga -->
+                            <button type="button" 
+                                    @click="selectedNasiyaMonths = 12"
+                                    :class="selectedNasiyaMonths === 12 ? 'border-[#123C2F] ring-2 ring-[#123C2F] bg-white shadow-sm' : 'border-amber-200 bg-white/70 hover:border-amber-400'"
+                                    class="p-2.5 rounded-xl border-2 transition-all relative cursor-pointer active:scale-95 text-center">
+                                <span x-show="selectedNasiyaMonths === 12" class="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-[#123C2F] text-white text-[8px] font-black tracking-wider whitespace-nowrap">✓ TANLANDI</span>
                                 <span class="block text-[10px] font-bold text-[#64748B]">12 oyga</span>
-                                <span class="text-xs font-black text-[#123C2F]" x-text="formatNumber(Math.ceil((currentQuote.total_price * 1.18) / 12)) + ' UZS'"></span>
+                                <span class="text-xs font-black text-[#123C2F] block mt-0.5" x-text="formatNumber(getNasiyaMonthly(12)) + ' UZS'"></span>
                                 <span class="block text-[9px] text-[#64748B]">oyiga</span>
+                            </button>
+                        </div>
+
+                        <!-- Direct Nasiya Action CTA -->
+                        <div class="mt-3 pt-3 border-t border-amber-200/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                            <div class="text-xs">
+                                <span class="text-[#64748B]">Tanlangan: </span>
+                                <strong class="text-[#172326]" x-text="selectedNasiyaMonths + ' oyga (' + formatNumber(getNasiyaMonthly(selectedNasiyaMonths)) + ' UZS/oy)'"></strong>
+                                <span class="block text-[10px] text-emerald-700 font-semibold mt-0.5">✓ Boshlang'ich to'lov: 0 UZS</span>
                             </div>
+                            <button type="button" 
+                                    @click="buyWithNasiya()" 
+                                    :disabled="buyingNasiya"
+                                    class="w-full sm:w-auto px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                                <span x-show="!buyingNasiya" class="flex items-center gap-1.5">
+                                    <span>⚡ Nasiyaga olish</span>
+                                    <span>→</span>
+                                </span>
+                                <span x-show="buyingNasiya" x-cloak class="flex items-center gap-1.5">
+                                    <svg class="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                    <span>Rasmiylashtirilmoqda...</span>
+                                </span>
+                            </button>
                         </div>
                     </div>
                 </div>

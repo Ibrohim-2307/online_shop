@@ -996,4 +996,51 @@ class CartAndCheckoutTest extends TestCase
         $this->actingAs($customer)->post('/orders/' . $order->order_number . '/cancel')
             ->assertSessionHas('error');
     }
+
+    public function test_nasiya_checkout_and_installment_contract(): void
+    {
+        [$seller, $product, $variant] = $this->setupSellerWithProduct(
+            'Nasiya Seller', 'nasiya-seller', 'Nasiya Mahsulot', 'nasiya-mahsulot', 'NASIYA-01', 50
+        );
+        $customer = $this->createCustomer('+998901239988');
+
+        // Add 2 items to cart
+        $this->actingAs($customer)->postJson('/api/v1/cart/items', [
+            'variant_id' => $variant->id,
+            'quantity' => 2,
+        ])->assertStatus(201);
+
+        // Checkout with nasiya for 6 months
+        $response = $this->actingAs($customer)->post('/checkout', [
+            'recipient_name' => 'Akbar Xaridor',
+            'phone' => '+998901239988',
+            'region' => 'Toshkent shahri',
+            'city' => 'Yunusobod tumani',
+            'address_line' => 'Amir Temur ko\'chasi 14',
+            'payment_method' => 'nasiya',
+            'nasiya_months' => 6,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $order = Order::where('user_id', $customer->id)->latest()->firstOrFail();
+
+        // Nasiya orders commit stock immediately and are in processing status
+        $this->assertEquals('processing', $order->status);
+
+        $payment = $order->payments()->first();
+        $this->assertNotNull($payment);
+        $this->assertEquals('nasiya', $payment->payment_method);
+        $this->assertEquals('pending', $payment->status);
+        $this->assertEquals(6, $payment->payload_snapshot['nasiya']['months'] ?? null);
+
+        // Order success page renders nasiya info
+        $this->actingAs($customer)->get('/orders/' . $order->order_number . '/success')
+            ->assertStatus(200)
+            ->assertSee('Muddatli To\'lov (Nasiya', false);
+
+        // Order detail page shows active agreement
+        $this->actingAs($customer)->get('/orders/' . $order->order_number)
+            ->assertStatus(200)
+            ->assertSee('shartnomasi faollashtirildi');
+    }
 }

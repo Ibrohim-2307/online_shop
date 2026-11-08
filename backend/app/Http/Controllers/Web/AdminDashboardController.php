@@ -157,8 +157,21 @@ class AdminDashboardController extends Controller
         }
 
         $targetUser = User::findOrFail($id);
-        if ($targetUser->hasRole(['superadmin', 'admin']) && $targetUser->id === $user->id) {
+        if ($targetUser->id === $user->id) {
             return back()->with('error', 'O\'z hisobingizni bloklay olmaysiz.');
+        }
+
+        // Security check: A standard admin cannot block a superadmin
+        if ($targetUser->hasRole('superadmin') && !$user->hasRole('superadmin')) {
+            return back()->with('error', "Standart administrator Superadmin hisobini bloklay olmaydi.");
+        }
+
+        // Security check: Prevent blocking the last active superadmin
+        if ($targetUser->hasRole('superadmin') && $targetUser->is_active) {
+            $activeSuperadmins = User::whereHas('roles', fn($q) => $q->where('name', 'superadmin'))->where('is_active', true)->count();
+            if ($activeSuperadmins <= 1) {
+                return back()->with('error', "Tizimdagi yagona faol Superadministratorni bloklab bo'lmaydi.");
+            }
         }
 
         $targetUser->update(['is_active' => !$targetUser->is_active]);
@@ -188,6 +201,24 @@ class AdminDashboardController extends Controller
         $targetUser = User::findOrFail($id);
         $roleName = $validated['role'];
         $role = Role::where('name', $roleName)->firstOrFail();
+
+        // Security check: Only superadmin can assign admin or superadmin roles
+        if (in_array($roleName, ['superadmin', 'admin'], true) && !$user->hasRole('superadmin')) {
+            return back()->with('error', "Faqat Superadministrator boshqa foydalanuvchilarga administrator yoki superadmin rolini bera oladi.");
+        }
+
+        // Security check: A standard admin cannot demote or modify an existing superadmin
+        if ($targetUser->hasRole('superadmin') && !$user->hasRole('superadmin')) {
+            return back()->with('error', "Standart administrator Superadmin hisobini o'zgartira olmaydi.");
+        }
+
+        // Security check: Prevent removing the last active superadmin
+        if ($targetUser->hasRole('superadmin') && $roleName !== 'superadmin') {
+            $superadminCount = User::whereHas('roles', fn($q) => $q->where('name', 'superadmin'))->where('is_active', true)->count();
+            if ($superadminCount <= 1) {
+                return back()->with('error', "Tizimdagi yagona Superadministrator rolini olib tashlab bo'lmaydi.");
+            }
+        }
 
         // Sync role (single primary role or promote)
         $targetUser->roles()->sync([$role->id]);

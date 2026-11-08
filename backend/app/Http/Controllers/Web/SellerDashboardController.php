@@ -33,12 +33,8 @@ class SellerDashboardController extends Controller
             return redirect()->route('login')->with('error', 'Sotuvchi paneliga kirish uchun do\'kon xodimi yoki egasi hisobi talab qilinadi.');
         }
 
-        $sellerId = $user->seller_id;
-        $seller = $sellerId ? Seller::find($sellerId) : null;
-        if (!$seller) {
-            // Fallback for first demo seller if membership query differs
-            $seller = Seller::first();
-        }
+        $seller = $user->activeSeller()
+            ?? ($user->seller_id ? Seller::find($user->seller_id) : null);
 
         if (!$seller) {
             return redirect()->route('home')->with('error', "Sizga biriktirilgan faol do'kon topilmadi.");
@@ -110,7 +106,7 @@ class SellerDashboardController extends Controller
             'unit_step' => ['required', 'numeric', 'min:0.001'],
             'items_per_box' => ['nullable', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:10240'],
+            'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
             'image_url' => ['nullable', 'string', 'max:1000'],
             'sku' => ['nullable', 'string', 'max:100', 'unique:product_variants,sku'],
             'retail_price' => ['required', 'integer', 'min:100'],
@@ -120,13 +116,24 @@ class SellerDashboardController extends Controller
             'warehouse_id' => ['nullable', 'exists:warehouses,id'],
         ]);
 
-        $seller = Seller::find($user->seller_id) ?: Seller::first();
+        $seller = $user->activeSeller()
+            ?? ($user->seller_id ? Seller::find($user->seller_id) : null);
+
         if (!$seller) {
-            return back()->with('error', 'Sotuvchi do\'koni topilmadi.');
+            return back()->with('error', "Sotuvchi do'koni topilmadi.");
+        }
+
+        if ($seller->status === 'suspended') {
+            return back()->with('error', "Do'koningiz faoliyati vaqtincha to'xtatilgan (bloklangan). Mahsulot qo'shib bo'lmaydi.");
         }
 
         $warehouseId = $request->warehouse_id;
-        if (!$warehouseId) {
+        if ($warehouseId) {
+            $warehouse = Warehouse::where('id', $warehouseId)->where('seller_id', $seller->id)->first();
+            if (!$warehouse) {
+                return back()->with('error', "Tanlangan ombor ushbu do'konga tegishli emas.");
+            }
+        } else {
             $warehouse = Warehouse::firstOrCreate(
                 ['seller_id' => $seller->id],
                 ['name' => 'Asosiy Ombor', 'code' => 'WH-' . $seller->id . '-01', 'address' => 'Toshkent sh.', 'is_active' => true]
@@ -146,8 +153,8 @@ class SellerDashboardController extends Controller
             if (!file_exists($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
-            $extension = $file->getClientOriginalExtension() ?: 'jpg';
-            $filename = Str::slug($validated['name']) . '-' . time() . '.' . $extension;
+            $extension = in_array($file->guessExtension(), ['jpg', 'jpeg', 'png', 'webp'], true) ? $file->guessExtension() : 'jpg';
+            $filename = Str::slug($validated['name']) . '-' . time() . '-' . Str::lower(Str::random(4)) . '.' . $extension;
             $file->move($uploadDir, $filename);
             $imageUrl = '/images/products/' . $filename;
         }
@@ -182,7 +189,7 @@ class SellerDashboardController extends Controller
             'items_per_box' => $validated['items_per_box'] ?? 1,
             'unit_step' => $validated['unit_step'],
             'min_order_quantity' => $validated['min_order_quantity'],
-            'status' => 'approved',
+            'status' => $seller->status === 'active' ? 'approved' : 'pending',
             'is_active' => true,
         ]);
 

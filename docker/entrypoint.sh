@@ -86,8 +86,20 @@ if [ "$INITIAL_SEED" = "true" ] || [ "$USER_COUNT" = "0" ]; then
     php artisan db:seed --force
 fi
 
-# Ensure storage symlink
+# Ensure storage symlink and persistent storage for images and uploads
 php artisan storage:link || true
+mkdir -p /var/www/html/storage/data/images/products /var/www/html/storage/data/uploads
+if [ -d /var/www/html/public/images/products ] && [ ! -L /var/www/html/public/images/products ]; then
+    cp -rn /var/www/html/public/images/products/* /var/www/html/storage/data/images/products/ 2>/dev/null || true
+    rm -rf /var/www/html/public/images/products
+    ln -sfn /var/www/html/storage/data/images/products /var/www/html/public/images/products
+elif [ ! -e /var/www/html/public/images/products ]; then
+    ln -sfn /var/www/html/storage/data/images/products /var/www/html/public/images/products
+fi
+if [ ! -L /var/www/html/public/uploads ]; then
+    ln -sfn /var/www/html/storage/data/uploads /var/www/html/public/uploads
+fi
+chown -R www-data:www-data /var/www/html/storage/data
 
 # Cache optimization (clear first then rebuild)
 php artisan optimize:clear || true

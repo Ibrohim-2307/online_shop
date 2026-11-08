@@ -533,4 +533,129 @@ class SellerAndAdminPanelTest extends TestCase
         $this->assertNotNull($variant);
         $this->assertCount(3, $variant->priceTiers);
     }
+
+    public function test_unassigned_seller_cannot_fallback_to_seller_first(): void
+    {
+        $seller1 = Seller::create([
+            'name' => 'First Store', 'slug' => 'first-store', 'legal_name' => 'First Store MCHJ',
+            'status' => 'active', 'commission_rate' => 5.0, 'rating' => 5.0,
+        ]);
+
+        $role = Role::firstOrCreate(['name' => 'seller_operator'], ['label' => 'Operator']);
+        $unassignedUser = User::create([
+            'name' => 'Unassigned Seller', 'email' => 'unassigned@example.uz',
+            'password' => bcrypt('Secret123!'), 'is_active' => true,
+        ]);
+        $unassignedUser->roles()->attach($role->id);
+
+        $response = $this->actingAs($unassignedUser)->get('/seller');
+        $response->assertRedirect(route('home'));
+        $response->assertSessionHas('error');
+
+        // Cannot create product into Seller #1
+        $postResponse = $this->actingAs($unassignedUser)->post('/seller/products', [
+            'name' => 'Hacked Product',
+            'category_id' => Category::firstOrCreate(['slug' => 'cat-1'], ['name' => 'Cat 1'])->id,
+            'trade_mode' => 'both',
+            'unit' => 'piece',
+            'min_order_quantity' => 1,
+            'unit_step' => 1,
+            'retail_price' => 10000,
+            'stock_quantity' => 50,
+        ]);
+        $postResponse->assertSessionHas('error');
+        $this->assertDatabaseMissing('products', ['name' => 'Hacked Product']);
+    }
+
+    public function test_standard_admin_cannot_promote_to_superadmin_or_demote_superadmin(): void
+    {
+        $superadminRole = Role::firstOrCreate(['name' => 'superadmin'], ['label' => 'Superadmin']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Admin']);
+        $customerRole = Role::firstOrCreate(['name' => 'customer'], ['label' => 'Customer']);
+
+        $superadmin = User::create([
+            'name' => 'Chief Superadmin', 'email' => 'chief@example.uz',
+            'password' => bcrypt('Secret123!'), 'is_active' => true,
+        ]);
+        $superadmin->roles()->attach($superadminRole->id);
+
+        $admin = User::create([
+            'name' => 'Regular Admin', 'email' => 'admin_reg@example.uz',
+            'password' => bcrypt('Secret123!'), 'is_active' => true,
+        ]);
+        $admin->roles()->attach($adminRole->id);
+
+        $victim = User::create([
+            'name' => 'Target Customer', 'email' => 'target@example.uz',
+            'password' => bcrypt('Secret123!'), 'is_active' => true,
+        ]);
+        $victim->roles()->attach($customerRole->id);
+
+        // 1. Regular admin tries to promote victim to superadmin -> BLOCKED
+        $this->actingAs($admin)->post('/admin/users/' . $victim->id . '/role', [
+            'role' => 'superadmin',
+        ])->assertSessionHas('error');
+        $this->assertFalse($victim->fresh()->hasRole('superadmin'));
+
+        // 2. Regular admin tries to demote chief superadmin -> BLOCKED
+        $this->actingAs($admin)->post('/admin/users/' . $superadmin->id . '/role', [
+            'role' => 'customer',
+        ])->assertSessionHas('error');
+        $this->assertTrue($superadmin->fresh()->hasRole('superadmin'));
+
+        // 3. Regular admin tries to block superadmin -> BLOCKED
+        $this->actingAs($admin)->post('/admin/users/' . $superadmin->id . '/status')
+            ->assertSessionHas('error');
+        $this->assertTrue($superadmin->fresh()->is_active);
+
+        // 4. Superadmin CAN promote someone to admin
+        $this->actingAs($superadmin)->post('/admin/users/' . $victim->id . '/role', [
+            'role' => 'admin',
+        ])->assertSessionHas('success');
+        $this->assertTrue($victim->fresh()->hasRole('admin'));
+    }
+
+    public function test_seller_cannot_inject_stock_into_foreign_warehouse(): void
+    {
+        $sellerA = Seller::create([
+            'name' => 'Store A', 'slug' => 'store-a', 'legal_name' => 'Store A MCHJ',
+            'status' => 'active', 'commission_rate' => 5.0, 'rating' => 5.0,
+        ]);
+        $sellerB = Seller::create([
+            'name' => 'Store B', 'slug' => 'store-b', 'legal_name' => 'Store B MCHJ',
+            'status' => 'active', 'commission_rate' => 5.0, 'rating' => 5.0,
+        ]);
+
+        $ownerRole = Role::firstOrCreate(['name' => 'seller_owner'], ['label' => 'Owner']);
+        $userA = User::create([
+            'name' => 'Owner A', 'email' => 'owner_a@example.uz',
+            'password' => bcrypt('Secret123!'), 'is_active' => true,
+            'seller_id' => $sellerA->id,
+        ]);
+        $userA->roles()->attach($ownerRole->id);
+
+        $warehouseB = Warehouse::create([
+            'seller_id' => $sellerB->id,
+            'name' => 'Warehouse B',
+            'code' => 'WH-B-01',
+            'is_active' => true,
+        ]);
+
+        $cat = Category::firstOrCreate(['slug' => 'cat-wh'], ['name' => 'Cat WH']);
+
+        // User A tries to add product with Seller B's warehouse_id
+        $this->actingAs($userA)->post('/seller/products', [
+            'name' => 'Illegal Wh Product',
+            'category_id' => $cat->id,
+            'trade_mode' => 'both',
+            'unit' => 'piece',
+            'min_order_quantity' => 1,
+            'unit_step' => 1,
+            'retail_price' => 10000,
+            'stock_quantity' => 50,
+            'warehouse_id' => $warehouseB->id,
+        ])->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('products', ['name' => 'Illegal Wh Product']);
+    }
 }

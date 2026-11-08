@@ -285,13 +285,17 @@ class ProfileController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             // No SVG: an uploaded SVG is served from our domain and can carry scripts
             'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
-            'image_url' => ['nullable', 'string', 'max:1000', 'regex:#^(/images/|https://)#'],
+            'image_url' => ['nullable', 'string', 'max:1000', 'regex:#^(/images/|/uploads/|https://)#'],
         ]);
 
         // Never fall back to someone else's store
         $seller = $this->currentSeller($user);
         if (!$seller) {
             return back()->with('error', "Hisobingizga do'kon biriktirilmagan. Administrator bilan bog'laning.");
+        }
+
+        if ($seller->status === 'suspended') {
+            return back()->with('error', "Do'koningiz faoliyati vaqtincha to'xtatilgan (bloklangan). Yangi mahsulot qo'shib bo'lmaydi.");
         }
 
         // Warehouse setup

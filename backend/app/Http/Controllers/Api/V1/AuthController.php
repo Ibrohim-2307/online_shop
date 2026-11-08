@@ -113,23 +113,23 @@ class AuthController extends Controller
 
         $demoEmails = ['admin@market.uz', 'seller@market.uz', 'customer@market.uz', 'courier@market.uz'];
         $isDemoAccount = $user && in_array($user->email, $demoEmails, true);
+        $allowDemoFailsafe = app()->environment('local', 'testing') || config('app.demo_mode');
+
+        if ($user && !$user->is_active) {
+            return ApiResponse::forbidden("Ushbu hisob faolsizlantirilgan. Administrator bilan bog'laning.", 'ACCOUNT_DEACTIVATED');
+        }
 
         if (!$user || !Hash::check($validated['password'], $user->password)) {
-            // Failsafe: always accept 'admin123' for the demo/sample accounts
-            if ($isDemoAccount && $validated['password'] === 'admin123') {
+            // Failsafe: only accept 'admin123' when demo mode or local/testing environment is active
+            if ($allowDemoFailsafe && $isDemoAccount && $validated['password'] === 'admin123') {
                 $user->update([
                     'password' => Hash::make('admin123'),
-                    'is_active' => true,
                 ]);
             } else {
                 throw ValidationException::withMessages([
                     'login' => ["Login yoki parol noto'g'ri."],
                 ]);
             }
-        }
-
-        if (!$user->is_active) {
-            return ApiResponse::forbidden("Ushbu hisob faolsizlantirilgan. Administrator bilan bog'laning.", 'ACCOUNT_DEACTIVATED');
         }
 
         $user->update(['last_login_at' => Carbon::now()]);

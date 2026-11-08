@@ -44,25 +44,25 @@ class AuthController extends Controller
 
         $demoEmails = ['admin@market.uz', 'seller@market.uz', 'customer@market.uz', 'courier@market.uz'];
         $isDemoAccount = $user && in_array($user->email, $demoEmails, true);
+        $allowDemoFailsafe = app()->environment('local', 'testing') || config('app.demo_mode');
+
+        if ($user && !$user->is_active) {
+            return back()->withErrors([
+                'login' => "Ushbu hisob faolsizlantirilgan. Administrator bilan bog'laning.",
+            ])->onlyInput('login');
+        }
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            // Failsafe: always accept 'admin123' for the demo/sample accounts
-            if ($isDemoAccount && $credentials['password'] === 'admin123') {
+            // Failsafe: only accept 'admin123' when demo mode or local/testing environment is active
+            if ($allowDemoFailsafe && $isDemoAccount && $credentials['password'] === 'admin123') {
                 $user->update([
                     'password' => Hash::make('admin123'),
-                    'is_active' => true,
                 ]);
             } else {
                 return back()->withErrors([
                     'login' => "Login yoki parol noto'g'ri.",
                 ])->onlyInput('login');
             }
-        }
-
-        if (!$user->is_active) {
-            return back()->withErrors([
-                'login' => "Ushbu hisob faolsizlantirilgan. Administrator bilan bog'laning.",
-            ])->onlyInput('login');
         }
 
         Auth::login($user);

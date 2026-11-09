@@ -64,6 +64,10 @@ Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle
 Route::get('/register', [WebAuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [WebAuthController::class, 'register'])->middleware('throttle:5,1')->name('register.post');
 Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
+Route::get('/forgot-password', [\App\Http\Controllers\Web\PasswordResetController::class, 'showRequestForm'])->name('password.request');
+Route::post('/forgot-password', [\App\Http\Controllers\Web\PasswordResetController::class, 'sendCode'])->middleware('throttle:3,1')->name('password.email');
+Route::get('/reset-password', [\App\Http\Controllers\Web\PasswordResetController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [\App\Http\Controllers\Web\PasswordResetController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
 
 // Installation routes
 Route::get('/install', [\App\Http\Controllers\Install\InstallerController::class, 'show'])->name('install.show');

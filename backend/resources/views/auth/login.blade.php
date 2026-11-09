@@ -19,6 +19,12 @@
             <p class="text-xs text-slate-500 mt-1">Admin, sotuvchi yoki xaridor hisobingizga kiring</p>
         </div>
 
+        @if(session('success'))
+            <div class="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-xl">
+                {{ session('success') }}
+            </div>
+        @endif
+
         @if(session('error'))
             <div class="mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium rounded-xl">
                 {{ session('error') }}
@@ -47,6 +53,9 @@
                 <input type="password" id="password" name="password" required
                        placeholder="••••••••"
                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#123C2F] focus:outline-none">
+                <div class="text-right mt-1.5">
+                    <a href="{{ route('password.request') }}" class="text-xs font-bold text-[#123C2F] hover:underline">Parolni unutdingizmi?</a>
+                </div>
             </div>
 
             <button type="submit" class="w-full py-3 px-4 rounded-xl bg-[#123C2F] hover:bg-[#0d2a21] text-white font-bold text-sm shadow transition duration-150">

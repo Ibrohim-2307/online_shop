@@ -133,7 +133,7 @@ class ProfileController extends Controller
             $sellerSuborders = Suborder::where('seller_id', $seller->id)
                 ->with(['order.user', 'items.product', 'shipments.courier'])
                 ->latest()
-                ->limit(30)
+                ->limit(100)
                 ->get();
 
             // Orders the seller must act on now (paid or cash-on-delivery, not yet being packed) go to the top

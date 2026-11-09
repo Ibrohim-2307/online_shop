@@ -572,13 +572,85 @@
                                 };
                             };
                             $stateCounts = $sellerProducts->countBy(fn($p) => in_array($productState($p), ['frozen', 'soldout'], true) ? 'frozen' : ($productState($p) === 'active' ? 'active' : 'other'));
+                            $activeCount = $stateCounts['active'] ?? 0;
+                            $frozenCount = $stateCounts['frozen'] ?? 0;
+                            $lowStockCount = $sellerProducts->filter(fn($p) => $productState($p) === 'active' && max(0, (float)$p->variants->flatMap->inventoryBalances->sum('quantity') - (float)$p->variants->flatMap->inventoryBalances->sum('reserved_quantity')) < 5)->count();
+                            $pendingCount = $sellerProducts->where('status', 'pending')->count();
                         @endphp
-                        <div x-data="{ filter: 'all' }" class="space-y-3">
+                        <div x-data="{
+                            prodSearch: '',
+                            selectedCategory: 'all',
+                            prodFilter: 'all',
+                            matchesProd(name, sku, categoryId, state, availableStock, categoryName) {
+                                if (this.prodSearch.trim() !== '') {
+                                    const q = this.prodSearch.toLowerCase().trim();
+                                    const text = (name + ' ' + (sku || '') + ' ' + (categoryName || '')).toLowerCase();
+                                    if (!text.includes(q)) return false;
+                                }
+                                if (this.selectedCategory !== 'all' && String(categoryId) !== String(this.selectedCategory)) {
+                                    return false;
+                                }
+                                if (this.prodFilter === 'active' && state !== 'active') return false;
+                                if (this.prodFilter === 'frozen' && state !== 'frozen' && state !== 'soldout') return false;
+                                if (this.prodFilter === 'low_stock' && (availableStock >= 5 || state !== 'active')) return false;
+                                if (this.prodFilter === 'pending' && state !== 'pending') return false;
+                                return true;
+                            }
+                        }" class="space-y-4">
                             @if($sellerProducts->isNotEmpty())
-                                <div class="flex gap-2 overflow-x-auto no-scrollbar text-xs">
-                                    <button type="button" @click="filter = 'all'" :class="filter === 'all' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#E8ECE4]'" class="px-3 py-1.5 rounded-full border font-bold whitespace-nowrap">Hammasi ({{ $sellerProducts->count() }})</button>
-                                    <button type="button" @click="filter = 'active'" :class="filter === 'active' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#E8ECE4]'" class="px-3 py-1.5 rounded-full border font-bold whitespace-nowrap">● Sotuvda ({{ $stateCounts['active'] ?? 0 }})</button>
-                                    <button type="button" @click="filter = 'frozen'" :class="filter === 'frozen' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#E8ECE4]'" class="px-3 py-1.5 rounded-full border font-bold whitespace-nowrap">❄️ Muzlatilgan ({{ $stateCounts['frozen'] ?? 0 }})</button>
+                                <!-- Filter & Search Toolbar -->
+                                <div class="bg-white rounded-3xl border border-[#E8ECE4] p-3 sm:p-4 space-y-3 shadow-xs">
+                                    <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                                        <!-- Search input -->
+                                        <div class="relative flex-1">
+                                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🔍</span>
+                                            <input type="text" x-model="prodSearch" placeholder="Mahsulot nomi, SKU (artikul) yoki kategoriya bo'yicha qidirish..." 
+                                                   class="w-full h-11 pl-10 pr-9 rounded-2xl border border-[#E8ECE4] bg-[#FAFBF7] focus:bg-white text-xs placeholder:text-slate-400 focus:border-[#123C2F] outline-none">
+                                            <button type="button" x-show="prodSearch.length > 0" @click="prodSearch = ''" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+                                        </div>
+
+                                        <!-- Category selector -->
+                                        <div class="w-full sm:w-60">
+                                            <select x-model="selectedCategory" class="w-full h-11 px-3.5 rounded-2xl border border-[#E8ECE4] bg-[#FAFBF7] focus:bg-white text-xs font-semibold text-[#172326] focus:border-[#123C2F] outline-none">
+                                                <option value="all">Barcha Kategoriyalar ({{ $sellerProducts->count() }})</option>
+                                                @foreach($categories as $cat)
+                                                    @php $cCount = $sellerProducts->where('category_id', $cat->id)->count(); @endphp
+                                                    @if($cCount > 0)
+                                                        <option value="{{ $cat->id }}">{{ $cat->name }} ({{ $cCount }})</option>
+                                                    @endif
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick status pills -->
+                                    <div class="flex gap-2 overflow-x-auto no-scrollbar text-xs pt-2 border-t border-[#E8ECE4]">
+                                        <button type="button" @click="prodFilter = 'all'" :class="prodFilter === 'all' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            Hammasi ({{ $sellerProducts->count() }})
+                                        </button>
+                                        <button type="button" @click="prodFilter = 'active'" :class="prodFilter === 'active' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            ● Sotuvda ({{ $activeCount }})
+                                        </button>
+                                        @if($lowStockCount > 0)
+                                            <button type="button" @click="prodFilter = 'low_stock'" :class="prodFilter === 'low_stock' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-900 border-amber-200'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                                ⚠️ Kam qolgan (< 5 ta) ({{ $lowStockCount }})
+                                            </button>
+                                        @endif
+                                        <button type="button" @click="prodFilter = 'frozen'" :class="prodFilter === 'frozen' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            ❄️ Muzlatilgan / Tugagan ({{ $frozenCount }})
+                                        </button>
+                                        @if($pendingCount > 0)
+                                            <button type="button" @click="prodFilter = 'pending'" :class="prodFilter === 'pending' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-900 border-amber-200'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                                ⏳ Moderatsiyada ({{ $pendingCount }})
+                                            </button>
+                                        @endif
+
+                                        <button type="button" x-show="prodSearch !== '' || selectedCategory !== 'all' || prodFilter !== 'all'" 
+                                                @click="prodSearch = ''; selectedCategory = 'all'; prodFilter = 'all'" 
+                                                class="ml-auto text-[11px] font-bold text-rose-600 hover:text-rose-800 whitespace-nowrap self-center underline">
+                                            Tozalash ✕
+                                        </button>
+                                    </div>
                                 </div>
                             @endif
 
@@ -602,7 +674,7 @@
                                     ][$state];
                                     $fmtQty = fn($q) => rtrim(rtrim(number_format($q, 3, '.', ' '), '0'), '.');
                                 @endphp
-                                <article x-show="filter === 'all' || filter === '{{ $group }}'"
+                                <article x-show="matchesProd('{{ addslashes($prod->name) }}', '{{ addslashes($variant?->sku ?? '') }}', '{{ $prod->category_id }}', '{{ $state }}', {{ $availableStock }}, '{{ addslashes($prod->category->name ?? '') }}')"
                                          class="bg-white rounded-2xl border {{ in_array($state, ['frozen', 'soldout'], true) ? 'border-sky-200 bg-sky-50/30' : 'border-[#E8ECE4]' }} p-3 sm:p-4 shadow-2xs">
                                     <div class="flex gap-3">
                                         <a href="{{ route('product.show', $prod->slug) }}" target="_blank" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-100 overflow-hidden border border-[#E8ECE4] flex-shrink-0 flex items-center justify-center {{ in_array($state, ['frozen', 'soldout'], true) ? 'grayscale opacity-70' : '' }}">
@@ -788,13 +860,76 @@
 
                     <!-- TAB: SELLER ORDERS -->
                     <div x-show="activeTab === 'seller_orders'" class="space-y-6">
-                        <div>
-                            <h2 class="text-xl font-black text-[#172326]">Do'konga Tushgan Buyurtmalar</h2>
-                            <p class="text-xs text-[#64748B]">Xaridorlar tomonidan do'koningizdan sotib olingan tovarlar va ularning yetkazilish bosqichlari</p>
-                        </div>
+                        @php
+                            $inTransitSubordersCount = $sellerSuborders->filter(fn($s) => in_array($s->status, ['shipped', 'in_transit']) || $s->shipments->contains(fn($sh) => in_array($sh->status, ['in_transit', 'out_for_delivery'])))->count();
+                            $deliveredSubordersCount = $sellerSuborders->filter(fn($s) => $s->status === 'delivered')->count();
+                            $cancelledSubordersCount = $sellerSuborders->filter(fn($s) => $s->status === 'cancelled' || $s->order?->status === 'cancelled')->count();
+                        @endphp
+                        <div x-data="{
+                            orderSearch: '',
+                            orderStatusTab: 'all',
+                            matchesOrder(number, buyer, phone, itemsText, status, isAction) {
+                                if (this.orderSearch.trim() !== '') {
+                                    const q = this.orderSearch.toLowerCase().trim();
+                                    const full = (number + ' ' + (buyer || '') + ' ' + (phone || '') + ' ' + (itemsText || '')).toLowerCase();
+                                    if (!full.includes(q)) return false;
+                                }
+                                if (this.orderStatusTab === 'needs_action' && !isAction) return false;
+                                if (this.orderStatusTab === 'in_transit' && status !== 'shipped' && status !== 'in_transit') return false;
+                                if (this.orderStatusTab === 'delivered' && status !== 'delivered') return false;
+                                if (this.orderStatusTab === 'cancelled' && status !== 'cancelled') return false;
+                                return true;
+                            }
+                        }" class="space-y-4">
+                            <div>
+                                <h2 class="text-xl font-black text-[#172326]">Do'konga Tushgan Buyurtmalar</h2>
+                                <p class="text-xs text-[#64748B]">Xaridorlar tomonidan do'koningizdan sotib olingan tovarlar va ularning yetkazilish bosqichlari</p>
+                            </div>
 
-                        @forelse($sellerSuborders as $sub)
-                            <div class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all p-5 space-y-4">
+                            @if($sellerSuborders->isNotEmpty())
+                                <!-- Filter & Search Toolbar -->
+                                <div class="bg-white rounded-3xl border border-[#E8ECE4] p-3 sm:p-4 space-y-3 shadow-xs">
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🔍</span>
+                                        <input type="text" x-model="orderSearch" placeholder="Buyurtma #SO-..., xaridor ismi, telefon raqami yoki mahsulot nomi bo'yicha qidirish..." 
+                                               class="w-full h-11 pl-10 pr-9 rounded-2xl border border-[#E8ECE4] bg-[#FAFBF7] focus:bg-white text-xs placeholder:text-slate-400 focus:border-[#123C2F] outline-none">
+                                        <button type="button" x-show="orderSearch.length > 0" @click="orderSearch = ''" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+                                    </div>
+
+                                    <div class="flex gap-2 overflow-x-auto no-scrollbar text-xs pt-2 border-t border-[#E8ECE4]">
+                                        <button type="button" @click="orderStatusTab = 'all'" :class="orderStatusTab === 'all' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            Hammasi ({{ $sellerSuborders->count() }})
+                                        </button>
+                                        <button type="button" @click="orderStatusTab = 'needs_action'" :class="orderStatusTab === 'needs_action' ? 'bg-rose-600 text-white border-rose-600' : 'bg-rose-50 text-rose-900 border-rose-200'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition flex items-center gap-1.5">
+                                            <span>⚡ Yangi / Qadoqlash kerak</span>
+                                            @if($sellerNeedsActionCount > 0)
+                                                <span class="px-1.5 py-0.2 rounded-full bg-white text-rose-700 text-[10px] font-black">{{ $sellerNeedsActionCount }}</span>
+                                            @endif
+                                        </button>
+                                        <button type="button" @click="orderStatusTab = 'in_transit'" :class="orderStatusTab === 'in_transit' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            🚚 Kuryerda / Yo'lda ({{ $inTransitSubordersCount }})
+                                        </button>
+                                        <button type="button" @click="orderStatusTab = 'delivered'" :class="orderStatusTab === 'delivered' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            ✅ Yetkazildi ({{ $deliveredSubordersCount }})
+                                        </button>
+                                        @if($cancelledSubordersCount > 0)
+                                            <button type="button" @click="orderStatusTab = 'cancelled'" :class="orderStatusTab === 'cancelled' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                                ❌ Bekor / Qaytarilgan ({{ $cancelledSubordersCount }})
+                                            </button>
+                                        @endif
+
+                                        <button type="button" x-show="orderSearch !== '' || orderStatusTab !== 'all'" 
+                                                @click="orderSearch = ''; orderStatusTab = 'all'" 
+                                                class="ml-auto text-[11px] font-bold text-rose-600 hover:text-rose-800 whitespace-nowrap self-center underline">
+                                            Tozalash ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
+                            @forelse($sellerSuborders as $sub)
+                                <div x-show="matchesOrder('{{ addslashes($sub->suborder_number) }}', '{{ addslashes($sub->order->user->name ?? '') }}', '{{ addslashes($sub->order->user->phone ?? '') }}', '{{ addslashes($sub->items->pluck('product_name')->implode(' ')) }}', '{{ $sub->status }}', {{ $needsAction($sub) ? 'true' : 'false' }})"
+                                     class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all p-5 space-y-4">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E8ECE4]">
                                     <div>
                                         <div class="flex items-center gap-2">
@@ -895,6 +1030,7 @@
                                 <p class="text-xs text-[#64748B]">Do'koningizga yangi buyurtmalar tushganda shu yerda paydo bo'ladi.</p>
                             </div>
                         @endforelse
+                        </div>
                     </div>
 
                     <!-- TAB: SELLER SHIPPING -->
@@ -1069,10 +1205,78 @@
                                 'delivered' => ['Topshirildi', 'bg-emerald-100 text-emerald-900'],
                                 'failed' => ["Yetkazib bo'lmadi", 'bg-rose-100 text-rose-900'],
                             ];
+                            $inTransitShipmentsCount = $courierActiveShipments->filter(fn($s) => in_array($s->status, ['in_transit', 'out_for_delivery']))->count();
+                            $pickupShipmentsCount = $courierActiveShipments->filter(fn($s) => $s->status === 'assigned')->count();
+                            $inHandShipmentsCount = $courierActiveShipments->filter(fn($s) => $s->status === 'picked_up')->count();
+                            $codShipmentsCount = $courierActiveShipments->filter(fn($s) => $s->suborder?->order?->latest_payment?->payment_method === 'cash_on_delivery')->count();
+                            $failedShipmentsCount = $courierActiveShipments->filter(fn($s) => $s->status === 'failed')->count();
                         @endphp
 
-                        <div class="space-y-5">
-                            @forelse($courierActiveShipments as $sh)
+                        <div x-data="{
+                            courierSearch: '',
+                            courierFilter: 'all',
+                            matchesCourier(tracking, suborder, sellerName, dropName, dropPhone, dropAddress, status, isCOD) {
+                                if (this.courierSearch.trim() !== '') {
+                                    const q = this.courierSearch.toLowerCase().trim();
+                                    const text = (tracking + ' ' + suborder + ' ' + (sellerName || '') + ' ' + (dropName || '') + ' ' + (dropPhone || '') + ' ' + (dropAddress || '')).toLowerCase();
+                                    if (!text.includes(q)) return false;
+                                }
+                                if (this.courierFilter === 'in_transit' && status !== 'in_transit' && status !== 'out_for_delivery') return false;
+                                if (this.courierFilter === 'pickup' && status !== 'assigned') return false;
+                                if (this.courierFilter === 'in_hand' && status !== 'picked_up') return false;
+                                if (this.courierFilter === 'cod' && !isCOD) return false;
+                                if (this.courierFilter === 'failed' && status !== 'failed') return false;
+                                return true;
+                            }
+                        }" class="space-y-4">
+
+                            @if($courierActiveShipments->isNotEmpty())
+                                <!-- Courier Search & Filter Toolbar -->
+                                <div class="bg-white rounded-3xl border border-[#E8ECE4] p-3 sm:p-4 space-y-3 shadow-xs">
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🔍</span>
+                                        <input type="text" x-model="courierSearch" placeholder="Tracking raqami, xaridor ismi, manzil, telefon yoki do'kon nomi bo'yicha qidirish..." 
+                                               class="w-full h-11 pl-10 pr-9 rounded-2xl border border-[#E8ECE4] bg-[#FAFBF7] focus:bg-white text-xs placeholder:text-slate-400 focus:border-[#123C2F] outline-none">
+                                        <button type="button" x-show="courierSearch.length > 0" @click="courierSearch = ''" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+                                    </div>
+
+                                    <div class="flex gap-2 overflow-x-auto no-scrollbar text-xs pt-2 border-t border-[#E8ECE4]">
+                                        <button type="button" @click="courierFilter = 'all'" :class="courierFilter === 'all' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            Barcha Faol ({{ $courierActiveShipments->count() }})
+                                        </button>
+                                        <button type="button" @click="courierFilter = 'in_transit'" :class="courierFilter === 'in_transit' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-900 border-amber-200'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition flex items-center gap-1.5">
+                                            <span>🔥 Bugun topshirish kerak / Yo'lda</span>
+                                            <span class="px-1.5 py-0.2 rounded-full bg-white text-amber-800 text-[10px] font-black">{{ $inTransitShipmentsCount }}</span>
+                                        </button>
+                                        <button type="button" @click="courierFilter = 'pickup'" :class="courierFilter === 'pickup' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-indigo-50 text-indigo-900 border-indigo-200'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition flex items-center gap-1.5">
+                                            <span>🏬 Do'kondan olish kerak</span>
+                                            <span class="px-1.5 py-0.2 rounded-full bg-white text-indigo-800 text-[10px] font-black">{{ $pickupShipmentsCount }}</span>
+                                        </button>
+                                        <button type="button" @click="courierFilter = 'in_hand'" :class="courierFilter === 'in_hand' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            📦 Qo'limda ({{ $inHandShipmentsCount }})
+                                        </button>
+                                        @if($codShipmentsCount > 0)
+                                            <button type="button" @click="courierFilter = 'cod'" :class="courierFilter === 'cod' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-950 border-amber-300'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                                💵 Naqd pul (COD) ({{ $codShipmentsCount }})
+                                            </button>
+                                        @endif
+                                        @if($failedShipmentsCount > 0)
+                                            <button type="button" @click="courierFilter = 'failed'" :class="courierFilter === 'failed' ? 'bg-rose-600 text-white border-rose-600' : 'bg-rose-50 text-rose-900 border-rose-200'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                                ⚠️ Qayta urinish ({{ $failedShipmentsCount }})
+                                            </button>
+                                        @endif
+
+                                        <button type="button" x-show="courierSearch !== '' || courierFilter !== 'all'" 
+                                                @click="courierSearch = ''; courierFilter = 'all'" 
+                                                class="ml-auto text-[11px] font-bold text-rose-600 hover:text-rose-800 whitespace-nowrap self-center underline">
+                                            Tozalash ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="space-y-5">
+                                @forelse($courierActiveShipments as $sh)
                                 @php
                                     $isCOD = $sh->suborder?->order?->latest_payment?->payment_method === 'cash_on_delivery';
                                     $codAmount = $sh->suborder?->total_amount ?? 0;
@@ -1088,7 +1292,8 @@
                                     $orderNotes = $sh->suborder?->order?->notes;
                                 @endphp
 
-                                <div class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all p-5 space-y-4">
+                                <div x-show="matchesCourier('{{ addslashes($sh->tracking_number) }}', '{{ addslashes($sh->suborder?->suborder_number ?? '') }}', '{{ addslashes($sh->suborder?->seller?->name ?? '') }}', '{{ addslashes($dropName) }}', '{{ addslashes($dropPhone ?? '') }}', '{{ addslashes($dropAddress) }}', '{{ $sh->status }}', {{ $isCOD ? 'true' : 'false' }})"
+                                     class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all p-5 space-y-4">
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E8ECE4]">
                                         <div>
                                             <div class="flex items-center gap-2">
@@ -1235,6 +1440,7 @@
                                 </div>
                             @endforelse
                         </div>
+                    </div>
 
                         @if($courierFinishedShipments->isNotEmpty())
                             <details class="bg-white rounded-3xl border border-[#E8ECE4] p-5">
@@ -1266,25 +1472,90 @@
 
                 <!-- TAB 1: BUYURTMALARIM (Customer Orders) -->
                 <div x-show="activeTab === 'orders'" class="space-y-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="text-xl font-black text-[#172326]">Mening Buyurtmalarim</h2>
-                            <p class="text-xs text-[#64748B]">Barcha xaridlaringiz, tovarlar tarkibi va ularning yetkazilish holati</p>
+                    @php
+                        $inTransitOrdersCount = $orders->filter(fn($o) => 
+                            in_array($o->status, ['pending_payment', 'processing', 'awaiting_payment']) || 
+                            $o->suborders->flatMap->shipments->contains(fn($s) => in_array($s->status, ['in_transit', 'out_for_delivery']))
+                        )->count();
+                        $deliveredOrdersCount = $orders->filter(fn($o) => 
+                            in_array($o->status, ['completed', 'delivered']) || 
+                            $o->suborders->flatMap->shipments->contains(fn($s) => $s->status === 'delivered')
+                        )->count();
+                        $cancelledOrdersCount = $orders->filter(fn($o) => $o->status === 'cancelled')->count();
+                    @endphp
+
+                    <div x-data="{
+                        custSearch: '',
+                        custTab: 'all',
+                        matchesCust(orderNumber, itemsText, status, isInTransit, isDelivered) {
+                            if (this.custSearch.trim() !== '') {
+                                const q = this.custSearch.toLowerCase().trim();
+                                const full = (orderNumber + ' ' + (itemsText || '')).toLowerCase();
+                                if (!full.includes(q)) return false;
+                            }
+                            if (this.custTab === 'in_transit' && !isInTransit && !['processing', 'pending_payment'].includes(status)) return false;
+                            if (this.custTab === 'delivered' && !isDelivered) return false;
+                            if (this.custTab === 'cancelled' && status !== 'cancelled') return false;
+                            return true;
+                        }
+                    }" class="space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-xl font-black text-[#172326]">Mening Buyurtmalarim</h2>
+                                <p class="text-xs text-[#64748B]">Barcha xaridlaringiz, tovarlar tarkibi va ularning yetkazilish holati</p>
+                            </div>
+                            <a href="{{ route('orders.hub') }}" class="text-xs font-bold text-[#123C2F] hover:underline flex items-center gap-1">
+                                <span>To'liq Ta'minot Markazi</span>
+                                <span>→</span>
+                            </a>
                         </div>
-                        <a href="{{ route('orders.hub') }}" class="text-xs font-bold text-[#123C2F] hover:underline flex items-center gap-1">
-                            <span>To'liq Ta'minot Markazi</span>
-                            <span>→</span>
-                        </a>
-                    </div>
 
-                    @forelse($orders as $order)
-                        @php
-                            $shipment = $order->suborders->flatMap->shipments->first();
-                            $isInTransit = $shipment && in_array($shipment->status, ['in_transit', 'out_for_delivery']);
-                            $isDelivered = $order->status === 'completed' || ($shipment && $shipment->status === 'delivered');
-                        @endphp
+                        @if($orders->isNotEmpty())
+                            <!-- Customer Orders Search & Filter Toolbar -->
+                            <div class="bg-white rounded-3xl border border-[#E8ECE4] p-3 sm:p-4 space-y-3 shadow-xs">
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🔍</span>
+                                    <input type="text" x-model="custSearch" placeholder="Buyurtma raqami yoki tovar nomi bo'yicha qidirish..." 
+                                           class="w-full h-11 pl-10 pr-9 rounded-2xl border border-[#E8ECE4] bg-[#FAFBF7] focus:bg-white text-xs placeholder:text-slate-400 focus:border-[#123C2F] outline-none">
+                                    <button type="button" x-show="custSearch.length > 0" @click="custSearch = ''" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+                                </div>
 
-                        <div class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all">
+                                <div class="flex gap-2 overflow-x-auto no-scrollbar text-xs pt-2 border-t border-[#E8ECE4]">
+                                    <button type="button" @click="custTab = 'all'" :class="custTab === 'all' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                        Barchasi ({{ $orders->count() }})
+                                    </button>
+                                    <button type="button" @click="custTab = 'in_transit'" :class="custTab === 'in_transit' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition flex items-center gap-1.5">
+                                        <span>🚚 Yo'lda / Kutilmoqda</span>
+                                        <span class="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">{{ $inTransitOrdersCount }}</span>
+                                    </button>
+                                    <button type="button" @click="custTab = 'delivered'" :class="custTab === 'delivered' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                        ✅ Qabul qilingan ({{ $deliveredOrdersCount }})
+                                    </button>
+                                    @if($cancelledOrdersCount > 0)
+                                        <button type="button" @click="custTab = 'cancelled'" :class="custTab === 'cancelled' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-[#FAFBF7] text-[#172326] border-[#E8ECE4]'" class="px-3.5 py-1.5 rounded-xl border font-bold whitespace-nowrap transition">
+                                            ❌ Bekor qilingan ({{ $cancelledOrdersCount }})
+                                        </button>
+                                    @endif
+
+                                    <button type="button" x-show="custSearch !== '' || custTab !== 'all'" 
+                                            @click="custSearch = ''; custTab = 'all'" 
+                                            class="ml-auto text-[11px] font-bold text-rose-600 hover:text-rose-800 whitespace-nowrap self-center underline">
+                                        Tozalash ✕
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+
+                        @forelse($orders as $order)
+                            @php
+                                $shipment = $order->suborders->flatMap->shipments->first();
+                                $isInTransit = $shipment && in_array($shipment->status, ['in_transit', 'out_for_delivery']);
+                                $isDelivered = $order->status === 'completed' || ($shipment && $shipment->status === 'delivered');
+                                $orderItemsText = $order->suborders->flatMap->items->pluck('product_name')->implode(' ');
+                            @endphp
+
+                            <div x-show="matchesCust('{{ addslashes($order->order_number) }}', '{{ addslashes($orderItemsText) }}', '{{ $order->status }}', {{ $isInTransit ? 'true' : 'false' }}, {{ $isDelivered ? 'true' : 'false' }})"
+                                 class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all">
                             
                             <!-- Order Header -->
                             <div class="p-5 bg-[#FAFBF7] border-b border-[#E8ECE4] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1383,6 +1654,7 @@
                             </a>
                         </div>
                     @endforelse
+                    </div>
                 </div>
 
                 <!-- TAB 2: SEVIMLILAR & SAQLANGANLAR (Wishlist) -->
@@ -1582,6 +1854,8 @@
                 </div>
 
             </div>
+
+        </div>
 
         <!-- Add Product Modal for Seller -->
         @if($user->isSeller())

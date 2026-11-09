@@ -45,6 +45,8 @@ apps/**/build/
 **/coverage/
 
 # Distribution & Artifacts
+*.apk
+/mobile_apks/
 dist/*.zip
 dist/staging_hosting/
 storage/installed.lock

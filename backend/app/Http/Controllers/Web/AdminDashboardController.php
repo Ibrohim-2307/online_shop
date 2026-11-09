@@ -14,12 +14,14 @@ use App\Models\SellerPayout;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Services\Audit\AuditService;
+use App\Services\Backup\DatabaseBackupService;
 use App\Services\Refund\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminDashboardController extends Controller
 {
@@ -63,11 +65,23 @@ class AdminDashboardController extends Controller
             ->get();
         $stats['open_refunds'] = Refund::whereIn('status', ['requested', 'approved', 'goods_returned'])->count();
 
-        $initialTab = in_array($request->query('tab'), ['sellers', 'products', 'users', 'shipments', 'orders', 'refunds', 'audit'], true)
+        // A database copy holds every customer's data, so moderators get no access to it
+        $canManageBackups = $user->hasRole(['superadmin', 'admin']);
+        $backups = $canManageBackups ? app(DatabaseBackupService::class)->all() : collect();
+        $lastDailyBackup = $backups->firstWhere('type', 'daily');
+
+        $tabs = ['sellers', 'products', 'users', 'shipments', 'orders', 'refunds', 'audit'];
+        if ($canManageBackups) {
+            $tabs[] = 'backups';
+        }
+        $initialTab = in_array($request->query('tab'), $tabs, true)
             ? $request->query('tab')
             : 'sellers';
 
         return view('admin.dashboard', compact(
+            'canManageBackups',
+            'backups',
+            'lastDailyBackup',
             'refunds',
             'initialTab',
             'stats',
@@ -310,6 +324,51 @@ class AdminDashboardController extends Controller
             : "Qaytarish #{$refund->refund_number} yakunlandi: tovar omborga qaytdi, summa sotuvchi hisobidan ayirildi.";
 
         return redirect()->route('admin.dashboard', ['tab' => 'refunds'])->with('success', $message);
+    }
+
+    /**
+     * Take a database copy right now, e.g. before a risky change.
+     */
+    public function createBackup(DatabaseBackupService $backups): RedirectResponse
+    {
+        $this->authorizeBackups();
+
+        try {
+            $backup = $backups->create('manual');
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('admin.dashboard', ['tab' => 'backups'])
+                ->with('error', "Zaxira nusxa olinmadi. Serverdagi xatolar jurnalini tekshiring.");
+        }
+
+        AuditService::log('admin.backup_created', null, null, ['file' => $backup['name']]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'backups'])
+            ->with('success', "Zaxira nusxa olindi: {$backup['name']}");
+    }
+
+    /**
+     * Download a database copy so it can be kept away from the server.
+     */
+    public function downloadBackup(string $filename, DatabaseBackupService $backups): BinaryFileResponse
+    {
+        $this->authorizeBackups();
+
+        $path = $backups->path($filename);
+        abort_if($path === null, 404);
+
+        AuditService::log('admin.backup_downloaded', null, null, ['file' => $filename]);
+
+        return response()->download($path, $filename, ['Content-Type' => 'application/gzip']);
+    }
+
+    protected function authorizeBackups(): void
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, 'Zaxira nusxalar faqat administrator uchun.');
+        }
     }
 
     /**

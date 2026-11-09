@@ -79,6 +79,8 @@ Route::post('/admin/products/{id}/status', [\App\Http\Controllers\Web\AdminDashb
 Route::post('/admin/shipments/{id}/assign', [\App\Http\Controllers\Web\AdminDashboardController::class, 'assignCourier'])->name('admin.shipments.assign');
 Route::post('/admin/refunds/{id}/review', [\App\Http\Controllers\Web\AdminDashboardController::class, 'reviewRefund'])->name('admin.refunds.review');
 Route::post('/admin/refunds/{id}/complete', [\App\Http\Controllers\Web\AdminDashboardController::class, 'completeRefund'])->name('admin.refunds.complete');
+Route::post('/admin/backups', [\App\Http\Controllers\Web\AdminDashboardController::class, 'createBackup'])->middleware('throttle:3,1')->name('admin.backups.create');
+Route::get('/admin/backups/{filename}/download', [\App\Http\Controllers\Web\AdminDashboardController::class, 'downloadBackup'])->where('filename', \App\Services\Backup\DatabaseBackupService::FILENAME_PATTERN)->middleware('throttle:10,1')->name('admin.backups.download');
 
 // Seller Web Dashboard
 Route::get('/seller', [\App\Http\Controllers\Web\SellerDashboardController::class, 'index'])->name('seller.dashboard');

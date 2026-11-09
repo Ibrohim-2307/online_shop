@@ -128,6 +128,11 @@
             <button @click="currentTab = 'audit'" :class="currentTab === 'audit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 🔍 Audit Jurnali
             </button>
+            @if($canManageBackups)
+                <button @click="currentTab = 'backups'" :class="currentTab === 'backups' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                    💾 Zaxira nusxalar
+                </button>
+            @endif
         </div>
 
         <!-- TAB 1: SELLERS -->
@@ -621,6 +626,47 @@
                 @endforelse
             </div>
         </div>
+
+        @if($canManageBackups)
+            <!-- TAB: DATABASE BACKUPS -->
+            <div x-show="currentTab === 'backups'" x-cloak class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">Bazaning zaxira nusxalari</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Har kuni soat 03:00 da va har yangilanishdan oldin avtomatik olinadi.</p>
+                    </div>
+                    <form action="{{ route('admin.backups.create') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Hozir nusxa olish</button>
+                    </form>
+                </div>
+
+                @if(!$lastDailyBackup)
+                    <div class="px-4 py-3 bg-amber-50 text-amber-900 text-xs border-b border-amber-100">Birinchi kunlik nusxa kechasi soat 03:00 da olinadi.</div>
+                @elseif($lastDailyBackup['created_at']->diffInHours(now()) > 26)
+                    <div class="px-4 py-3 bg-rose-50 text-rose-800 text-xs font-bold border-b border-rose-100">⚠️ Kunlik nusxa bir kundan ko'proq vaqt olinmagan. Serverni tekshiring.</div>
+                @endif
+
+                <div class="px-4 py-3 bg-slate-50 text-slate-600 text-xs border-b border-slate-100">Nusxalar sayt bilan bitta diskda turadi. Haftada bir marta yuklab olib, boshqa joyda saqlang. Faylda mijozlar ma'lumoti bor, uni hech kimga bermang.</div>
+
+                @php
+                    $backupTypes = ['daily' => 'Kunlik', 'predeploy' => 'Yangilanishdan oldin', 'manual' => "Qo'lda"];
+                @endphp
+                <div class="divide-y divide-slate-100">
+                    @forelse($backups as $backup)
+                        <div class="p-4 flex items-center justify-between gap-3 text-xs">
+                            <div class="min-w-0">
+                                <div class="font-bold text-slate-900">{{ $backup['created_at']->copy()->timezone('Asia/Tashkent')->format('d.m.Y H:i') }}</div>
+                                <div class="text-slate-500 mt-0.5">{{ $backupTypes[$backup['type']] }} · {{ number_format($backup['size'] / 1048576, 2, '.', ' ') }} MB</div>
+                            </div>
+                            <a href="{{ route('admin.backups.download', $backup['name']) }}" class="px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-bold whitespace-nowrap hover:bg-slate-50">Yuklab olish</a>
+                        </div>
+                    @empty
+                        <div class="p-8 text-center text-slate-400">Hozircha zaxira nusxalar yo'q</div>
+                    @endforelse
+                </div>
+            </div>
+        @endif
 
         <!-- TAB 4: AUDIT LOGS -->
         <div x-show="currentTab === 'audit'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">

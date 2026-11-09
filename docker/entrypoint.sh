@@ -75,6 +75,11 @@ sed -i "s/listen \[::\]:80 default_server;/listen \[::\]:${PORT} default_server;
 # Test Nginx configuration
 nginx -t
 
+# Copy the database before migrations touch it. A failed copy must not stop the site from starting.
+php artisan db:backup --type=predeploy || echo "Pre-deploy database backup skipped."
+# That ran as root: hand the new files back so the web app can still write its log and read the copy
+chown -R www-data:www-data /var/www/html/storage/logs /var/www/html/storage/data
+
 # Run migrations: MUST NOT swallow errors. If migrations fail, halt deployment immediately.
 echo "Running database migrations..."
 php artisan migrate --force

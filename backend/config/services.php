@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'backup' => [
+        // Must stay on the persistent disk and outside the public folder
+        'path' => env('BACKUP_PATH', storage_path('data/backups')),
+    ],
+
     'payment' => [
         'demo_secret' => env('PAYMENT_DEMO_SECRET', 'marketplace-sandbox-hmac-secret-key-2026'),
         'allow_demo_settlement' => (bool) env('PAYMENT_ALLOW_DEMO', false),

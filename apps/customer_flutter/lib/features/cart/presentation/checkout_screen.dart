@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/network/api_client.dart';
 import '../data/cart_notifier.dart';
 
@@ -467,7 +468,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              '${item.product.name} (${item.quantity.toInt()} ${item.product.unit})',
+                              '${item.product.name} (${formatQuantity(item.quantity)} ${unitLabel(item.product.unit)})',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 13),

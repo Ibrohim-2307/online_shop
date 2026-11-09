@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/product_image.dart';
 import '../../cart/data/cart_notifier.dart';
 import '../../cart/presentation/checkout_screen.dart';
 import '../domain/product_model.dart';
@@ -62,8 +64,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         title: Text(
           widget.product.name,
           maxLines: 1,
@@ -79,19 +79,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           // Image preview card
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.inventory_2_outlined,
-                size: 70,
-                color: AppColors.brandDark,
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 300,
+              child: ProductImage(url: widget.product.imageUrl, iconSize: 72),
             ),
           ),
           const SizedBox(height: 16),
@@ -120,7 +112,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Birlik: ${widget.product.unit}',
+                'Birlik: ${unitLabel(widget.product.unit)}',
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
@@ -224,8 +216,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               padding: const EdgeInsets.all(8),
                               child: Text(
                                 t.maxQuantity != null
-                                    ? '${t.minQuantity.toInt()} - ${t.maxQuantity!.toInt()} ${widget.product.unit}'
-                                    : '${t.minQuantity.toInt()}+ ${widget.product.unit}',
+                                    ? '${t.minQuantity.toInt()} - ${t.maxQuantity!.toInt()} ${unitLabel(widget.product.unit)}'
+                                    : '${t.minQuantity.toInt()}+ ${unitLabel(widget.product.unit)}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: isApplied ? FontWeight.bold : FontWeight.normal,
@@ -273,7 +265,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     Text(
-                      'Min: ${widget.product.minOrderQuantity.toInt()} | Qadam: ${widget.product.unitStep.toInt()} ${widget.product.unit}',
+                      'Min: ${widget.product.minOrderQuantity.toInt()} | Qadam: ${widget.product.unitStep.toInt()} ${unitLabel(widget.product.unit)}',
                       style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                     ),
                   ],
@@ -293,7 +285,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Text(
-                        '${_quantity.toInt()} ${widget.product.unit}',
+                        '${_quantity.toInt()} ${unitLabel(widget.product.unit)}',
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                       ),
                     ),
@@ -520,7 +512,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     ),
                   ),
                   Text(
-                    '(${_formatCurrency(activeUnitPrice)} / ${widget.product.unit})',
+                    '(${_formatCurrency(activeUnitPrice)} / ${unitLabel(widget.product.unit)})',
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ],

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/formatters.dart';
 import '../../catalog/domain/product_model.dart';
 import '../domain/cart_model.dart';
 
@@ -25,7 +26,7 @@ class CartNotifier extends Notifier<CartState> {
 
       String? notice;
       if (item.unitPrice != oldPrice) {
-        notice = "${variant.name} uchun optom chegirma qo'llandi! Yangi narx: ${item.unitPrice} UZS";
+        notice = "${variant.name} uchun optom chegirma qo'llandi! Yangi narx: ${formatMoney(item.unitPrice)}";
       }
 
       state = state.copyWith(items: currentItems, priceChangeNotice: notice);
@@ -59,9 +60,9 @@ class CartNotifier extends Notifier<CartState> {
 
       String? notice;
       if (item.unitPrice < oldPrice) {
-        notice = "Katta hajm uchun chegirmali narx: ${item.unitPrice} UZS!";
+        notice = "Katta hajm uchun chegirmali narx: ${formatMoney(item.unitPrice)}!";
       } else if (item.unitPrice > oldPrice) {
-        notice = "Miqdor kamaygani sababli narx yangilandi: ${item.unitPrice} UZS";
+        notice = "Miqdor kamaygani sababli narx yangilandi: ${formatMoney(item.unitPrice)}";
       }
 
       state = state.copyWith(items: currentItems, priceChangeNotice: notice);

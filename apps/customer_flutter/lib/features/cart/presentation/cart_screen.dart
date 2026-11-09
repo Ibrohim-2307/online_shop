@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/product_image.dart';
 import '../data/cart_notifier.dart';
 import 'checkout_screen.dart';
 
@@ -33,23 +36,10 @@ class CartScreen extends ConsumerWidget {
         ],
       ),
       body: cart.items.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.shopping_cart_outlined, size: 70, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Savatchangiz bo\'sh',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Katalogdan mahsulotlarni tanlang va qo\'shing',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
+          ? const EmptyState(
+              icon: Icons.shopping_cart_outlined,
+              title: "Savatchangiz bo'sh",
+              subtitle: "Katalogdan mahsulotlarni tanlang va qo'shing",
             )
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -118,22 +108,21 @@ class CartScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(8),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  width: 64,
+                                  height: 64,
+                                  child: ProductImage(url: item.product.imageUrl, iconSize: 26),
                                 ),
-                                child: const Icon(Icons.inventory_2_outlined, color: AppColors.brandDark),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -151,7 +140,7 @@ class CartScreen extends ConsumerWidget {
                                       style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
                                     ),
                                     Text(
-                                      '${item.unitPrice} UZS / ${item.product.unit}',
+                                      '${formatMoney(item.unitPrice)} / ${unitLabel(item.product.unit)}',
                                       style: const TextStyle(
                                         color: AppColors.brandDark,
                                         fontWeight: FontWeight.bold,
@@ -186,7 +175,7 @@ class CartScreen extends ConsumerWidget {
                                     },
                                   ),
                                   Text(
-                                    '${item.quantity.toInt()} ${item.product.unit}',
+                                    '${formatQuantity(item.quantity)} ${unitLabel(item.product.unit)}',
                                     style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                   IconButton(
@@ -202,7 +191,7 @@ class CartScreen extends ConsumerWidget {
                                 ],
                               ),
                               Text(
-                                '${item.subtotal} UZS',
+                                formatMoney(item.subtotal),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 15,
@@ -235,7 +224,7 @@ class CartScreen extends ConsumerWidget {
                       children: [
                         Text('Jami (${cart.totalItemCount} dona):', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                         Text(
-                          '${cart.grandTotal} UZS',
+                          formatMoney(cart.grandTotal),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
@@ -259,7 +248,7 @@ class CartScreen extends ConsumerWidget {
                         MaterialPageRoute(builder: (_) => const CheckoutScreen()),
                       );
                     },
-                    child: const Text('Checkoutga o\'tish', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Rasmiylashtirish', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

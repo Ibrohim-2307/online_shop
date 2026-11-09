@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../data/catalog_repository.dart';
 import '../domain/product_model.dart';
-import 'product_detail_screen.dart';
+import 'product_card.dart';
 
 class CatalogScreen extends StatefulWidget {
   final String? initialCategory;
-  const CatalogScreen({super.key, this.initialCategory});
+  final bool autofocusSearch;
+  const CatalogScreen({super.key, this.initialCategory, this.autofocusSearch = false});
 
   @override
   State<CatalogScreen> createState() => _CatalogScreenState();
@@ -28,6 +30,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
     super.initState();
     _selectedCategory = widget.initialCategory;
     _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -54,71 +62,43 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text(
-          'Katalog',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Katalog')),
       body: Column(
         children: [
-          // Search & Trade mode filter bar
+          // Search
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
             child: TextField(
               controller: _searchCtrl,
+              autofocus: widget.autofocusSearch,
+              textInputAction: TextInputAction.search,
               onSubmitted: (_) => _fetchData(),
-              decoration: InputDecoration(
-                hintText: 'Mahsulot yoki SKU qidirish...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.filter_list, color: AppColors.brandDark),
-                  onPressed: _showFilterModal,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
+              decoration: const InputDecoration(
+                hintText: 'Mahsulot qidirish',
+                prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
               ),
             ),
           ),
 
           // Categories horizontal scroll bar
           if (_categories.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    _buildCategoryChip('Hammasi', null),
-                    ..._categories.map((c) => Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: _buildCategoryChip(c.name, c.slug),
-                        )),
-                  ],
-                ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  _buildCategoryChip('Hammasi', null),
+                  ..._categories.map((c) => Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: _buildCategoryChip(c.name, c.slug),
+                      )),
+                ],
               ),
             ),
 
           // Trade mode quick pills
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
               children: [
                 _buildFilterChip('Barchasi', 'all'),
@@ -130,94 +110,25 @@ class _CatalogScreenState extends State<CatalogScreen> {
             ),
           ),
 
-          const SizedBox(height: 8),
-
-          // Products list/grid
+          // Products grid
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.brandDark))
+                ? const ProductGridSkeleton(scrollable: true)
                 : _products.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Hech qanday mahsulot topilmadi',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        title: 'Hech narsa topilmadi',
+                        subtitle: "Boshqa so'z yoki kategoriyani sinab ko'ring",
                       )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _products.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, i) {
-                          final prod = _products[i];
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProductDetailScreen(product: prod),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 70,
-                                    height: 70,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF8FAFC),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.inventory_2_outlined,
-                                      color: AppColors.brandDark,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          prod.name,
-                                          maxLines: 2,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Sotuvchi: ${prod.sellerName ?? "Rasmiy do'kon"}',
-                                          style: const TextStyle(
-                                            color: AppColors.textSecondary,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${prod.basePrice} UZS / ${prod.unit}',
-                                          style: const TextStyle(
-                                            color: AppColors.brandDark,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                    : RefreshIndicator(
+                        onRefresh: _fetchData,
+                        color: AppColors.brandDark,
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: productGridDelegate,
+                          itemCount: _products.length,
+                          itemBuilder: (context, i) => ProductCard(product: _products[i]),
+                        ),
                       ),
           ),
         ],
@@ -230,14 +141,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      selectedColor: AppColors.brandDark,
-      backgroundColor: Colors.white,
-      side: BorderSide(
-        color: isSelected ? AppColors.brandDark : const Color(0xFFE2E8F0),
-      ),
+      side: BorderSide(color: isSelected ? AppColors.brandDark : AppColors.border),
       labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 12.5,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         color: isSelected ? Colors.white : AppColors.textPrimary,
       ),
       onSelected: (selected) {
@@ -255,13 +162,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
       label: Text(label),
       selected: isSelected,
       selectedColor: AppColors.brandLime,
-      backgroundColor: Colors.white,
-      side: BorderSide(
-        color: isSelected ? AppColors.brandDark : const Color(0xFFCBD5E1),
-      ),
+      side: BorderSide(color: isSelected ? AppColors.brandLime : AppColors.border),
       labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 12.5,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         color: AppColors.brandDark,
       ),
       onSelected: (selected) {
@@ -269,47 +173,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
           setState(() => _selectedTradeMode = value);
           _fetchData();
         }
-      },
-    );
-  }
-
-  void _showFilterModal() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Kategoriya bo\'yicha saralash',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                children: _categories.map((c) {
-                  return FilterChip(
-                    label: Text(c.name),
-                    selected: _selectedCategory == c.slug,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategory = selected ? c.slug : null;
-                      });
-                      Navigator.pop(context);
-                      _fetchData();
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
       },
     );
   }

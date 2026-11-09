@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_colors.dart';
+import 'core/theme/app_theme.dart';
 import 'features/admin/presentation/admin_dashboard_screen.dart';
 import 'features/auth/auth_notifier.dart';
 import 'features/cart/data/cart_notifier.dart';
@@ -25,14 +26,7 @@ class CustomerApp extends StatelessWidget {
     return MaterialApp(
       title: 'Marketplace SuperApp',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.brandLime,
-          primary: AppColors.brandDark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: const RootScreen(),
     );
   }
@@ -121,11 +115,12 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               },
             )
           : null,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: NavigationBar(
         selectedIndex: _currentIndex,
-        backgroundColor: Colors.white,
-        indicatorColor: AppColors.brandLime,
-        elevation: 2,
         onDestinationSelected: (index) {
           setState(() => _currentIndex = index);
         },
@@ -144,13 +139,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             icon: Badge(
               isLabelVisible: cart.items.isNotEmpty,
               label: Text(cart.totalItemCount.toString()),
-              backgroundColor: AppColors.brandDark,
+              backgroundColor: AppColors.statusError,
               child: const Icon(Icons.shopping_cart_outlined),
             ),
             selectedIcon: Badge(
               isLabelVisible: cart.items.isNotEmpty,
               label: Text(cart.totalItemCount.toString()),
-              backgroundColor: AppColors.brandDark,
+              backgroundColor: AppColors.statusError,
               child: const Icon(Icons.shopping_cart, color: AppColors.brandDark),
             ),
             label: 'Savatcha',
@@ -166,6 +161,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             label: 'Profil',
           ),
         ],
+        ),
       ),
     );
   }

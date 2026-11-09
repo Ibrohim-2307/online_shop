@@ -7,7 +7,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: CustomerApp()));
     await tester.pump();
 
-    expect(find.text('Marketplace'), findsOneWidget);
+    expect(find.text('MARKET'), findsOneWidget);
     expect(find.text('Asosiy'), findsOneWidget);
     expect(find.text('Katalog'), findsOneWidget);
     expect(find.text('Savatcha'), findsOneWidget);

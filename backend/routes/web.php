@@ -22,11 +22,14 @@ Route::delete('/cart/items/{id}', [StorefrontController::class, 'removeCartItem'
 Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
 Route::post('/checkout', [StorefrontController::class, 'processCheckout'])->middleware('throttle:10,1')->name('checkout.post');
 Route::get('/orders/{orderNumber}/success', [StorefrontController::class, 'orderSuccess'])->name('order.success');
-Route::get('/orders', [\App\Http\Controllers\Web\OrderHubController::class, 'index'])->name('orders.hub');
-Route::get('/orders/{orderNumber}', [\App\Http\Controllers\Web\OrderHubController::class, 'show'])->name('orders.detail');
-Route::post('/orders/{orderNumber}/cancel', [\App\Http\Controllers\Web\OrderHubController::class, 'cancel'])->name('orders.cancel');
-Route::post('/orders/{orderNumber}/reorder', [\App\Http\Controllers\Web\OrderHubController::class, 'reorder'])->name('orders.reorder');
-Route::post('/orders/{orderNumber}/returns', [\App\Http\Controllers\Web\OrderHubController::class, 'requestReturn'])->middleware('throttle:5,1')->name('orders.returns.store');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/orders', [\App\Http\Controllers\Web\OrderHubController::class, 'index'])->name('orders.hub');
+    Route::get('/orders/{orderNumber}', [\App\Http\Controllers\Web\OrderHubController::class, 'show'])->name('orders.detail');
+    Route::post('/orders/{orderNumber}/cancel', [\App\Http\Controllers\Web\OrderHubController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{orderNumber}/reorder', [\App\Http\Controllers\Web\OrderHubController::class, 'reorder'])->name('orders.reorder');
+    Route::post('/orders/{orderNumber}/returns', [\App\Http\Controllers\Web\OrderHubController::class, 'requestReturn'])->middleware('throttle:5,1')->name('orders.returns.store');
+});
 Route::get('/tracking/{trackingNumber?}', [StorefrontController::class, 'tracking'])->name('tracking');
 
 // Customer Service, Legal & Policy Pages

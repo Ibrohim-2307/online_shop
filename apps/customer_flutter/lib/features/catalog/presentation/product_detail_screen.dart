@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../cart/data/cart_notifier.dart';
+import '../../cart/presentation/checkout_screen.dart';
 import '../domain/product_model.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -15,6 +16,7 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   late ProductVariant _selectedVariant;
   late double _quantity;
+  int _selectedNasiyaMonths = 6;
 
   @override
   void initState() {
@@ -39,15 +41,28 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
   }
 
+  String _formatCurrency(num amount) {
+    final parts = amount.round().toString().split('');
+    final buffer = StringBuffer();
+    for (int i = 0; i < parts.length; i++) {
+      if (i > 0 && (parts.length - i) % 3 == 0) {
+        buffer.write(' ');
+      }
+      buffer.write(parts[i]);
+    }
+    return '${buffer.toString()} UZS';
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeUnitPrice = _selectedVariant.getPriceForQuantity(_quantity);
     final totalSum = (activeUnitPrice * _quantity).round();
+    final monthlyNasiya = (totalSum / _selectedNasiyaMonths).round();
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
           widget.product.name,
@@ -220,7 +235,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             Padding(
                               padding: const EdgeInsets.all(8),
                               child: Text(
-                                '${t.unitPrice} UZS',
+                                _formatCurrency(t.unitPrice),
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: isApplied ? FontWeight.bold : FontWeight.normal,
@@ -236,7 +251,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
           ],
 
           // Interactive Quantity Counter
@@ -254,11 +269,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Miqdor:',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      'Miqdorni tanlang:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     Text(
-                      'Qadam: ${widget.product.unitStep.toInt()} ${widget.product.unit}',
+                      'Min: ${widget.product.minOrderQuantity.toInt()} | Qadam: ${widget.product.unitStep.toInt()} ${widget.product.unit}',
                       style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                     ),
                   ],
@@ -270,9 +285,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       color: AppColors.brandDark,
                       onPressed: _decrement,
                     ),
-                    Text(
-                      '${_quantity.toInt()} ${widget.product.unit}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Text(
+                        '${_quantity.toInt()} ${widget.product.unit}',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline),
@@ -280,6 +303,192 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       onPressed: _increment,
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // MUDDATLI TO'LOV (NASIYA) SECTION
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFBEB),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.bolt, color: Color(0xFFD97706), size: 20),
+                        SizedBox(width: 6),
+                        Text(
+                          'MUDDATLI TO\'LOV (NASIYA)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                            color: Color(0xFF78350F),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFFCD34D)),
+                      ),
+                      child: const Text(
+                        '0% Boshlang\'ich to\'lov',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF92400E),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Qulay muddatni tanlang va 1 daqiqada nasiyaga rasmiylashtiring:',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                ),
+                const SizedBox(height: 12),
+
+                // 3 Month Options Cards
+                Row(
+                  children: [3, 6, 12].map((months) {
+                    final isCur = _selectedNasiyaMonths == months;
+                    final monthly = (totalSum / months).round();
+
+                    return Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedNasiyaMonths = months),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: isCur ? Colors.white : Colors.white.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isCur ? AppColors.brandDark : const Color(0xFFFCD34D),
+                              width: isCur ? 2 : 1,
+                            ),
+                            boxShadow: isCur
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.brandDark.withValues(alpha: 0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          child: Column(
+                            children: [
+                              if (months == 6)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  margin: const EdgeInsets.only(bottom: 2),
+                                  decoration: BoxDecoration(
+                                    color: isCur ? AppColors.brandDark : const Color(0xFFF59E0B),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    isCur ? '✓ TANLANDI' : 'XIT',
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              else if (isCur)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  margin: const EdgeInsets.only(bottom: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.brandDark,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    '✓ TANLANDI',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              Text(
+                                '$months oyga',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatCurrency(monthly).replaceAll(' UZS', ''),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                  color: AppColors.brandDark,
+                                ),
+                              ),
+                              const Text(
+                                'UZS / oy',
+                                style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Direct Nasiya CTA button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF123C2F),
+                      foregroundColor: AppColors.brandLime,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.bolt, size: 20),
+                    label: Text(
+                      '⚡ Nasiyaga olish ($_selectedNasiyaMonths oyga - ${_formatCurrency(monthlyNasiya)}/oy)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    onPressed: () {
+                      ref.read(cartProvider.notifier).addItem(
+                            widget.product,
+                            _selectedVariant,
+                            _quantity,
+                          );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutScreen(
+                            initialPaymentMethod: 'nasiya',
+                            initialNasiyaMonths: _selectedNasiyaMonths,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -303,7 +512,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 children: [
                   const Text('Jami hisob:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   Text(
-                    '$totalSum UZS',
+                    _formatCurrency(totalSum),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -311,8 +520,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     ),
                   ),
                   Text(
-                    '($activeUnitPrice UZS / ${widget.product.unit})',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    '(${_formatCurrency(activeUnitPrice)} / ${widget.product.unit})',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ],
               ),

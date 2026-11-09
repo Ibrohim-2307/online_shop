@@ -94,6 +94,7 @@ class ProfileController extends Controller
         $categories = collect();
         $couriers = collect();
         $sellerNeedsActionCount = 0;
+        $needsAction = fn($sub) => false;
         $sellerSalesStats = [];
 
         if ($user->isSeller()) {
@@ -252,6 +253,7 @@ class ProfileController extends Controller
             'categories',
             'couriers',
             'sellerNeedsActionCount',
+            'needsAction',
             'sellerSalesStats',
             'courierShipments',
             'courierActiveShipments',

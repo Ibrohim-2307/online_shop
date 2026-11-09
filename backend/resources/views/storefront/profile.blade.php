@@ -928,14 +928,17 @@
                             @endif
 
                             @forelse($sellerSuborders as $sub)
-                                <div x-show="matchesOrder('{{ addslashes($sub->suborder_number) }}', '{{ addslashes($sub->order->user->name ?? '') }}', '{{ addslashes($sub->order->user->phone ?? '') }}', '{{ addslashes($sub->items->pluck('product_name')->implode(' ')) }}', '{{ $sub->status }}', {{ $needsAction($sub) ? 'true' : 'false' }})"
+                                @php
+                                    $subShipment = $sub->shipments->first();
+                                    $isSubNeedsAction = in_array($sub->status, ['pending', 'confirmed'], true) && $sub->shipments->isEmpty();
+                                @endphp
+                                <div x-show="matchesOrder('{{ addslashes($sub->suborder_number) }}', '{{ addslashes($sub->order->user->name ?? '') }}', '{{ addslashes($sub->order->user->phone ?? '') }}', '{{ addslashes($sub->items->pluck('product_name')->implode(' ')) }}', '{{ $sub->status }}', {{ $isSubNeedsAction ? 'true' : 'false' }})"
                                      class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs hover:border-[#123C2F]/30 transition-all p-5 space-y-4">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E8ECE4]">
                                     <div>
                                         <div class="flex items-center gap-2">
                                             <span class="font-mono font-black text-sm text-[#172326]">#{{ $sub->suborder_number }}</span>
                                             @php
-                                                $subShipment = $sub->shipments->first();
                                                 $isUnpaid = $sub->order?->status === 'pending_payment';
                                                 $isLocked = in_array($sub->status, ['cancelled', 'shipped', 'delivered'], true) || $sub->order?->status === 'cancelled';
                                                 $statusLabel = match (true) {

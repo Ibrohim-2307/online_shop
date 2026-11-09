@@ -145,15 +145,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/audit-logs', [AdminPanelController::class, 'auditLogs'])->middleware('role:admin');
         });
 
-        // Logistics Operator routes
-        Route::prefix('logistics')->middleware('role:logistics_operator,admin')->group(function () {
+        // Logistics Operator & Courier routes
+        Route::prefix('logistics')->middleware('role:logistics_operator,admin,courier')->group(function () {
             Route::get('/shipments', [LogisticsPanelController::class, 'shipments']);
             Route::post('/shipments/{id}/assign', [LogisticsPanelController::class, 'assignCourier']);
             Route::post('/shipments/{id}/status', [LogisticsPanelController::class, 'updateStatus']);
         });
 
-        // Courier routes
+        // Dedicated Courier routes
         Route::prefix('courier')->middleware('role:courier,admin')->group(function () {
+            Route::get('/shipments', [LogisticsPanelController::class, 'shipments']);
+            Route::post('/shipments/{id}/status', [LogisticsPanelController::class, 'updateStatus']);
             Route::post('/location/batch', [TrackingController::class, 'recordBatch']);
         });
 

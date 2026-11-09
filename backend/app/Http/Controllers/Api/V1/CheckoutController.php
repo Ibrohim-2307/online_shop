@@ -39,6 +39,30 @@ class CheckoutController extends Controller
      */
     public function checkout(Request $request): JsonResponse
     {
+        // Normalize payload for mobile / Flutter app compatibility
+        if (!$request->has('shipping_address') && ($request->filled('address') || $request->filled('address_line'))) {
+            $addrLine = $request->input('address') ?: $request->input('address_line');
+            $request->merge([
+                'shipping_address' => [
+                    'recipient_name' => $request->input('recipient_name', $request->user()?->name ?? 'Xaridor'),
+                    'phone' => $request->input('phone', $request->user()?->phone ?? '+998901234567'),
+                    'region' => $request->input('region', 'Toshkent'),
+                    'city' => $request->input('city', 'Toshkent shahri'),
+                    'address_line' => $addrLine,
+                ],
+            ]);
+        }
+
+        if ($request->has('items') && is_array($request->input('items'))) {
+            $items = array_map(function ($item) {
+                if (isset($item['product_variant_id']) && !isset($item['variant_id'])) {
+                    $item['variant_id'] = $item['product_variant_id'];
+                }
+                return $item;
+            }, $request->input('items'));
+            $request->merge(['items' => $items]);
+        }
+
         $validated = $request->validate([
             'items' => 'nullable|array',
             'items.*.variant_id' => 'required_with:items|integer|exists:product_variants,id',
@@ -46,11 +70,20 @@ class CheckoutController extends Controller
             'shipping_address' => 'required|array',
             'shipping_address.recipient_name' => 'required|string|max:100',
             'shipping_address.phone' => 'required|string|max:20',
-            'shipping_address.region' => 'required|string|max:50',
-            'shipping_address.city' => 'required|string|max:50',
+            'shipping_address.region' => 'nullable|string|max:50',
+            'shipping_address.city' => 'nullable|string|max:50',
             'shipping_address.address_line' => 'required|string|max:255',
+            'payment_method' => 'nullable|string|in:cash_on_delivery,nasiya,click,payme,card,wallet',
+            'nasiya_months' => 'nullable|integer|in:3,6,12,24',
             'notes' => 'nullable|string|max:500',
         ]);
+
+        if (empty($validated['shipping_address']['region'])) {
+            $validated['shipping_address']['region'] = 'Toshkent';
+        }
+        if (empty($validated['shipping_address']['city'])) {
+            $validated['shipping_address']['city'] = 'Toshkent shahri';
+        }
 
         $idempotencyKey = $request->header('Idempotency-Key') ?? $request->input('idempotency_key');
 

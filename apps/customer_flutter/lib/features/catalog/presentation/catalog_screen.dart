@@ -97,6 +97,25 @@ class _CatalogScreenState extends State<CatalogScreen> {
             ),
           ),
 
+          // Categories horizontal scroll bar
+          if (_categories.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    _buildCategoryChip('Hammasi', null),
+                    ..._categories.map((c) => Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: _buildCategoryChip(c.name, c.slug),
+                        )),
+                  ],
+                ),
+              ),
+            ),
+
           // Trade mode quick pills
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -203,6 +222,30 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCategoryChip(String label, String? slug) {
+    final isSelected = _selectedCategory == slug || (slug == null && (_selectedCategory == null || _selectedCategory == 'all'));
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      selectedColor: AppColors.brandDark,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: isSelected ? AppColors.brandDark : const Color(0xFFE2E8F0),
+      ),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        color: isSelected ? Colors.white : AppColors.textPrimary,
+      ),
+      onSelected: (selected) {
+        setState(() {
+          _selectedCategory = selected ? slug : null;
+        });
+        _fetchData();
+      },
     );
   }
 

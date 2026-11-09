@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\InventoryBalance;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PriceTier;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Rfq;
@@ -657,5 +658,172 @@ class SellerAndAdminPanelTest extends TestCase
         ])->assertSessionHas('error');
 
         $this->assertDatabaseMissing('products', ['name' => 'Illegal Wh Product']);
+    }
+
+    public function test_seller_can_edit_all_product_fields_from_profile(): void
+    {
+        $seller = Seller::create([
+            'name' => 'Prof Store', 'slug' => 'prof-store', 'legal_name' => 'Prof Store MCHJ',
+            'status' => 'active', 'commission_rate' => 5.0, 'rating' => 5.0,
+        ]);
+
+        $user = $this->setupUserWithRole('seller_owner', 'prof_owner@example.uz', $seller->id);
+        $user->update(['seller_id' => $seller->id]);
+
+        $catOld = Category::firstOrCreate(['slug' => 'cat-old'], ['name' => 'Old Category']);
+        $catNew = Category::firstOrCreate(['slug' => 'cat-new'], ['name' => 'New Category']);
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'category_id' => $catOld->id,
+            'name' => 'Initial Name',
+            'slug' => 'initial-name',
+            'description' => 'Initial Description',
+            'trade_mode' => 'retail_only',
+            'unit' => 'piece',
+            'unit_step' => 1.0,
+            'min_order_quantity' => 1.0,
+            'status' => 'approved',
+            'is_active' => true,
+        ]);
+
+        $variant = ProductVariant::create([
+            'product_id' => $product->id,
+            'sku' => 'SKU-OLD-01',
+            'name' => 'Standart',
+            'is_active' => true,
+        ]);
+
+        PriceTier::create([
+            'product_variant_id' => $variant->id,
+            'min_quantity' => 1,
+            'unit_price' => 150000,
+            'currency' => 'UZS',
+        ]);
+
+        $warehouse = Warehouse::create([
+            'seller_id' => $seller->id,
+            'name' => 'Asosiy Ombor',
+            'code' => 'WH-P-01',
+            'is_active' => true,
+        ]);
+
+        InventoryBalance::create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id,
+            'quantity' => 50,
+            'reserved_quantity' => 0,
+        ]);
+
+        // Seller submits full product edit with all properties
+        $response = $this->actingAs($user)->post("/profile/seller/products/{$product->id}", [
+            'name' => 'Updated Product Name',
+            'category_id' => $catNew->id,
+            'trade_mode' => 'both',
+            'unit' => 'box',
+            'unit_step' => 2.0,
+            'items_per_box' => 24,
+            'price' => 250000,
+            'tier_300_price' => 220000,
+            'tier_1000_price' => 190000,
+            'stock_quantity' => 120,
+            'min_order_quantity' => 2.0,
+            'sku' => 'SKU-NEW-99',
+            'description' => 'Updated full description of product.',
+            'image_url' => '/images/products/updated.jpg',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $product->refresh();
+        $this->assertEquals('Updated Product Name', $product->name);
+        $this->assertEquals($catNew->id, $product->category_id);
+        $this->assertEquals('both', $product->trade_mode);
+        $this->assertEquals('box', $product->unit);
+        $this->assertEquals(2.0, (float) $product->unit_step);
+        $this->assertEquals(24, $product->items_per_box);
+        $this->assertEquals(2.0, (float) $product->min_order_quantity);
+        $this->assertEquals('Updated full description of product.', $product->description);
+        $this->assertEquals('/images/products/updated.jpg', $product->image_url);
+
+        $variant->refresh();
+        $this->assertEquals('SKU-NEW-99', $variant->sku);
+
+        // Check base price
+        $baseTier = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity <= 2.0);
+        $this->assertNotNull($baseTier);
+        $this->assertEquals(250000, $baseTier->unit_price);
+
+        // Check wholesale tiers
+        $t300 = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity >= 300 && (float)$t->min_quantity < 1000);
+        $this->assertNotNull($t300);
+        $this->assertEquals(220000, $t300->unit_price);
+
+        $t1000 = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity >= 1000);
+        $this->assertNotNull($t1000);
+        $this->assertEquals(190000, $t1000->unit_price);
+
+        // Check inventory balance updated
+        $balance = InventoryBalance::where('warehouse_id', $warehouse->id)->where('product_variant_id', $variant->id)->first();
+        $this->assertEquals(120, (float) $balance->quantity);
+    }
+
+    public function test_seller_can_create_product_with_wholesale_tiers_from_profile(): void
+    {
+        $seller = Seller::create([
+            'name' => 'Profile Create Store', 'slug' => 'prof-create-store', 'legal_name' => 'Prof Create MCHJ',
+            'status' => 'active', 'commission_rate' => 5.0, 'rating' => 5.0,
+        ]);
+
+        $user = $this->setupUserWithRole('seller_owner', 'prof_create_owner@example.uz', $seller->id);
+        $user->update(['seller_id' => $seller->id]);
+
+        $cat = Category::firstOrCreate(['slug' => 'cat-create-prof'], ['name' => 'Category Create']);
+
+        $response = $this->actingAs($user)->post('/profile/seller/products', [
+            'name' => 'Brand New Profile Product',
+            'category_id' => $cat->id,
+            'trade_mode' => 'both',
+            'unit' => 'kg',
+            'price' => 75000,
+            'tier_300_price' => 65000,
+            'tier_1000_price' => 55000,
+            'stock_quantity' => 2500,
+            'min_order_quantity' => 5,
+            'unit_step' => 1.5,
+            'items_per_box' => 50,
+            'sku' => 'SKU-PROF-NEW-01',
+            'image_url' => '/images/products/new.jpg',
+            'description' => 'Test product created from profile modal.',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $product = Product::where('name', 'Brand New Profile Product')->first();
+        $this->assertNotNull($product);
+        $this->assertEquals($cat->id, $product->category_id);
+        $this->assertEquals('both', $product->trade_mode);
+        $this->assertEquals('kg', $product->unit);
+        $this->assertEquals(1.5, (float) $product->unit_step);
+        $this->assertEquals(50, $product->items_per_box);
+        $this->assertEquals(5.0, (float) $product->min_order_quantity);
+
+        $variant = $product->variants()->first();
+        $this->assertNotNull($variant);
+        $this->assertEquals('SKU-PROF-NEW-01', $variant->sku);
+
+        $tBase = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity <= 5.0);
+        $this->assertNotNull($tBase);
+        $this->assertEquals(75000, $tBase->unit_price);
+
+        $t300 = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity >= 300 && (float)$t->min_quantity < 1000);
+        $this->assertNotNull($t300);
+        $this->assertEquals(65000, $t300->unit_price);
+
+        $t1000 = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity >= 1000);
+        $this->assertNotNull($t1000);
+        $this->assertEquals(55000, $t1000->unit_price);
     }
 }

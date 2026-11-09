@@ -280,8 +280,13 @@ class ProfileController extends Controller
             'unit' => ['required', 'in:piece,box,kg,ton'],
             'trade_mode' => ['required', 'in:wholesale_only,retail_only,both'],
             'price' => ['required', 'numeric', 'min:100'],
+            'tier_300_price' => ['nullable', 'integer', 'min:100'],
+            'tier_1000_price' => ['nullable', 'integer', 'min:100'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
             'min_order_quantity' => ['nullable', 'numeric', 'min:0.001'],
+            'unit_step' => ['nullable', 'numeric', 'min:0.001'],
+            'items_per_box' => ['nullable', 'integer', 'min:1'],
+            'sku' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:2000'],
             // No SVG: an uploaded SVG is served from our domain and can carry scripts
             'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
@@ -338,14 +343,15 @@ class ProfileController extends Controller
             'trade_mode' => $validated['trade_mode'],
             'unit' => $validated['unit'],
             'min_order_quantity' => $validated['min_order_quantity'] ?? 1.0,
-            'unit_step' => 1.0,
+            'unit_step' => $validated['unit_step'] ?? 1.0,
+            'items_per_box' => $validated['items_per_box'] ?? null,
             'image_url' => $imageUrl,
             // A store the admin hasn't approved yet can prepare products, but they go live only after moderation
             'status' => $seller->status === 'active' ? 'approved' : 'pending',
             'is_active' => true,
         ]);
 
-        $sku = 'SKU-' . strtoupper(Str::random(8));
+        $sku = !empty($validated['sku']) ? $validated['sku'] : ('SKU-' . strtoupper(Str::random(8)));
         $variant = ProductVariant::create([
             'product_id' => $product->id,
             'sku' => $sku,
@@ -355,9 +361,30 @@ class ProfileController extends Controller
 
         PriceTier::create([
             'product_variant_id' => $variant->id,
-            'min_quantity' => 1,
+            'min_quantity' => (float) ($validated['min_order_quantity'] ?? 1),
             'unit_price' => (int) $validated['price'],
+            'currency' => 'UZS',
         ]);
+
+        if (!empty($validated['tier_300_price'])) {
+            PriceTier::create([
+                'product_variant_id' => $variant->id,
+                'min_quantity' => 300.0,
+                'max_quantity' => 999.0,
+                'unit_price' => (int) $validated['tier_300_price'],
+                'currency' => 'UZS',
+            ]);
+        }
+
+        if (!empty($validated['tier_1000_price'])) {
+            PriceTier::create([
+                'product_variant_id' => $variant->id,
+                'min_quantity' => 1000.0,
+                'max_quantity' => null,
+                'unit_price' => (int) $validated['tier_1000_price'],
+                'currency' => 'UZS',
+            ]);
+        }
 
         InventoryBalance::create([
             'warehouse_id' => $warehouse->id,
@@ -394,11 +421,20 @@ class ProfileController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'trade_mode' => ['nullable', 'in:both,retail_only,wholesale_only,retail,wholesale'],
+            'unit' => ['nullable', 'in:piece,box,kg,ton'],
+            'min_order_quantity' => ['nullable', 'numeric', 'min:0.001'],
+            'unit_step' => ['nullable', 'numeric', 'min:0.001'],
+            'items_per_box' => ['nullable', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['required', 'integer', 'min:100'],
+            'tier_300_price' => ['nullable', 'integer', 'min:100'],
+            'tier_1000_price' => ['nullable', 'integer', 'min:100'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
-            'min_order_quantity' => ['nullable', 'numeric', 'min:0.001'],
+            'sku' => ['nullable', 'string', 'max:100'],
             'image_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+            'image_url' => ['nullable', 'string', 'max:1000', 'regex:#^(/images/|/uploads/|https://)#'],
         ]);
 
         $variant = $product->variants->first();
@@ -421,17 +457,83 @@ class ProfileController extends Controller
                 'description' => $validated['description'] ?? null,
                 'min_order_quantity' => $validated['min_order_quantity'] ?? $product->min_order_quantity,
             ];
+            if (!empty($validated['category_id'])) {
+                $updates['category_id'] = $validated['category_id'];
+            }
+            if (!empty($validated['trade_mode'])) {
+                $updates['trade_mode'] = $validated['trade_mode'];
+            }
+            if (!empty($validated['unit'])) {
+                $updates['unit'] = $validated['unit'];
+            }
+            if (isset($validated['items_per_box'])) {
+                $updates['items_per_box'] = $validated['items_per_box'];
+            }
+            if (isset($validated['unit_step'])) {
+                $updates['unit_step'] = $validated['unit_step'];
+            }
             if ($request->hasFile('image_file')) {
                 $updates['image_url'] = $this->storeProductImage($request->file('image_file'), $validated['name']);
+            } elseif (!empty($validated['image_url'])) {
+                $updates['image_url'] = $validated['image_url'];
             }
             $product->update($updates);
 
-            // Retail price lives in the base tier (smallest minimum quantity)
+            // Update SKU if provided
+            if (!empty($validated['sku'])) {
+                $variant->update(['sku' => $validated['sku']]);
+            }
+
+            // Retail base price (Tier 1)
             $baseTier = $variant->priceTiers->sortBy('min_quantity')->first();
             if ($baseTier) {
-                $baseTier->update(['unit_price' => (int) $validated['price']]);
+                $baseTier->update([
+                    'unit_price' => (int) $validated['price'],
+                    'min_quantity' => (float) ($validated['min_order_quantity'] ?? $baseTier->min_quantity),
+                ]);
             } else {
-                PriceTier::create(['product_variant_id' => $variant->id, 'min_quantity' => 1, 'unit_price' => (int) $validated['price']]);
+                PriceTier::create([
+                    'product_variant_id' => $variant->id,
+                    'min_quantity' => (float) ($validated['min_order_quantity'] ?? 1),
+                    'unit_price' => (int) $validated['price'],
+                    'currency' => 'UZS',
+                ]);
+            }
+
+            // Wholesale Tier 2 (300+)
+            $tier300 = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity >= 300 && (float)$t->min_quantity < 1000);
+            if (!empty($validated['tier_300_price'])) {
+                if ($tier300) {
+                    $tier300->update(['unit_price' => (int) $validated['tier_300_price']]);
+                } else {
+                    PriceTier::create([
+                        'product_variant_id' => $variant->id,
+                        'min_quantity' => 300.0,
+                        'max_quantity' => 999.0,
+                        'unit_price' => (int) $validated['tier_300_price'],
+                        'currency' => 'UZS',
+                    ]);
+                }
+            } elseif ($tier300 && array_key_exists('tier_300_price', $validated) && $validated['tier_300_price'] === null) {
+                $tier300->delete();
+            }
+
+            // Wholesale Tier 3 (1000+)
+            $tier1000 = $variant->priceTiers->first(fn($t) => (float)$t->min_quantity >= 1000);
+            if (!empty($validated['tier_1000_price'])) {
+                if ($tier1000) {
+                    $tier1000->update(['unit_price' => (int) $validated['tier_1000_price']]);
+                } else {
+                    PriceTier::create([
+                        'product_variant_id' => $variant->id,
+                        'min_quantity' => 1000.0,
+                        'max_quantity' => null,
+                        'unit_price' => (int) $validated['tier_1000_price'],
+                        'currency' => 'UZS',
+                    ]);
+                }
+            } elseif ($tier1000 && array_key_exists('tier_1000_price', $validated) && $validated['tier_1000_price'] === null) {
+                $tier1000->delete();
             }
 
             $delta = bcsub((string) $validated['stock_quantity'], (string) ($balance?->quantity ?? 0), 3);

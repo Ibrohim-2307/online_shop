@@ -584,7 +584,10 @@
 
                             @forelse($sellerProducts as $prod)
                                 @php
-                                    $firstTier = $prod->variants->first()?->priceTiers->sortBy('min_quantity')->first();
+                                    $variant = $prod->variants->first();
+                                    $firstTier = $variant?->priceTiers->sortBy('min_quantity')->first();
+                                    $tier300 = $variant?->priceTiers->first(fn($t) => (float)$t->min_quantity >= 300 && (float)$t->min_quantity < 1000);
+                                    $tier1000 = $variant?->priceTiers->first(fn($t) => (float)$t->min_quantity >= 1000);
                                     $totalStock = (float) $prod->variants->flatMap->inventoryBalances->sum('quantity');
                                     $reservedStock = (float) $prod->variants->flatMap->inventoryBalances->sum('reserved_quantity');
                                     $availableStock = max(0, $totalStock - $reservedStock);
@@ -614,7 +617,7 @@
                                                 <a href="{{ route('product.show', $prod->slug) }}" target="_blank" class="font-bold text-sm text-[#172326] leading-snug line-clamp-2 hover:underline">{{ $prod->name }}</a>
                                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap {{ $badge[1] }}">{{ $badge[0] }}</span>
                                             </div>
-                                            <div class="text-[11px] text-[#64748B] mt-0.5 truncate">{{ $prod->category->name ?? '—' }} · {{ $prod->variants->first()?->sku ?? '—' }}</div>
+                                            <div class="text-[11px] text-[#64748B] mt-0.5 truncate">{{ $prod->category->name ?? '—' }} · {{ $variant?->sku ?? '—' }}</div>
                                             <div class="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
                                                 <span class="font-black text-base text-[#123C2F] whitespace-nowrap">{{ $firstTier ? number_format($firstTier->unit_price, 0, '.', ' ') : '—' }} <span class="text-[10px] font-bold">UZS</span></span>
                                                 <span class="text-xs whitespace-nowrap {{ $availableStock <= 0 ? 'text-rose-700 font-bold' : ($availableStock < 5 ? 'text-amber-700 font-bold' : 'text-[#172326] font-semibold') }}">
@@ -657,38 +660,121 @@
                                     <!-- Inline edit form -->
                                     <form x-show="editProductId === {{ $prod->id }}" x-cloak
                                           action="{{ route('profile.seller.products.update', $prod->id) }}" method="POST" enctype="multipart/form-data"
-                                          class="mt-3 pt-3 border-t border-[#E8ECE4] grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                                          class="mt-3 pt-3 border-t border-[#E8ECE4] space-y-4 text-xs">
                                         @csrf
-                                        <label class="col-span-2 space-y-1">
-                                            <span class="font-bold text-[#172326]">Nomi</span>
-                                            <input type="text" name="name" value="{{ $prod->name }}" required maxlength="255" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white">
-                                        </label>
-                                        <label class="space-y-1">
-                                            <span class="font-bold text-[#172326]">Narx, UZS <span class="font-normal text-[#64748B]">(1 {{ $prod->unit }})</span></span>
-                                            <input type="number" name="price" value="{{ (int) ($firstTier?->unit_price ?? 0) }}" min="100" step="1" required inputmode="numeric" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white">
-                                        </label>
-                                        <label class="space-y-1">
-                                            <span class="font-bold text-[#172326]">Ombordagi qoldiq</span>
-                                            <input type="number" name="stock_quantity" value="{{ $totalStock }}" min="{{ $reservedStock }}" step="any" required inputmode="decimal" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white">
-                                        </label>
-                                        <label class="col-span-2 space-y-1">
-                                            <span class="font-bold text-[#172326]">Tavsif</span>
-                                            <textarea name="description" rows="3" maxlength="2000" class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4] bg-white">{{ $prod->description }}</textarea>
-                                        </label>
-                                        <label class="space-y-1">
-                                            <span class="font-bold text-[#172326]">Min. buyurtma</span>
-                                            <input type="number" name="min_order_quantity" value="{{ (float) $prod->min_order_quantity }}" min="0.001" step="any" inputmode="decimal" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white">
-                                        </label>
-                                        <label class="space-y-1">
-                                            <span class="font-bold text-[#172326]">Yangi rasm</span>
-                                            <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp" class="w-full text-[11px] file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:bg-[#123C2F] file:text-white file:font-bold">
-                                        </label>
+                                        
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                            <!-- Mahsulot Nomi -->
+                                            <div class="sm:col-span-2 space-y-1">
+                                                <label class="block font-bold text-[#172326]">Mahsulot Nomi *</label>
+                                                <input type="text" name="name" value="{{ $prod->name }}" required maxlength="255" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Kategoriya -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Kategoriya *</label>
+                                                <select name="category_id" required class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                                    @foreach($categories as $cat)
+                                                        <option value="{{ $cat->id }}" @selected($prod->category_id == $cat->id)>{{ $cat->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Savdo turi -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Savdo turi *</label>
+                                                <select name="trade_mode" required class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                                    <option value="both" @selected($prod->trade_mode === 'both')>Chakana va Ulgurji</option>
+                                                    <option value="retail_only" @selected($prod->trade_mode === 'retail_only')>Faqat Chakana (Retail)</option>
+                                                    <option value="wholesale_only" @selected($prod->trade_mode === 'wholesale_only')>Faqat Ulgurji (Optom)</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- O'lchov birligi -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">O'lchov birligi *</label>
+                                                <select name="unit" required class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                                    <option value="piece" @selected($prod->unit === 'piece')>Dona (piece)</option>
+                                                    <option value="box" @selected($prod->unit === 'box')>Quti (box)</option>
+                                                    <option value="kg" @selected($prod->unit === 'kg')>Kilogramm (kg)</option>
+                                                    <option value="ton" @selected($prod->unit === 'ton')>Tonna (ton)</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Chakana narx -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Chakana narx, UZS <span class="font-normal text-[#64748B]">(1 {{ $prod->unit }})</span> *</label>
+                                                <input type="number" name="price" value="{{ (int) ($firstTier?->unit_price ?? 0) }}" min="100" step="100" required inputmode="numeric" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Ombordagi qoldiq -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Ombordagi qoldiq *</label>
+                                                <input type="number" name="stock_quantity" value="{{ $totalStock }}" min="{{ $reservedStock }}" step="any" required inputmode="decimal" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Min. buyurtma -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Min. buyurtma</label>
+                                                <input type="number" name="min_order_quantity" value="{{ (float) $prod->min_order_quantity }}" min="0.001" step="any" inputmode="decimal" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Qadam (step) -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Sotish qadami (Step)</label>
+                                                <input type="number" name="unit_step" value="{{ (float) ($prod->unit_step ?? 1.0) }}" min="0.001" step="any" inputmode="decimal" placeholder="1" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Qutidagi donalar -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Qutidagi donalar (Qadoq)</label>
+                                                <input type="number" name="items_per_box" value="{{ $prod->items_per_box }}" min="1" step="1" placeholder="Masalan: 12" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Optom narx (300+) -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">300+ Ulgurji narx, UZS</label>
+                                                <input type="number" name="tier_300_price" value="{{ (int) ($tier300?->unit_price ?? '') }}" min="100" step="100" placeholder="Chegirmali narx" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Optom narx (1000+) -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">1000+ Katta ulgurji narx, UZS</label>
+                                                <input type="number" name="tier_1000_price" value="{{ (int) ($tier1000?->unit_price ?? '') }}" min="100" step="100" placeholder="Eng arzon ulgurji narx" class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Artikul / SKU -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Artikul (SKU)</label>
+                                                <input type="text" name="sku" value="{{ $variant?->sku }}" maxlength="100" placeholder="SKU-..." class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Rasm URL -->
+                                            <div class="space-y-1">
+                                                <label class="block font-bold text-[#172326]">Rasm URL havolasi</label>
+                                                <input type="text" name="image_url" value="{{ $prod->image_url }}" placeholder="https://... yoki /images/..." class="w-full h-10 px-3 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">
+                                            </div>
+
+                                            <!-- Yangi rasm yuklash -->
+                                            <div class="sm:col-span-2 space-y-1">
+                                                <label class="block font-bold text-[#172326]">Yangi rasm fayli yuklash</label>
+                                                <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp" class="w-full h-10 px-2.5 py-1.5 rounded-xl border border-[#E8ECE4] bg-white text-[11px] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-[#123C2F] file:text-white file:font-bold">
+                                            </div>
+
+                                            <!-- Tavsif -->
+                                            <div class="sm:col-span-2 lg:col-span-4 space-y-1">
+                                                <label class="block font-bold text-[#172326]">Mahsulot tavsifi</label>
+                                                <textarea name="description" rows="3" maxlength="2000" placeholder="Texnik xususiyatlari, markasi, sifati..." class="w-full px-3 py-2 rounded-xl border border-[#E8ECE4] bg-white text-xs focus:border-[#123C2F] outline-none">{{ $prod->description }}</textarea>
+                                            </div>
+                                        </div>
+
                                         @if($reservedStock > 0)
-                                            <p class="col-span-2 lg:col-span-4 text-[11px] text-[#64748B]">Qoldiq {{ $fmtQty($reservedStock) }} dan kam bo'lolmaydi — shuncha mijoz buyurtmalarida band.</p>
+                                            <p class="text-[11px] text-[#64748B]">Qoldiq {{ $fmtQty($reservedStock) }} dan kam bo'lolmaydi — shuncha tovar xaridorlar buyurtmalarida band qilingan.</p>
                                         @endif
-                                        <div class="col-span-2 lg:col-span-4 grid grid-cols-2 gap-2">
-                                            <button type="button" @click="editProductId = null" class="h-11 rounded-xl border border-[#E8ECE4] bg-white font-bold">Bekor</button>
-                                            <button type="submit" class="h-11 rounded-xl bg-[#123C2F] text-[#C9F46B] font-bold">Saqlash</button>
+
+                                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[#E8ECE4]">
+                                            <button type="button" @click="editProductId = null" class="h-11 rounded-xl border border-[#E8ECE4] bg-white font-bold hover:bg-slate-50 transition">Bekor qilish</button>
+                                            <button type="submit" class="h-11 rounded-xl bg-[#123C2F] text-[#C9F46B] font-bold hover:bg-[#0d2a21] transition shadow-xs">O'zgarishlarni Saqlash</button>
                                         </div>
                                     </form>
                                 </article>
@@ -1497,96 +1583,122 @@
 
             </div>
 
-        </div>
-
-    </div>
-
-    <!-- Add Product Modal for Seller -->
-    @if($user->isSeller())
-        <div x-show="showAddProductModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-            <div @click.away="showAddProductModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-[#E8ECE4] space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto">
-                <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
-                    <div>
-                        <h3 class="font-black text-lg text-[#172326]">Yangi Mahsulot Qo'shish</h3>
-                        <p class="text-xs text-[#64748B]">Do'koningizga yangi tovar kiriting va darhol sotuvga chiqaring</p>
+        <!-- Add Product Modal for Seller -->
+        @if($user->isSeller())
+            <div x-show="showAddProductModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+                <div @click.away="showAddProductModal = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-[#E8ECE4] space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
+                        <div>
+                            <h3 class="font-black text-lg text-[#172326]">Yangi Mahsulot Qo'shish</h3>
+                            <p class="text-xs text-[#64748B]">Do'koningizga yangi tovar kiriting va darhol sotuvga chiqaring</p>
+                        </div>
+                        <button @click="showAddProductModal = false" class="text-[#64748B] hover:text-[#172326] font-bold text-xl">✕</button>
                     </div>
-                    <button @click="showAddProductModal = false" class="text-[#64748B] hover:text-[#172326] font-bold text-xl">✕</button>
+
+                    <form action="{{ route('profile.seller.products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+                        @csrf
+                        <div>
+                            <label class="block font-bold text-[#172326] mb-1">Mahsulot Nomi *</label>
+                            <input type="text" name="name" required placeholder="Masalan: M-500 Sement 50kg yoki Alyumin profil" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Kategoriya *</label>
+                                <select name="category_id" required class="w-full h-11 px-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none font-medium">
+                                    @foreach($categories as $cat)
+                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Savdo Turi *</label>
+                                <select name="trade_mode" required class="w-full h-11 px-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none font-medium">
+                                    <option value="both">Chakana va Ulgurji (Har ikkisi)</option>
+                                    <option value="retail_only">Faqat Chakana (Retail)</option>
+                                    <option value="wholesale_only">Faqat Ulgurji (Optom)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Birlik *</label>
+                                <select name="unit" required class="w-full h-11 px-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none font-medium">
+                                    <option value="piece">Dona (piece)</option>
+                                    <option value="box">Quti (box)</option>
+                                    <option value="kg">Kilogramm (kg)</option>
+                                    <option value="ton">Tonna (ton)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Birlik Narxi (UZS) *</label>
+                                <input type="number" name="price" required min="100" step="100" placeholder="50000" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Ombordagi Soni *</label>
+                                <input type="number" name="stock_quantity" required min="0" step="1" placeholder="100" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Minimal Buyurtma</label>
+                                <input type="number" name="min_order_quantity" min="1" step="1" value="1" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Sotish Qadami (Step)</label>
+                                <input type="number" name="unit_step" min="0.001" step="any" value="1" placeholder="1" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Qutidagi donalar soni</label>
+                                <input type="number" name="items_per_box" min="1" step="1" placeholder="Masalan: 12" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">300+ Ulgurji Narx (UZS)</label>
+                                <input type="number" name="tier_300_price" min="100" step="100" placeholder="Ixtiyoriy" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">1000+ Katta Ulgurji (UZS)</label>
+                                <input type="number" name="tier_1000_price" min="100" step="100" placeholder="Ixtiyoriy" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Artikul / SKU</label>
+                                <input type="text" name="sku" maxlength="100" placeholder="Avtomatik yoki SKU-..." class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Rasm Yuklash</label>
+                                <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp" class="w-full h-11 px-2.5 py-1.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-[#123C2F] file:text-white file:font-bold">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[#172326] mb-1">Yoki Rasm URL havolasi</label>
+                                <input type="text" name="image_url" placeholder="https://... yoki /images/products/..." class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-[#172326] mb-1">Mahsulot Haqida Tavsif</label>
+                            <textarea name="description" rows="3" placeholder="Texnik xususiyatlari, markasi va tavsifi..." class="w-full p-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none"></textarea>
+                        </div>
+
+                        <div class="pt-3 border-t border-[#E8ECE4] flex items-center justify-end gap-3">
+                            <button type="button" @click="showAddProductModal = false" class="px-5 py-2.5 rounded-xl bg-[#FAFBF7] text-[#64748B] hover:bg-[#E8ECE4] text-xs font-bold">
+                                Bekor qilish
+                            </button>
+                            <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] text-xs font-bold transition shadow-xs">
+                                Mahsulotni Saqlash & Sotuvga Chiqarish
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <form action="{{ route('profile.seller.products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-                    @csrf
-                    <div>
-                        <label class="block text-xs font-bold text-[#172326] mb-1">Mahsulot Nomi *</label>
-                        <input type="text" name="name" required placeholder="Masalan: M-500 Sement 50kg yoki Alyumin profil" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1">Kategoriya *</label>
-                            <select name="category_id" required class="w-full h-11 px-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none font-medium">
-                                @foreach($categories as $cat)
-                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1">Savdo Turi *</label>
-                            <select name="trade_mode" required class="w-full h-11 px-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none font-medium">
-                                <option value="both">Chakana va Ulgurji (Har ikkisi)</option>
-                                <option value="retail_only">Faqat Chakana (Retail)</option>
-                                <option value="wholesale_only">Faqat Ulgurji (Optom)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1">Birlik *</label>
-                            <select name="unit" required class="w-full h-11 px-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none font-medium">
-                                <option value="piece">Dona (piece)</option>
-                                <option value="box">Quti (box)</option>
-                                <option value="kg">Kilogramm (kg)</option>
-                                <option value="ton">Tonna (ton)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1">Birlik Narxi (UZS) *</label>
-                            <input type="number" name="price" required min="100" step="100" placeholder="50000" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1">Ombordagi Soni *</label>
-                            <input type="number" name="stock_quantity" required min="0" step="1" placeholder="100" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1">Minimal Buyurtma Soni</label>
-                            <input type="number" name="min_order_quantity" min="1" step="1" value="1" class="w-full h-11 px-3.5 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-[#172326] mb-1">Mahsulot Rasmini Yuklash</label>
-                            <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp" class="w-full h-11 px-2.5 py-2 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-[#123C2F] file:text-white file:font-bold">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-[#172326] mb-1">Mahsulot Haqida Tavsif</label>
-                        <textarea name="description" rows="3" placeholder="Texnik xususiyatlari, markasi va tavsifi..." class="w-full p-3 rounded-xl bg-[#FAFBF7] border border-[#E8ECE4] text-xs focus:bg-white focus:border-[#123C2F] outline-none"></textarea>
-                    </div>
-
-                    <div class="pt-3 border-t border-[#E8ECE4] flex items-center justify-end gap-3">
-                        <button type="button" @click="showAddProductModal = false" class="px-5 py-2.5 rounded-xl bg-[#FAFBF7] text-[#64748B] hover:bg-[#E8ECE4] text-xs font-bold">
-                            Bekor qilish
-                        </button>
-                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#123C2F] text-[#C9F46B] hover:bg-[#0d2a21] text-xs font-bold transition shadow-xs">
-                            Mahsulotni Saqlash & Sotuvga Chiqarish
-                        </button>
-                    </div>
-                </form>
             </div>
-        </div>
-    @endif
+        @endif
 
     <!-- Add Address Modal for Customer -->
     <div x-show="showAddressModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
@@ -1636,4 +1748,5 @@
             </form>
         </div>
     </div>
+</div>
 </x-layouts.app>

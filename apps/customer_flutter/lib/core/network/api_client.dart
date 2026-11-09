@@ -14,6 +14,8 @@ class ApiClient {
     _authToken = token;
   }
 
+  String? get token => _authToken;
+
   String get baseUrl => ApiConfig.baseUrl;
 
   Map<String, String> _buildHeaders() {
@@ -44,6 +46,30 @@ class ApiClient {
     try {
       final response = await http
           .post(uri, headers: _buildHeaders(), body: jsonEncode(body))
+          .timeout(const Duration(seconds: 12));
+      return _processResponse(response);
+    } on SocketException {
+      throw Exception('Serverga ulanish imkoni bo\'lmadi. Internetni tekshiring.');
+    }
+  }
+
+  Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await http
+          .put(uri, headers: _buildHeaders(), body: jsonEncode(body))
+          .timeout(const Duration(seconds: 12));
+      return _processResponse(response);
+    } on SocketException {
+      throw Exception('Serverga ulanish imkoni bo\'lmadi. Internetni tekshiring.');
+    }
+  }
+
+  Future<dynamic> delete(String endpoint) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await http
+          .delete(uri, headers: _buildHeaders())
           .timeout(const Duration(seconds: 12));
       return _processResponse(response);
     } on SocketException {

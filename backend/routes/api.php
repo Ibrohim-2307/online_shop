@@ -28,6 +28,7 @@ Route::prefix('v1')->group(function () {
     // Public catalog & product endpoints
     Route::get('/categories', [CatalogController::class, 'categories']);
     Route::get('/products', [CatalogController::class, 'products']);
+    Route::get('/catalog', [CatalogController::class, 'products']);
     Route::get('/products/{slugOrId}', [CatalogController::class, 'show']);
     Route::post('/products/{variantId}/quote', [CatalogController::class, 'calculateQuote']);
 

@@ -46,11 +46,17 @@ class CatalogController extends Controller
             ])
             ->orderByDesc('id');
 
-        if ($search = $request->get('search')) {
+        if ($search = $request->get('search') ?? $request->get('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
             });
+        }
+
+        if ($cat = $request->get('category') ?? $request->get('category_slug')) {
+            if ($cat !== 'all') {
+                $query->whereHas('category', fn($q) => $q->where('slug', $cat));
+            }
         }
 
         if ($categoryId = $request->get('category_id')) {

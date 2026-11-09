@@ -63,7 +63,7 @@ Route::get('/login', [WebAuthController::class, 'showLoginForm'])->name('login')
 Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
 Route::get('/register', [WebAuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [WebAuthController::class, 'register'])->middleware('throttle:5,1')->name('register.post');
-Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
+Route::match(['get', 'post'], '/logout', [WebAuthController::class, 'logout'])->name('logout');
 Route::get('/forgot-password', [\App\Http\Controllers\Web\PasswordResetController::class, 'showRequestForm'])->name('password.request');
 Route::post('/forgot-password', [\App\Http\Controllers\Web\PasswordResetController::class, 'sendCode'])->middleware('throttle:3,1')->name('password.email');
 Route::get('/reset-password', [\App\Http\Controllers\Web\PasswordResetController::class, 'showResetForm'])->name('password.reset');

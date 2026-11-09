@@ -131,9 +131,15 @@ class AuthSecurityHardeningTest extends TestCase
         $newSessionId = session()->getId();
         $this->assertNotEquals($initialSessionId, $newSessionId);
 
-        // Web logout
+        // Web logout (both POST and GET must succeed without 405)
         $logoutResponse = $this->post('/logout');
         $logoutResponse->assertRedirect('/login');
+        $this->assertGuest();
+
+        // Direct GET navigation to /logout also invalidates and redirects
+        $this->actingAs($user);
+        $getLogoutResponse = $this->get('/logout');
+        $getLogoutResponse->assertRedirect('/login');
         $this->assertGuest();
     }
 

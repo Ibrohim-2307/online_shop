@@ -135,18 +135,16 @@ class SellerPanelController extends Controller
             'notes' => 'nullable|string|max:255',
         ]);
 
-        $eligibility = $this->ledgerService->canRequestPayout($seller, $validated['amount']);
-        if (!$eligibility['allowed']) {
-            return ApiResponse::error($eligibility['reason'], 'PAYOUT_NOT_ALLOWED', [], 422);
+        try {
+            $payout = $this->ledgerService->requestPayout(
+                $seller,
+                (int) $validated['amount'],
+                ['bank_account' => $validated['bank_account']],
+                $validated['notes'] ?? null
+            );
+        } catch (InvalidArgumentException $e) {
+            return ApiResponse::error($e->getMessage(), 'PAYOUT_NOT_ALLOWED', [], 422);
         }
-
-        $payout = SellerPayout::create([
-            'seller_id' => $seller->id,
-            'amount' => $validated['amount'],
-            'status' => 'requested',
-            'bank_details' => ['bank_account' => $validated['bank_account']],
-            'notes' => $validated['notes'] ?? null,
-        ]);
 
         return ApiResponse::success($payout, "Mablag'ni yechib olish arizasi qabul qilindi.", 201);
     }

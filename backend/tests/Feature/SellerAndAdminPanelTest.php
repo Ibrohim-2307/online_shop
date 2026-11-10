@@ -131,6 +131,17 @@ class SellerAndAdminPanelTest extends TestCase
         $supportUser = $this->setupUserWithRole('support', 'support@example.uz');
         $adminUser = $this->setupUserWithRole('admin', 'admin@example.uz');
 
+        // The store has earned the money it is asking for
+        \App\Models\SellerLedger::create([
+            'seller_id' => $seller->id,
+            'type' => 'credit',
+            'entry_type' => 'order_sale',
+            'amount' => 800000,
+            'currency' => 'UZS',
+            'running_balance' => 800000,
+            'created_at' => now()->subDays(10),
+        ]);
+
         $payout = SellerPayout::create([
             'seller_id' => $seller->id,
             'amount' => 500000,

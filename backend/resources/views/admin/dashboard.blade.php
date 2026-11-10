@@ -125,6 +125,14 @@
                     <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_refunds'] }}</span>
                 @endif
             </button>
+            @if($canManagePayouts)
+                <button @click="currentTab = 'payouts'" :class="currentTab === 'payouts' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                    💸 Sotuvchilarga to'lov
+                    @if(($stats['open_payouts'] ?? 0) > 0)
+                        <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_payouts'] }}</span>
+                    @endif
+                </button>
+            @endif
             <button @click="currentTab = 'audit'" :class="currentTab === 'audit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 🔍 Audit Jurnali
             </button>
@@ -626,6 +634,96 @@
                 @endforelse
             </div>
         </div>
+
+        @if($canManagePayouts)
+            <!-- TAB: SELLER PAYOUTS -->
+            <div x-show="currentTab === 'payouts'" x-cloak class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="p-4 border-b border-slate-100">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="font-bold text-slate-900 text-sm">Sotuvchilarning pul yechish so'rovlari</h3>
+                        @if(($stats['open_payouts'] ?? 0) > 0)
+                            <span class="text-xs text-slate-600">Kutilmoqda: <b class="text-slate-900">{{ number_format($stats['open_payouts_sum'], 0, '.', ' ') }} UZS</b></span>
+                        @endif
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">
+                        1) Pulni sotuvchining kartasi yoki hisob raqamiga o'zingiz o'tkazing.
+                        2) Shundan keyin "To'landi" ni bosing — summa do'kon balansidan ayiriladi. Sayt pulni o'zi o'tkazmaydi.
+                    </p>
+                </div>
+                @php
+                    $payoutStatus = [
+                        'requested' => ['Yangi', 'bg-amber-100 text-amber-900'],
+                        'held' => ['Ushlab turilgan', 'bg-amber-100 text-amber-900'],
+                        'processing' => ['Jarayonda', 'bg-blue-100 text-blue-800'],
+                        'completed' => ["To'langan", 'bg-emerald-100 text-emerald-800'],
+                        'rejected' => ['Rad etilgan', 'bg-rose-100 text-rose-800'],
+                    ];
+                @endphp
+                <div class="divide-y divide-slate-100">
+                    @forelse($payouts as $payout)
+                        @php
+                            $details = $payout->bank_details ?? [];
+                            $number = (string) ($details['number'] ?? $details['bank_account'] ?? '');
+                            $storeBalance = $payoutBalances[$payout->seller_id] ?? null;
+                        @endphp
+                        <div class="p-4 grid gap-3 lg:grid-cols-12 text-xs">
+                            <div class="lg:col-span-4 space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-mono font-bold text-slate-900">#{{ $payout->id }}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $payoutStatus[$payout->status][1] ?? 'bg-slate-100' }}">
+                                        {{ $payoutStatus[$payout->status][0] ?? $payout->status }}
+                                    </span>
+                                    <span class="text-slate-400">{{ $payout->created_at->format('Y-m-d H:i') }}</span>
+                                </div>
+                                <div class="text-slate-600">Do'kon: <b class="text-slate-900">{{ $payout->seller->name ?? '—' }}</b></div>
+                                @if($payout->isOpen() && $storeBalance !== null)
+                                    <div class="{{ $storeBalance < $payout->amount ? 'text-rose-700 font-bold' : 'text-slate-500' }}">
+                                        Do'kon balansi: {{ number_format($storeBalance, 0, '.', ' ') }} UZS
+                                        @if($storeBalance < $payout->amount) — yetarli emas @endif
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="lg:col-span-4 space-y-1">
+                                <div class="font-black text-slate-900 text-sm">{{ number_format($payout->amount, 0, '.', ' ') }} UZS</div>
+                                <div class="text-slate-700">
+                                    <span class="text-slate-400">{{ ($details['method'] ?? 'account') === 'card' ? 'Karta:' : 'Hisob raqam:' }}</span>
+                                    {{-- The full number is shown only while the transfer still has to be made --}}
+                                    <span class="font-mono font-bold">{{ $payout->isOpen() ? trim(chunk_split($number, 4, ' ')) : $payout->maskedAccount() }}</span>
+                                </div>
+                                @if(!empty($details['holder']))
+                                    <div class="text-slate-700"><span class="text-slate-400">Egasi:</span> {{ $details['holder'] }}</div>
+                                @endif
+                                @if($payout->notes)
+                                    <div class="text-slate-500"><span class="text-slate-400">Sotuvchi izohi:</span> {{ $payout->notes }}</div>
+                                @endif
+                                @if($payout->admin_notes)
+                                    <div class="text-slate-500"><span class="text-slate-400">Admin izohi:</span> {{ $payout->admin_notes }}</div>
+                                @endif
+                            </div>
+                            <div class="lg:col-span-4 lg:text-right">
+                                @if($payout->isOpen())
+                                    <form method="POST" action="{{ route('admin.payouts.review', $payout->id) }}" class="space-y-2">
+                                        @csrf
+                                        <input type="text" name="notes" maxlength="500" placeholder="Izoh (rad etishda majburiy)"
+                                               class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs">
+                                        <div class="flex gap-2 lg:justify-end">
+                                            <button name="decision" value="paid"
+                                                    onclick="return confirm('{{ number_format($payout->amount, 0, '.', ' ') }} UZS sotuvchiga haqiqatan o\'tkazildimi? Bu amalni ortga qaytarib bo\'lmaydi.')"
+                                                    class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold">✓ To'landi</button>
+                                            <button name="decision" value="reject" class="px-3 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold">✕ Rad etish</button>
+                                        </div>
+                                    </form>
+                                @else
+                                    <span class="text-slate-400">Yopilgan{{ $payout->reviewed_at ? ' • ' . $payout->reviewed_at->format('Y-m-d H:i') : '' }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <div class="p-8 text-center text-slate-400">Hozircha pul yechish so'rovlari yo'q</div>
+                    @endforelse
+                </div>
+            </div>
+        @endif
 
         @if($canManageBackups)
             <!-- TAB: DATABASE BACKUPS -->

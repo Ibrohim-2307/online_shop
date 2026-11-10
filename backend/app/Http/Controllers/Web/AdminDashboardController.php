@@ -15,6 +15,7 @@ use App\Models\Shipment;
 use App\Models\User;
 use App\Services\Audit\AuditService;
 use App\Services\Backup\DatabaseBackupService;
+use App\Services\Ledger\SellerLedgerService;
 use App\Services\Refund\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,20 @@ class AdminDashboardController extends Controller
         $recentOrders = Order::with(['suborders.seller', 'suborders.shipments'])->latest()->limit(15)->get();
         $shipments = Shipment::with(['courier', 'suborder.seller', 'suborder.order.user'])->latest()->paginate(15);
         $auditLogs = AuditLog::with('user')->latest()->limit(20)->get();
-        $payouts = SellerPayout::with('seller')->latest()->limit(10)->get();
+        // Paying sellers moves real money, so moderators only see that it exists
+        $canManagePayouts = $user->hasRole(['superadmin', 'admin']);
+        $payouts = $canManagePayouts
+            ? SellerPayout::with('seller')
+                ->orderByRaw("CASE WHEN status IN ('requested', 'held', 'processing') THEN 0 ELSE 1 END")
+                ->latest('id')
+                ->limit(50)
+                ->get()
+            : collect();
+        $stats['open_payouts'] = $canManagePayouts ? $payouts->filter->isOpen()->count() : 0;
+        $stats['open_payouts_sum'] = $canManagePayouts ? (int) $payouts->filter->isOpen()->sum('amount') : 0;
+        $ledgerService = app(SellerLedgerService::class);
+        $payoutBalances = $payouts->filter->isOpen()->pluck('seller_id')->unique()
+            ->mapWithKeys(fn($sellerId) => [$sellerId => $ledgerService->getSellerBalance($sellerId)]);
 
         // Open return requests first, then the most recent decisions
         $refunds = Refund::with(['order', 'suborder.seller', 'suborder.items', 'user', 'moderator'])
@@ -73,6 +87,9 @@ class AdminDashboardController extends Controller
         $tabs = ['sellers', 'products', 'users', 'shipments', 'orders', 'refunds', 'audit'];
         if ($canManageBackups) {
             $tabs[] = 'backups';
+        }
+        if ($canManagePayouts) {
+            $tabs[] = 'payouts';
         }
         $initialTab = in_array($request->query('tab'), $tabs, true)
             ? $request->query('tab')
@@ -93,8 +110,49 @@ class AdminDashboardController extends Controller
             'shipments',
             'couriers',
             'auditLogs',
-            'payouts'
+            'payouts',
+            'payoutBalances',
+            'canManagePayouts'
         ));
+    }
+
+    /**
+     * Administrator has transferred the money (or refuses to): close the seller's payout request.
+     */
+    public function reviewPayout(Request $request, int $id, SellerLedgerService $ledgerService): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Sotuvchiga pul to'lashni faqat administrator tasdiqlay oladi.");
+        }
+
+        $validated = $request->validate([
+            'decision' => ['required', 'in:paid,reject'],
+            'notes' => ['nullable', 'string', 'max:500', 'required_if:decision,reject'],
+        ], [
+            'notes.required_if' => "Rad etish sababini yozing — u sotuvchiga ko'rsatiladi.",
+        ]);
+
+        $payout = SellerPayout::with('seller')->findOrFail($id);
+        $back = redirect()->route('admin.dashboard', ['tab' => 'payouts']);
+
+        try {
+            $ledgerService->reviewPayout(
+                $payout,
+                $validated['decision'] === 'paid' ? 'completed' : 'rejected',
+                $validated['notes'] ?? null,
+                $user
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $back->with('error', $e->getMessage());
+        }
+
+        $sum = number_format($payout->amount, 0, '.', ' ');
+        $store = $payout->seller?->name ?? "Do'kon";
+
+        return $back->with('success', $validated['decision'] === 'paid'
+            ? "{$store}: {$sum} UZS to'langan deb belgilandi va do'kon balansidan ayirildi."
+            : "{$store}: {$sum} UZS so'rovi rad etildi, pul do'kon balansida qoldi.");
     }
 
     /**

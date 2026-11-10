@@ -1104,35 +1104,173 @@
                     <!-- TAB: SELLER FINANCE -->
                     <div x-show="activeTab === 'seller_finance'" class="space-y-6">
                         <div>
-                            <h2 class="text-xl font-black text-[#172326]">Do'kon Moliyasi & Hisob-kitoblar</h2>
-                            <p class="text-xs text-[#64748B]">Savdolardan tushgan mablag'lar, platforma komissiyasi va to'lovlar tarixi</p>
+                            <h2 class="text-xl font-black text-[#172326]">Do'kon moliyasi</h2>
+                            <p class="text-xs text-[#64748B]">Qancha sotdingiz, sayt qancha oldi, qo'lingizga qancha tegadi va pulni qanday olasiz</p>
                         </div>
 
                         <!-- Finance summary widgets -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div class="p-5 rounded-3xl bg-white border border-[#E8ECE4] shadow-xs">
-                                <span class="text-[11px] font-bold uppercase text-[#64748B] block mb-1">Do'kon Sof Balansi</span>
-                                <div class="text-2xl font-black text-[#123C2F]">{{ number_format($sellerBalance, 0, '.', ' ') }} <span class="text-xs text-[#64748B] font-bold">UZS</span></div>
-                                <span class="text-[10px] text-emerald-600 block mt-1">Yechib olish uchun tayyor</span>
+                        @php
+                            $money = fn($sum) => number_format((int) $sum, 0, '.', ' ');
+                            $fin = $sellerFinance + ['balance' => 0, 'on_hold' => 0, 'pending_payouts' => 0, 'available' => 0, 'total_sales' => 0, 'total_commission' => 0, 'total_refunds' => 0, 'total_paid_out' => 0, 'has_dispute' => false];
+                            $holdDays = \App\Services\Ledger\SellerLedgerService::HOLD_DAYS;
+                            $minPayout = \App\Services\Ledger\SellerLedgerService::MIN_PAYOUT;
+                        @endphp
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="col-span-2 lg:col-span-1 p-4 sm:p-5 rounded-3xl bg-[#123C2F] text-white">
+                                <span class="text-[11px] font-bold uppercase text-[#C9F46B] block mb-1">Yechish mumkin</span>
+                                <div class="text-2xl font-black">{{ $money($fin['available']) }} <span class="text-xs font-bold text-white/70">UZS</span></div>
+                                <span class="text-[10px] text-white/70 block mt-1">Hozir so'rash mumkin bo'lgan pul</span>
                             </div>
 
-                            <div class="p-5 rounded-3xl bg-white border border-[#E8ECE4] shadow-xs">
-                                <span class="text-[11px] font-bold uppercase text-[#64748B] block mb-1">Komissiya Stavkasi</span>
-                                <div class="text-2xl font-black text-slate-800">{{ $seller->commission_rate ?? 5.0 }}%</div>
-                                <span class="text-[10px] text-[#64748B] block mt-1">Platforma xizmat haqi</span>
+                            <div class="p-4 sm:p-5 rounded-3xl bg-white border border-[#E8ECE4] shadow-xs">
+                                <span class="text-[11px] font-bold uppercase text-[#64748B] block mb-1">Kutish muddatida</span>
+                                <div class="text-lg sm:text-xl font-black text-slate-800">{{ $money($fin['on_hold']) }} <span class="text-[10px] text-[#64748B] font-bold">UZS</span></div>
+                                <span class="text-[10px] text-[#64748B] block mt-1">Oxirgi {{ $holdDays }} kunlik savdo</span>
                             </div>
 
-                            <div class="p-5 rounded-3xl bg-white border border-[#E8ECE4] shadow-xs">
-                                <span class="text-[11px] font-bold uppercase text-[#64748B] block mb-1">Muvaffaqiyatli Savdolar</span>
-                                <div class="text-2xl font-black text-slate-800">{{ $sellerSuborders->count() }} <span class="text-xs text-[#64748B] font-bold">ta</span></div>
-                                <span class="text-[10px] text-emerald-600 block mt-1">Umumiy buyurtmalar</span>
+                            <div class="p-4 sm:p-5 rounded-3xl bg-white border border-[#E8ECE4] shadow-xs">
+                                <span class="text-[11px] font-bold uppercase text-[#64748B] block mb-1">So'ralgan</span>
+                                <div class="text-lg sm:text-xl font-black text-slate-800">{{ $money($fin['pending_payouts']) }} <span class="text-[10px] text-[#64748B] font-bold">UZS</span></div>
+                                <span class="text-[10px] text-[#64748B] block mt-1">Admin ko'rib chiqmoqda</span>
+                            </div>
+
+                            <div class="col-span-2 lg:col-span-1 p-4 sm:p-5 rounded-3xl bg-white border border-[#E8ECE4] shadow-xs">
+                                <span class="text-[11px] font-bold uppercase text-[#64748B] block mb-1">Jami balans</span>
+                                <div class="text-lg sm:text-xl font-black text-[#123C2F]">{{ $money($fin['balance']) }} <span class="text-[10px] text-[#64748B] font-bold">UZS</span></div>
+                                <span class="text-[10px] text-[#64748B] block mt-1">Saytda turgan barcha pulingiz</span>
                             </div>
                         </div>
+
+                        <!-- How the balance was made -->
+                        <div class="bg-white rounded-3xl border border-[#E8ECE4] shadow-xs p-4 sm:p-5">
+                            <h3 class="font-bold text-xs text-[#172326] mb-3">Balans qanday hisoblangan</h3>
+                            <dl class="text-xs space-y-2">
+                                <div class="flex justify-between gap-3">
+                                    <dt class="text-[#64748B]">Jami savdo</dt>
+                                    <dd class="font-bold text-emerald-700 whitespace-nowrap">+ {{ $money($fin['total_sales']) }} UZS</dd>
+                                </div>
+                                <div class="flex justify-between gap-3">
+                                    <dt class="text-[#64748B]">Sayt komissiyasi ({{ (float) ($seller->commission_rate ?? 5) }}%)</dt>
+                                    <dd class="font-bold text-rose-700 whitespace-nowrap">− {{ $money($fin['total_commission']) }} UZS</dd>
+                                </div>
+                                <div class="flex justify-between gap-3">
+                                    <dt class="text-[#64748B]">Qaytarilgan tovarlar</dt>
+                                    <dd class="font-bold text-rose-700 whitespace-nowrap">− {{ $money($fin['total_refunds']) }} UZS</dd>
+                                </div>
+                                <div class="flex justify-between gap-3">
+                                    <dt class="text-[#64748B]">Sizga to'lab berilgan</dt>
+                                    <dd class="font-bold text-rose-700 whitespace-nowrap">− {{ $money($fin['total_paid_out']) }} UZS</dd>
+                                </div>
+                                <div class="flex justify-between gap-3 pt-2 border-t border-[#E8ECE4]">
+                                    <dt class="font-bold text-[#172326]">Jami balans</dt>
+                                    <dd class="font-black text-[#123C2F] whitespace-nowrap">{{ $money($fin['balance']) }} UZS</dd>
+                                </div>
+                            </dl>
+                            <p class="text-[11px] text-[#64748B] mt-3">
+                                Savdo puli buyurtma to'langach (naqd to'lovda — yetkazilgach) balansga tushadi va {{ $holdDays }} kun kutadi: shu vaqt ichida xaridor tovarni qaytarishi mumkin.
+                            </p>
+                        </div>
+
+                        <!-- Payout request -->
+                        <div class="bg-white rounded-3xl border border-[#E8ECE4] shadow-xs p-4 sm:p-5">
+                            <h3 class="font-bold text-sm text-[#172326]">Pulni yechib olish</h3>
+                            @if(!$canRequestPayout)
+                                <p class="text-xs text-[#64748B] mt-2">Pul yechishni faqat do'kon egasi so'rashi mumkin.</p>
+                            @elseif($fin['has_dispute'])
+                                <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl p-3 mt-2">
+                                    Hal qilinmagan qaytarish so'rovi bor. U yopilgach pul yechish mumkin bo'ladi.
+                                </p>
+                            @elseif($fin['available'] < $minPayout)
+                                <p class="text-xs text-[#64748B] mt-2">
+                                    Hozircha yechish uchun pul yetarli emas. Eng kam summa: {{ $money($minPayout) }} UZS.
+                                    @if($fin['on_hold'] > 0) Kutish muddatidagi {{ $money($fin['on_hold']) }} UZS {{ $holdDays }} kun ichida ochiladi. @endif
+                                </p>
+                            @else
+                                <p class="text-xs text-[#64748B] mt-1">So'rovni administrator ko'rib chiqadi va pulni kartangiz yoki hisob raqamingizga o'tkazadi.</p>
+                                <form method="POST" action="{{ route('profile.seller.payouts.store') }}" class="mt-4 grid gap-3 sm:grid-cols-2"
+                                      x-data="{ method: '{{ old('method', 'card') === 'account' ? 'account' : 'card' }}' }">
+                                    @csrf
+                                    <div class="sm:col-span-2">
+                                        <label for="payout_amount" class="text-[11px] font-bold text-[#172326] block mb-1">Summa (UZS)</label>
+                                        <input id="payout_amount" type="text" inputmode="numeric" name="amount" required
+                                               value="{{ $money(old('amount', $fin['available'])) }}"
+                                               class="w-full px-3 py-2.5 rounded-xl border border-[#E8ECE4] text-sm font-bold focus:outline-none focus:border-[#123C2F]">
+                                        <span class="text-[10px] text-[#64748B] block mt-1">{{ $money($minPayout) }} dan {{ $money($fin['available']) }} UZS gacha</span>
+                                    </div>
+                                    <div class="sm:col-span-2 flex gap-2">
+                                        <label class="flex-1 cursor-pointer">
+                                            <input type="radio" name="method" value="card" x-model="method" class="sr-only">
+                                            <span :class="method === 'card' ? 'bg-[#123C2F] text-white border-[#123C2F]' : 'bg-white text-[#172326] border-[#E8ECE4]'"
+                                                  class="block text-center px-3 py-2.5 rounded-xl border text-xs font-bold">Plastik karta</span>
+                                        </label>
+                                        <label class="flex-1 cursor-pointer">
+                                            <input type="radio" name="method" value="account" x-model="method" class="sr-only">
+                                            <span :class="method === 'account' ? 'bg-[#123C2F] text-white border-[#123C2F]' : 'bg-white text-[#172326] border-[#E8ECE4]'"
+                                                  class="block text-center px-3 py-2.5 rounded-xl border text-xs font-bold">Bank hisob raqami</span>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label for="payout_number" class="text-[11px] font-bold text-[#172326] block mb-1" x-text="method === 'card' ? 'Karta raqami (16 ta raqam)' : 'Hisob raqami (20 ta raqam)'">Karta raqami (16 ta raqam)</label>
+                                        <input id="payout_number" type="text" inputmode="numeric" name="account_number" required autocomplete="off"
+                                               :maxlength="method === 'card' ? 19 : 24"
+                                               :placeholder="method === 'card' ? '8600 0000 0000 0000' : '2020 8000 0000 0000 0000'"
+                                               class="w-full px-3 py-2.5 rounded-xl border border-[#E8ECE4] text-sm font-mono focus:outline-none focus:border-[#123C2F]">
+                                    </div>
+                                    <div>
+                                        <label for="payout_holder" class="text-[11px] font-bold text-[#172326] block mb-1">Karta yoki hisob egasi</label>
+                                        <input id="payout_holder" type="text" name="holder_name" required maxlength="100"
+                                               value="{{ old('holder_name', $seller->legal_name) }}"
+                                               class="w-full px-3 py-2.5 rounded-xl border border-[#E8ECE4] text-sm focus:outline-none focus:border-[#123C2F]">
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <button type="submit" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#123C2F] hover:bg-[#0E2F25] text-white text-sm font-bold">
+                                            Pul yechishni so'rash
+                                        </button>
+                                    </div>
+                                </form>
+                            @endif
+                        </div>
+
+                        <!-- Payout history -->
+                        @if($sellerPayouts->isNotEmpty())
+                            @php
+                                $payoutStatus = [
+                                    'requested' => ["Ko'rib chiqilmoqda", 'bg-amber-100 text-amber-900'],
+                                    'held' => ['Ushlab turilgan', 'bg-amber-100 text-amber-900'],
+                                    'processing' => ['Jarayonda', 'bg-blue-100 text-blue-800'],
+                                    'completed' => ["To'landi", 'bg-emerald-100 text-emerald-800'],
+                                    'rejected' => ['Rad etildi', 'bg-rose-100 text-rose-800'],
+                                ];
+                            @endphp
+                            <div class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs">
+                                <div class="p-4 bg-[#FAFBF7] border-b border-[#E8ECE4]">
+                                    <h3 class="font-bold text-xs text-[#172326]">Pul yechish so'rovlarim</h3>
+                                </div>
+                                <div class="divide-y divide-[#E8ECE4]">
+                                    @foreach($sellerPayouts as $payout)
+                                        <div class="p-4 text-xs">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <div class="font-black text-sm text-[#172326]">{{ $money($payout->amount) }} UZS</div>
+                                                    <div class="text-[#64748B] mt-0.5">{{ $payout->created_at->format('d.m.Y H:i') }} • {{ $payout->maskedAccount() }}</div>
+                                                </div>
+                                                <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-bold {{ $payoutStatus[$payout->status][1] ?? 'bg-slate-100' }}">
+                                                    {{ $payoutStatus[$payout->status][0] ?? $payout->status }}
+                                                </span>
+                                            </div>
+                                            @if($payout->admin_notes)
+                                                <div class="mt-2 text-slate-700"><span class="text-[#64748B]">Administrator izohi:</span> {{ $payout->admin_notes }}</div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
 
                         <!-- Ledger Transactions Table -->
                         <div class="bg-white rounded-3xl border border-[#E8ECE4] overflow-hidden shadow-xs">
                             <div class="p-4 bg-[#FAFBF7] border-b border-[#E8ECE4]">
-                                <h3 class="font-bold text-xs text-[#172326]">Oxirgi Moliya Operatsiyalari (Ledger)</h3>
+                                <h3 class="font-bold text-xs text-[#172326]">Oxirgi pul harakatlari</h3>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left text-xs text-slate-600">
@@ -1141,18 +1279,28 @@
                                             <th class="p-3">Sana</th>
                                             <th class="p-3">Turi</th>
                                             <th class="p-3">Summa</th>
-                                            <th class="p-3">Izoh</th>
+                                            <th class="p-3">Buyurtma</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-[#E8ECE4]">
+                                        @php
+                                            $entryLabels = [
+                                                'order_sale' => 'Savdo tushumi',
+                                                'commission_fee' => 'Sayt komissiyasi',
+                                                'payout' => "Sizga to'landi",
+                                                'refund_deduction' => 'Tovar qaytarildi',
+                                                'dispute_hold' => 'Nizo uchun ushlandi',
+                                                'dispute_release' => 'Nizodan qaytdi',
+                                            ];
+                                        @endphp
                                         @forelse($sellerLedger as $item)
                                             <tr class="hover:bg-[#FAFBF7]/60">
-                                                <td class="p-3 text-slate-400 font-mono">{{ $item->created_at->format('Y-m-d H:i') }}</td>
-                                                <td class="p-3 font-bold uppercase {{ $item->type === 'credit' ? 'text-emerald-700' : 'text-rose-700' }}">
-                                                    {{ $item->type === 'credit' ? '+ Kirim (Kredit)' : '- Chiqim (Debet)' }}
+                                                <td class="p-3 text-slate-400 font-mono whitespace-nowrap">{{ $item->created_at->format('d.m.Y H:i') }}</td>
+                                                <td class="p-3 font-bold text-slate-800 whitespace-nowrap">{{ $entryLabels[$item->entry_type] ?? $item->entry_type }}</td>
+                                                <td class="p-3 font-black whitespace-nowrap {{ $item->type === 'credit' ? 'text-emerald-700' : 'text-rose-700' }}">
+                                                    {{ $item->type === 'credit' ? '+' : '−' }} {{ number_format($item->amount, 0, '.', ' ') }} UZS
                                                 </td>
-                                                <td class="p-3 font-black text-slate-900">{{ number_format($item->amount, 0, '.', ' ') }} UZS</td>
-                                                <td class="p-3 text-slate-600">{{ $item->description ?? 'Savdo tushumi' }}</td>
+                                                <td class="p-3 text-slate-600">{{ $item->reference ?? '—' }}</td>
                                             </tr>
                                         @empty
                                             <tr>

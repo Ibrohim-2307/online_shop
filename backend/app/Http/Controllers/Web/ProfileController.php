@@ -14,6 +14,7 @@ use App\Models\ProductVariant;
 use App\Models\Seller;
 use App\Models\SellerLedger;
 use App\Models\SellerMember;
+use App\Models\SellerPayout;
 use App\Models\Shipment;
 use App\Models\ShipmentEvent;
 use App\Models\Suborder;
@@ -91,6 +92,9 @@ class ProfileController extends Controller
         $sellerWarehouses = collect();
         $sellerLedger = collect();
         $sellerBalance = 0;
+        $sellerFinance = [];
+        $sellerPayouts = collect();
+        $canRequestPayout = false;
         $categories = collect();
         $couriers = collect();
         $sellerNeedsActionCount = 0;
@@ -169,10 +173,13 @@ class ProfileController extends Controller
                 ->with('balances.variant')
                 ->get();
 
-            $sellerLedger = SellerLedger::where('seller_id', $seller->id)->latest()->limit(20)->get();
-            $credits = SellerLedger::where('seller_id', $seller->id)->where('type', 'credit')->sum('amount');
-            $debits = SellerLedger::where('seller_id', $seller->id)->where('type', 'debit')->sum('amount');
-            $sellerBalance = $credits - $debits;
+            $sellerLedger = SellerLedger::where('seller_id', $seller->id)->latest('id')->limit(30)->get();
+            $ledgerService = app(SellerLedgerService::class);
+            $sellerFinance = $ledgerService->summary($seller);
+            $sellerFinance['has_dispute'] = $ledgerService->hasOpenDispute($seller);
+            $sellerBalance = $sellerFinance['balance'];
+            $sellerPayouts = SellerPayout::where('seller_id', $seller->id)->latest('id')->limit(20)->get();
+            $canRequestPayout = $this->mayRequestPayout($user, $seller);
 
             $categories = Category::where('is_active', true)->orderBy('name')->get();
             $couriers = User::whereHas('roles', fn($q) => $q->whereIn('name', ['courier', 'logistics_operator']))->get();
@@ -250,6 +257,9 @@ class ProfileController extends Controller
             'sellerWarehouses',
             'sellerLedger',
             'sellerBalance',
+            'sellerFinance',
+            'sellerPayouts',
+            'canRequestPayout',
             'categories',
             'couriers',
             'sellerNeedsActionCount',
@@ -560,6 +570,69 @@ class ProfileController extends Controller
     {
         return $user->activeSeller()
             ?? ($user->seller_id ? Seller::find($user->seller_id) : null);
+    }
+
+    /**
+     * Only the store's owner may take money out; managers and operators cannot.
+     */
+    protected function mayRequestPayout(User $user, Seller $seller): bool
+    {
+        return $user->isSellerOwner($seller->id)
+            || ($user->hasRole('seller_owner') && (int) $user->seller_id === (int) $seller->id);
+    }
+
+    /**
+     * Seller owner: ask the marketplace to pay out earned money to a card or bank account.
+     */
+    public function requestSellerPayout(Request $request, SellerLedgerService $ledgerService): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->isSeller()) {
+            abort(403, 'Ruxsat berilmagan.');
+        }
+
+        $seller = $this->currentSeller($user);
+        abort_unless($seller && $this->mayRequestPayout($user, $seller), 403, "Pul yechishni faqat do'kon egasi so'rashi mumkin.");
+
+        // People type sums and card numbers with spaces: "1 500 000", "8600 1234 ..."
+        $request->merge([
+            'amount' => preg_replace('/\D+/', '', (string) $request->input('amount')),
+            'account_number' => preg_replace('/\D+/', '', (string) $request->input('account_number')),
+        ]);
+
+        $validated = $request->validate([
+            'amount' => ['required', 'integer', 'min:' . SellerLedgerService::MIN_PAYOUT],
+            'method' => ['required', 'in:card,account'],
+            'account_number' => ['required', $request->input('method') === 'account' ? 'digits:20' : 'digits:16'],
+            'holder_name' => ['required', 'string', 'min:3', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:255'],
+        ], [
+            'amount.required' => 'Summani kiriting.',
+            'amount.integer' => 'Summani faqat raqam bilan kiriting.',
+            'amount.min' => 'Eng kam yechish summasi: ' . number_format(SellerLedgerService::MIN_PAYOUT, 0, '.', ' ') . ' UZS.',
+            'account_number.required' => 'Karta yoki hisob raqamini kiriting.',
+            'account_number.digits' => $request->input('method') === 'account'
+                ? 'Bank hisob raqami 20 ta raqamdan iborat bo\'lishi kerak.'
+                : 'Karta raqami 16 ta raqamdan iborat bo\'lishi kerak.',
+            'holder_name.required' => 'Karta yoki hisob egasining ismini kiriting.',
+            'holder_name.min' => 'Karta yoki hisob egasining ismini to\'liq kiriting.',
+        ]);
+
+        $back = redirect()->route('profile', ['tab' => 'seller_finance']);
+
+        try {
+            $payout = $ledgerService->requestPayout($seller, (int) $validated['amount'], [
+                'method' => $validated['method'],
+                'number' => $validated['account_number'],
+                'holder' => $validated['holder_name'],
+            ], $validated['notes'] ?? null);
+        } catch (\InvalidArgumentException $e) {
+            return $back->withInput($request->except('account_number'))->with('error', $e->getMessage());
+        }
+
+        AuditService::log('seller.payout_requested', $payout, null, ['amount' => $payout->amount], $user);
+
+        return $back->with('success', "So'rov qabul qilindi: " . number_format($payout->amount, 0, '.', ' ') . " UZS. Administrator ko'rib chiqib, pulni o'tkazadi.");
     }
 
     /**

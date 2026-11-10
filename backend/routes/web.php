@@ -55,6 +55,7 @@ Route::post('/profile/seller/products', [\App\Http\Controllers\Web\ProfileContro
 Route::post('/profile/seller/products/{id}', [\App\Http\Controllers\Web\ProfileController::class, 'updateSellerProduct'])->name('profile.seller.products.update');
 Route::post('/profile/seller/products/{id}/status', [\App\Http\Controllers\Web\ProfileController::class, 'updateSellerProductStatus'])->name('profile.seller.products.status');
 Route::post('/profile/seller/orders/{id}/status', [\App\Http\Controllers\Web\ProfileController::class, 'updateSellerOrderStatus'])->name('profile.seller.orders.status');
+Route::post('/profile/seller/payouts', [\App\Http\Controllers\Web\ProfileController::class, 'requestSellerPayout'])->middleware('throttle:5,1')->name('profile.seller.payouts.store');
 
 // Courier actions inside Profile
 Route::post('/profile/courier/shipments/{id}/status', [\App\Http\Controllers\Web\ProfileController::class, 'updateCourierShipmentStatus'])->name('profile.courier.shipments.status');
@@ -83,7 +84,8 @@ Route::post('/admin/products/{id}/status', [\App\Http\Controllers\Web\AdminDashb
 Route::post('/admin/shipments/{id}/assign', [\App\Http\Controllers\Web\AdminDashboardController::class, 'assignCourier'])->name('admin.shipments.assign');
 Route::post('/admin/refunds/{id}/review', [\App\Http\Controllers\Web\AdminDashboardController::class, 'reviewRefund'])->name('admin.refunds.review');
 Route::post('/admin/refunds/{id}/complete', [\App\Http\Controllers\Web\AdminDashboardController::class, 'completeRefund'])->name('admin.refunds.complete');
-Route::post('/admin/backups', [\App\Http\Controllers\Web\AdminDashboardController::class, 'createBackup'])->middleware('throttle:3,1')->name('admin.backups.create');
+Route::post('/admin/payouts/{id}/review', [\App\Http\Controllers\Web\AdminDashboardController::class, 'reviewPayout'])->name('admin.payouts.review');
+Route::post('/admin/backups',[\App\Http\Controllers\Web\AdminDashboardController::class, 'createBackup'])->middleware('throttle:3,1')->name('admin.backups.create');
 Route::get('/admin/backups/{filename}/download', [\App\Http\Controllers\Web\AdminDashboardController::class, 'downloadBackup'])->where('filename', \App\Services\Backup\DatabaseBackupService::FILENAME_PATTERN)->middleware('throttle:10,1')->name('admin.backups.download');
 
 // Seller Web Dashboard

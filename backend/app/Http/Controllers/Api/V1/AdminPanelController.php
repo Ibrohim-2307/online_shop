@@ -41,44 +41,14 @@ class AdminPanelController extends Controller
 
         $payout = SellerPayout::findOrFail($payoutId);
 
-        return DB::transaction(function () use ($payout, $validated, $user) {
-            $payout->update([
-                'status' => $validated['status'],
-                'notes' => $validated['notes'] ?? $payout->notes,
-            ]);
+        try {
+            $payout = app(\App\Services\Ledger\SellerLedgerService::class)
+                ->reviewPayout($payout, $validated['status'], $validated['notes'] ?? null, $user);
+        } catch (\InvalidArgumentException $e) {
+            return ApiResponse::error($e->getMessage(), 'PAYOUT_REVIEW_FAILED', [], 422);
+        }
 
-            // If completed, record ledger debit
-            if ($validated['status'] === 'completed') {
-                $credits = SellerLedger::where('seller_id', $payout->seller_id)->where('type', 'credit')->sum('amount');
-                $debits = SellerLedger::where('seller_id', $payout->seller_id)->where('type', 'debit')->sum('amount');
-                $balance = $credits - $debits;
-
-                SellerLedger::create([
-                    'seller_id' => $payout->seller_id,
-                    'type' => 'debit',
-                    'entry_type' => 'payout',
-                    'amount' => $payout->amount,
-                    'currency' => 'UZS',
-                    'running_balance' => $balance - $payout->amount,
-                    'reference' => 'PAYOUT-' . $payout->id,
-                    'notes' => "Sotuvchiga mablag' to'lab berildi: Payout #{$payout->id}",
-                    'created_at' => now(),
-                ]);
-            }
-
-            AuditLog::create([
-                'user_id' => $user->id,
-                'action' => 'payout.reviewed',
-                'entity_type' => 'SellerPayout',
-                'entity_id' => $payout->id,
-                'old_values' => ['status' => 'requested'],
-                'new_values' => ['status' => $validated['status']],
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-
-            return ApiResponse::success($payout, "Payout holati muvaffaqiyatli yangilandi.");
-        });
+        return ApiResponse::success($payout, "Payout holati muvaffaqiyatli yangilandi.");
     }
 
     /**

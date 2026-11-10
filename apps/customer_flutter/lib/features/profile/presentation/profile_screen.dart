@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../auth/auth_modal.dart';
 import '../../auth/auth_notifier.dart';
 import '../../health/presentation/health_screen.dart';
 
@@ -146,6 +147,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: auth.isLoading
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Kirish', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: () => showAuthModal(context),
+              child: const Text(
+                "Hisobingiz yo'qmi? Ro'yxatdan o'ting",
+                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.brandEmerald, fontSize: 13),
+              ),
             ),
           ),
 

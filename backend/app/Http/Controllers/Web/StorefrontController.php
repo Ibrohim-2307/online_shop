@@ -429,6 +429,11 @@ class StorefrontController extends Controller
     public function checkout(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+        if (!$user) {
+            return redirect()->guest(route('login'))
+                ->with('info', "Buyurtmani rasmiylashtirish uchun avval tizimga kiring yoki ro'yxatdan o'ting. Savatchangiz to'liq saqlanadi.");
+        }
+
         $sessionId = $this->cartSessionId($request);
 
         $cart = $this->cartService->getCartForUserOrSession($user, $sessionId);
@@ -462,23 +467,8 @@ class StorefrontController extends Controller
 
         $user = $request->user();
         if (!$user) {
-            $phone = preg_replace('/[^\d+]/', '', $validated['phone']);
-            $existing = \App\Models\User::where('phone', $phone)->first();
-
-            // A guest must not be able to place orders into someone else's registered account
-            if ($existing && !str_starts_with((string) $existing->email, 'guest_')) {
-                return redirect()->guest(route('login'))
-                    ->withInput(['login' => $phone])
-                    ->with('error', "Bu telefon raqami ro'yxatdan o'tgan. Buyurtmani yakunlash uchun hisobingizga kiring — savatchangiz saqlanib qoladi.");
-            }
-
-            $user = $existing ?? \App\Models\User::create([
-                'phone' => $phone,
-                'name' => $validated['recipient_name'],
-                'email' => 'guest_' . uniqid() . '@example.uz',
-                'password' => bcrypt(Str::random(16)),
-                'is_active' => true,
-            ]);
+            return redirect()->guest(route('login'))
+                ->with('info', "Buyurtmani yakunlash uchun tizimga kiring yoki ro'yxatdan o'ting. Savatchangiz saqlanadi.");
         }
 
         $sessionId = $this->cartSessionId($request);

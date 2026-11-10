@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/api_client.dart';
+import '../../auth/auth_modal.dart';
+import '../../auth/auth_notifier.dart';
 import '../../tracking/presentation/tracking_screen.dart';
 
-class OrdersScreen extends StatefulWidget {
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen> {
+class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   List<dynamic> _allOrders = [];
   bool _isLoading = true;
@@ -150,6 +153,74 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+
+    if (!auth.isAuthenticated) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: const Text(
+            'Mening Buyurtmalarim',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.brandEmerald.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.receipt_long_outlined, size: 40, color: AppColors.brandEmerald),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  "Buyurtmalar tarixi",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.brandDark),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Buyurtmalaringiz va ularning holatini kuzatish uchun profilingizga kiring yoki ro'yxatdan o'ting.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.brandLime,
+                    foregroundColor: AppColors.brandDark,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.login, size: 18),
+                  label: const Text("Tizimga kirish yoki Ro'yxatdan o'tish", style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: () async {
+                    final ok = await showAuthModal(context);
+                    if (ok == true && mounted) {
+                      _fetchOrders();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final filtered = _filteredOrders;
 
     return Scaffold(

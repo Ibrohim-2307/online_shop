@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/network/api_client.dart';
+import '../../auth/auth_modal.dart';
+import '../../auth/auth_notifier.dart';
 import '../data/cart_notifier.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -35,6 +37,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.initState();
     _selectedPaymentMethod = widget.initialPaymentMethod ?? 'cash_on_delivery';
     _selectedNasiyaMonths = widget.initialNasiyaMonths ?? 6;
+
+    final auth = ref.read(authProvider);
+    if (auth.user != null) {
+      if (auth.user!.name.isNotEmpty) _nameCtrl.text = auth.user!.name;
+      if (auth.user!.phone.isNotEmpty) _phoneCtrl.text = auth.user!.phone;
+    }
   }
 
   @override
@@ -61,6 +69,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _submitOrder() async {
     final cart = ref.read(cartProvider);
     if (cart.items.isEmpty) return;
+
+    final auth = ref.read(authProvider);
+    if (!auth.isAuthenticated) {
+      final ok = await showAuthModal(
+        context,
+        title: "Buyurtmani yakunlash",
+        subtitle: "Buyurtmani tasdiqlash uchun tizimga kiring yoki ro'yxatdan o'ting.",
+      );
+      if (ok != true || !mounted) return;
+
+      final updatedAuth = ref.read(authProvider);
+      if (updatedAuth.user != null) {
+        if (updatedAuth.user!.name.isNotEmpty) _nameCtrl.text = updatedAuth.user!.name;
+        if (updatedAuth.user!.phone.isNotEmpty) _phoneCtrl.text = updatedAuth.user!.phone;
+      }
+    }
 
     if (_nameCtrl.text.trim().isEmpty || _phoneCtrl.text.trim().isEmpty || _addressCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

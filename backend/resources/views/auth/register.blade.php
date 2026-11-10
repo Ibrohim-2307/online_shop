@@ -19,6 +19,13 @@
             <p class="text-xs text-slate-500 mt-1">Xarid qilish yoki o'z do'koningizni ochish uchun hisob yarating</p>
         </div>
 
+        @if(session('info'))
+            <div class="mb-4 p-3.5 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold rounded-xl flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ session('info') }}</span>
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium rounded-xl">
                 @foreach($errors->all() as $error)

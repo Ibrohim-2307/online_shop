@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/product_image.dart';
+import '../../auth/auth_modal.dart';
+import '../../auth/auth_notifier.dart';
 import '../../cart/data/cart_notifier.dart';
 import '../../cart/presentation/checkout_screen.dart';
 import '../domain/product_model.dart';
@@ -464,12 +466,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       '⚡ Nasiyaga olish ($_selectedNasiyaMonths oyga - ${_formatCurrency(monthlyNasiya)}/oy)',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       ref.read(cartProvider.notifier).addItem(
                             widget.product,
                             _selectedVariant,
                             _quantity,
                           );
+
+                      final auth = ref.read(authProvider);
+                      if (!auth.isAuthenticated) {
+                        final ok = await showAuthModal(
+                          context,
+                          title: "Nasiyaga buyurtma berish",
+                          subtitle: "Nasiyani rasmiylashtirish uchun tizimga kiring yoki ro'yxatdan o'ting.",
+                        );
+                        if (ok != true || !context.mounted) return;
+                      }
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(

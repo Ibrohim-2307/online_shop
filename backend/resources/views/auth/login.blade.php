@@ -19,6 +19,13 @@
             <p class="text-xs text-slate-500 mt-1">Admin, sotuvchi yoki xaridor hisobingizga kiring</p>
         </div>
 
+        @if(session('info'))
+            <div class="mb-4 p-3.5 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold rounded-xl flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ session('info') }}</span>
+            </div>
+        @endif
+
         @if(session('success'))
             <div class="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-xl">
                 {{ session('success') }}

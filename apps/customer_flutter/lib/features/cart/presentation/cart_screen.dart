@@ -4,6 +4,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/product_image.dart';
+import '../../auth/auth_modal.dart';
+import '../../auth/auth_notifier.dart';
 import '../data/cart_notifier.dart';
 import 'checkout_screen.dart';
 
@@ -242,7 +244,17 @@ class CartScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
+                      final auth = ref.read(authProvider);
+                      if (!auth.isAuthenticated) {
+                        final ok = await showAuthModal(
+                          context,
+                          title: "Xaridni rasmiylashtirish",
+                          subtitle: "Buyurtma berish uchun tizimga kiring yoki ro'yxatdan o'ting. Savatchangiz to'liq saqlanadi.",
+                        );
+                        if (ok != true || !context.mounted) return;
+                      }
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const CheckoutScreen()),

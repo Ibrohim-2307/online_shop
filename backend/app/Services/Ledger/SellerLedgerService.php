@@ -231,6 +231,63 @@ class SellerLedgerService
     }
 
     /**
+     * The marketplace's own money picture, for administrators: what was sold, what the site earned,
+     * what it still owes to stores, and the same per store.
+     */
+    public function platformSummary(int $days = 30): array
+    {
+        $from = now()->subDays($days);
+
+        $totals = fn($query) => $query->selectRaw('entry_type, SUM(amount) as total')->groupBy('entry_type')->pluck('total', 'entry_type');
+        $all = $totals(SellerLedger::query());
+        $recent = $totals(SellerLedger::where('created_at', '>=', $from));
+
+        $shape = fn($sums) => [
+            'sales' => (int) ($sums['order_sale'] ?? 0),
+            'commission' => (int) ($sums['commission_fee'] ?? 0),
+            'refunds' => (int) ($sums['refund_deduction'] ?? 0),
+            'paid_out' => (int) ($sums['payout'] ?? 0),
+        ];
+
+        $perSeller = SellerLedger::selectRaw('seller_id, entry_type, type, SUM(amount) as total')
+            ->groupBy('seller_id', 'entry_type', 'type')
+            ->get()
+            ->groupBy('seller_id');
+        $pending = SellerPayout::whereIn('status', self::OPEN_PAYOUT_STATUSES)
+            ->selectRaw('seller_id, SUM(amount) as total')
+            ->groupBy('seller_id')
+            ->pluck('total', 'seller_id');
+
+        $sellers = Seller::whereIn('id', $perSeller->keys())->get(['id', 'name', 'commission_rate'])
+            ->map(function (Seller $seller) use ($perSeller, $pending) {
+                $rows = $perSeller[$seller->id];
+
+                return [
+                    'id' => $seller->id,
+                    'name' => $seller->name,
+                    'commission_rate' => (float) $seller->commission_rate,
+                    'sales' => (int) $rows->where('entry_type', 'order_sale')->sum('total'),
+                    'commission' => (int) $rows->where('entry_type', 'commission_fee')->sum('total'),
+                    'paid_out' => (int) $rows->where('entry_type', 'payout')->sum('total'),
+                    'balance' => (int) $rows->where('type', 'credit')->sum('total') - (int) $rows->where('type', 'debit')->sum('total'),
+                    'pending_payouts' => (int) ($pending[$seller->id] ?? 0),
+                ];
+            })
+            ->sortByDesc('sales')
+            ->values();
+
+        return [
+            'days' => $days,
+            'all' => $shape($all),
+            'recent' => $shape($recent),
+            // Money the site holds that belongs to stores
+            'owed_to_sellers' => (int) $sellers->sum(fn($s) => max(0, $s['balance'])),
+            'pending_payouts' => (int) $pending->sum(),
+            'sellers' => $sellers,
+        ];
+    }
+
+    /**
      * Seller asks for their money. The request only reserves the sum; the ledger changes when an admin pays it.
      *
      * @throws InvalidArgumentException when the seller may not take this sum out right now

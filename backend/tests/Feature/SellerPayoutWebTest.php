@@ -224,6 +224,33 @@ class SellerPayoutWebTest extends TestCase
         $this->assertSame(0, SellerLedger::where('entry_type', 'payout')->count());
     }
 
+    public function test_admin_sees_platform_finance_and_moderator_does_not(): void
+    {
+        $seller = $this->seller();
+        $this->sale($seller, 1000000, 40);
+        $this->sale($seller, 200000, 1);
+        $admin = $this->user('admin');
+        $payout = SellerPayout::create(['seller_id' => $seller->id, 'amount' => 300000, 'status' => 'requested']);
+        app(SellerLedgerService::class)->reviewPayout($payout, 'completed', null, $admin);
+
+        $finance = app(SellerLedgerService::class)->platformSummary(30);
+        $this->assertSame(1200000, $finance['all']['sales']);
+        $this->assertSame(60000, $finance['all']['commission']);
+        $this->assertSame(10000, $finance['recent']['commission']);
+        $this->assertSame(300000, $finance['all']['paid_out']);
+        $this->assertSame(840000, $finance['owed_to_sellers']);
+        $this->assertSame(840000, $finance['sellers'][0]['balance']);
+
+        $this->actingAs($admin)->get(route('admin.dashboard', ['tab' => 'finance']))
+            ->assertOk()
+            ->assertSee('Sayt daromadi')
+            ->assertSee('840 000');
+
+        $this->actingAs($this->user('moderator'))->get(route('admin.dashboard', ['tab' => 'finance']))
+            ->assertOk()
+            ->assertDontSee('Sayt daromadi');
+    }
+
     public function test_moderator_cannot_pay_or_see_payouts(): void
     {
         $seller = $this->seller();

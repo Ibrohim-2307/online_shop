@@ -90,7 +90,9 @@ class AdminDashboardController extends Controller
         }
         if ($canManagePayouts) {
             $tabs[] = 'payouts';
+            $tabs[] = 'finance';
         }
+        $finance = $canManagePayouts ? $ledgerService->platformSummary() : null;
         $initialTab = in_array($request->query('tab'), $tabs, true)
             ? $request->query('tab')
             : 'sellers';
@@ -112,6 +114,7 @@ class AdminDashboardController extends Controller
             'auditLogs',
             'payouts',
             'payoutBalances',
+            'finance',
             'canManagePayouts'
         ));
     }

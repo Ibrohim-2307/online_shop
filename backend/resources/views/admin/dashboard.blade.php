@@ -132,6 +132,9 @@
                         <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_payouts'] }}</span>
                     @endif
                 </button>
+                <button @click="currentTab = 'finance'" :class="currentTab === 'finance' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                    📊 Moliya
+                </button>
             @endif
             <button @click="currentTab = 'audit'" :class="currentTab === 'audit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
                 🔍 Audit Jurnali
@@ -721,6 +724,71 @@
                     @empty
                         <div class="p-8 text-center text-slate-400">Hozircha pul yechish so'rovlari yo'q</div>
                     @endforelse
+                </div>
+            </div>
+        @endif
+
+        @if($canManagePayouts && $finance)
+            <!-- TAB: PLATFORM FINANCE -->
+            @php $sum = fn($v) => number_format((int) $v, 0, '.', ' '); @endphp
+            <div x-show="currentTab === 'finance'" x-cloak class="space-y-4">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="col-span-2 lg:col-span-1 p-4 rounded-2xl bg-slate-900 text-white">
+                        <span class="text-[11px] font-bold uppercase text-emerald-300 block">Sayt daromadi (komissiya)</span>
+                        <div class="text-xl font-black mt-1">{{ $sum($finance['all']['commission']) }} <span class="text-[10px] font-bold text-white/60">UZS</span></div>
+                        <span class="text-[10px] text-white/60 block mt-1">Oxirgi {{ $finance['days'] }} kunda: {{ $sum($finance['recent']['commission']) }}</span>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200">
+                        <span class="text-[11px] font-bold uppercase text-slate-500 block">To'langan savdo</span>
+                        <div class="text-lg font-black text-slate-900 mt-1">{{ $sum($finance['all']['sales']) }} <span class="text-[10px] font-bold text-slate-400">UZS</span></div>
+                        <span class="text-[10px] text-slate-500 block mt-1">Oxirgi {{ $finance['days'] }} kunda: {{ $sum($finance['recent']['sales']) }}</span>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200">
+                        <span class="text-[11px] font-bold uppercase text-slate-500 block">Sotuvchilarga qarz</span>
+                        <div class="text-lg font-black text-amber-700 mt-1">{{ $sum($finance['owed_to_sellers']) }} <span class="text-[10px] font-bold text-slate-400">UZS</span></div>
+                        <span class="text-[10px] text-slate-500 block mt-1">Shundan so'ralgan: {{ $sum($finance['pending_payouts']) }}</span>
+                    </div>
+                    <div class="col-span-2 lg:col-span-1 p-4 rounded-2xl bg-white border border-slate-200">
+                        <span class="text-[11px] font-bold uppercase text-slate-500 block">Sotuvchilarga to'langan</span>
+                        <div class="text-lg font-black text-slate-900 mt-1">{{ $sum($finance['all']['paid_out']) }} <span class="text-[10px] font-bold text-slate-400">UZS</span></div>
+                        <span class="text-[10px] text-slate-500 block mt-1">Qaytarilgan tovarlar: {{ $sum($finance['all']['refunds']) }}</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="p-4 border-b border-slate-100">
+                        <h3 class="font-bold text-slate-900 text-sm">Do'konlar bo'yicha</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Bu yerda faqat puli to'langan buyurtmalar hisoblanadi (naqd to'lovda — yetkazilgach). "Balans" — sayt shu do'konga berishi kerak bo'lgan pul.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-900 font-bold uppercase tracking-wider text-[10px]">
+                                <tr>
+                                    <th class="p-3">Do'kon</th>
+                                    <th class="p-3 text-right">Savdo</th>
+                                    <th class="p-3 text-right">Komissiya</th>
+                                    <th class="p-3 text-right">To'langan</th>
+                                    <th class="p-3 text-right">Balans</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @forelse($finance['sellers'] as $row)
+                                    <tr>
+                                        <td class="p-3">
+                                            <div class="font-bold text-slate-900">{{ $row['name'] }}</div>
+                                            <div class="text-[10px] text-slate-400">Komissiya {{ $row['commission_rate'] }}%@if($row['pending_payouts'] > 0) • so'ralgan {{ $sum($row['pending_payouts']) }}@endif</div>
+                                        </td>
+                                        <td class="p-3 text-right whitespace-nowrap">{{ $sum($row['sales']) }}</td>
+                                        <td class="p-3 text-right whitespace-nowrap font-bold text-emerald-700">{{ $sum($row['commission']) }}</td>
+                                        <td class="p-3 text-right whitespace-nowrap">{{ $sum($row['paid_out']) }}</td>
+                                        <td class="p-3 text-right whitespace-nowrap font-black text-slate-900">{{ $sum($row['balance']) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" class="p-8 text-center text-slate-400">Hozircha puli to'langan savdo yo'q</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         @endif

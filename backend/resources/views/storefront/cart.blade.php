@@ -196,6 +196,19 @@
                         </svg>
                     </a>
 
+                    <!-- Nasiya Quick Action Option -->
+                    @if($quote['grand_total'] > 0)
+                        <a href="{{ route('checkout', ['payment_method' => 'nasiya']) }}" class="w-full flex items-center justify-between py-3 px-4 rounded-2xl bg-amber-50 hover:bg-amber-100/80 border border-amber-300 text-amber-950 font-bold text-xs transition-all shadow-2xs group">
+                            <div class="flex items-center gap-2">
+                                <span>⚡</span>
+                                <span>Muddatli to'lov (Nasiya)</span>
+                            </div>
+                            <span class="text-[11px] text-[#123C2F] font-black group-hover:translate-x-0.5 transition-transform">
+                                oyiga {{ number_format(ceil(($quote['grand_total'] * 1.08) / 6), 0, '.', ' ') }} UZS dan →
+                            </span>
+                        </a>
+                    @endif
+
                     <div class="text-[11px] text-[#64748B] text-center space-y-1">
                         <p>🔒 100% xavfsiz to'lov va zaxirani band qilish</p>
                         <p>Narxlar server tomonidan to'g'ridan-to'g'ri tekshiriladi</p>

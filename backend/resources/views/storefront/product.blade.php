@@ -24,6 +24,8 @@ function productDetails() {
         activeTiers: [],
         addingToCart: false,
         addedSuccess: false,
+        redirectingToCart: false,
+        showCartModal: false,
         selectedNasiyaMonths: 6,
         buyingNasiya: false,
 
@@ -67,8 +69,9 @@ function productDetails() {
             }
         },
 
-        async addToCart() {
+        async addToCart(goToCart = false) {
             this.addingToCart = true;
+            this.redirectingToCart = goToCart;
             try {
                 const tokenEl = document.querySelector('meta[name="csrf-token"]');
                 const token = tokenEl ? tokenEl.getAttribute('content') : '';
@@ -88,7 +91,11 @@ function productDetails() {
                 const data = await res.json();
                 if (res.ok && data.success) {
                     this.addedSuccess = true;
-                    setTimeout(() => { window.location.href = '/cart'; }, 350);
+                    if (goToCart) {
+                        window.location.href = '/cart';
+                    } else {
+                        this.showCartModal = true;
+                    }
                 } else {
                     alert(data.message || 'Xatolik yuz berdi');
                 }
@@ -96,6 +103,7 @@ function productDetails() {
                 alert('Serverga ulanishda xatolik yuz berdi');
             } finally {
                 this.addingToCart = false;
+                if (!goToCart) this.redirectingToCart = false;
             }
         },
 
@@ -597,24 +605,63 @@ function imageMagnifier(imgUrl) {
                     </div>
                 </div>
 
-                <!-- Add to Cart CTA -->
-                <div class="pt-2">
+                <!-- Add to Cart & Go to Cart CTA -->
+                <div class="pt-2 space-y-3">
                     @if($product->isFrozen())
                     <div class="w-full h-14 rounded-2xl bg-slate-100 border border-slate-300 text-slate-600 font-bold text-base flex items-center justify-center gap-2" role="status">
                         ❄️ Vaqtincha sotuvda yo'q
                     </div>
                     <p class="text-center text-[11px] text-[#64748B] mt-2">Sotuvchi omborni to'ldirgach mahsulot yana sotuvga chiqadi.</p>
                     @else
-                    <button type="button"
-                            @click="addToCart()"
-                            :disabled="addingToCart"
-                            class="w-full h-14 rounded-2xl bg-[#123C2F] text-white hover:bg-[#0d2a21] font-bold text-base transition-all shadow-md flex items-center justify-center gap-3">
-                        <svg class="w-6 h-6 text-[#C9F46B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
-                        <span x-text="addingToCart ? 'Savatchaga qo\'shilmoqda...' : (addedSuccess ? '✓ Savatchaga qo\'shildi!' : `Savatchaga qo'shish (${quantity} ${unit})`)"></span>
-                    </button>
-                    <p class="text-center text-[11px] text-[#64748B] mt-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Button 1: Savatchaga qo'shish -->
+                        <button type="button"
+                                @click="addToCart(false)"
+                                :disabled="addingToCart"
+                                class="h-14 px-4 rounded-2xl bg-[#FAFBF7] hover:bg-white text-[#123C2F] border-2 border-[#123C2F] font-bold text-sm sm:text-base transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2.5 group cursor-pointer active:scale-98">
+                            <svg class="w-5 h-5 text-[#123C2F] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <span x-text="addingToCart && !redirectingToCart ? 'Qo\'shilmoqda...' : 'Savatchaga qo\'shish'"></span>
+                        </button>
+
+                        <!-- Button 2: Darrov savatga o'tish (Directly add and go to cart) -->
+                        <button type="button"
+                                @click="addToCart(true)"
+                                :disabled="addingToCart"
+                                class="h-14 px-4 rounded-2xl bg-[#123C2F] hover:bg-[#0d2a21] text-white font-black text-sm sm:text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2.5 group cursor-pointer active:scale-98">
+                            <span x-show="!redirectingToCart" class="flex items-center gap-2">
+                                <span>Savatga o'tish</span>
+                                <span class="text-[#C9F46B] text-lg font-black transition-transform group-hover:translate-x-1">→</span>
+                            </span>
+                            <span x-show="redirectingToCart" x-cloak class="flex items-center gap-2">
+                                <svg class="animate-spin h-5 w-5 text-[#C9F46B]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                <span>O'tilmoqda...</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Instant Added Alert Banner -->
+                    <div x-show="addedSuccess && !showCartModal" x-transition x-cloak class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shrink-0">✓</span>
+                            <div>
+                                <span class="font-bold text-xs sm:text-sm block">Mahsulot savatchaga qo'shildi!</span>
+                                <span class="text-[11px] text-emerald-700" x-text="quantity + ' ' + unit + ' • Jami: ' + formatNumber(currentQuote.total_price) + ' UZS'"></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button type="button" @click="addedSuccess = false" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer">
+                                Yopish
+                            </button>
+                            <a href="{{ route('cart') }}" class="px-4 py-2 rounded-xl bg-[#123C2F] text-[#C9F46B] text-xs font-bold hover:brightness-110 shadow-xs flex items-center gap-1.5 transition">
+                                <span>Savatga o'tish</span>
+                                <span>→</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <p class="text-center text-[11px] text-[#64748B] mt-1">
                         🔒 Xavfsiz ko'p sotuvchili buyurtma va avtomatik zaxira band qilish
                     </p>
                     @endif
@@ -717,6 +764,49 @@ function imageMagnifier(imgUrl) {
                 </div>
             @endif
 
+        </div>
+
+        <!-- Modal: Savatga qo'shildi (Added to Cart Dialog) -->
+        <div x-show="showCartModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4" x-transition.opacity>
+            <div @click.away="showCartModal = false" class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#E8ECE4]">
+                <div class="flex items-center justify-between pb-3 border-b border-[#E8ECE4]">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-base font-black">
+                            ✓
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold text-base text-[#172326]">Savatchaga qo'shildi!</h3>
+                            <p class="text-xs text-[#64748B]">Mahsulot muvaffaqiyatli band qilindi</p>
+                        </div>
+                    </div>
+                    <button @click="showCartModal = false" class="text-[#64748B] hover:text-[#172326] text-xl font-bold p-1 leading-none">✕</button>
+                </div>
+
+                <div class="flex items-center gap-3.5 p-3 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                    @if($product->image_url)
+                        <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-16 h-16 rounded-xl object-cover border border-[#E8ECE4] shrink-0">
+                    @else
+                        <div class="w-16 h-16 rounded-xl bg-white border border-[#E8ECE4] flex items-center justify-center text-2xl shrink-0">📦</div>
+                    @endif
+                    <div class="min-w-0 flex-1">
+                        <h4 class="font-bold text-xs sm:text-sm text-[#172326] truncate">{{ $product->name }}</h4>
+                        <p class="text-xs text-[#64748B] mt-0.5">
+                            <span x-text="quantity + ' ' + unit"></span> × <span x-text="formatNumber(currentQuote.base_unit_price) + ' UZS'"></span>
+                        </p>
+                        <p class="text-xs font-black text-[#123C2F] mt-1" x-text="'Jami: ' + formatNumber(currentQuote.total_price) + ' UZS'"></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 pt-2">
+                    <button type="button" @click="showCartModal = false" class="w-full py-3 rounded-xl border border-[#E8ECE4] bg-white hover:bg-slate-50 text-xs font-bold text-[#64748B] hover:text-[#172326] transition cursor-pointer">
+                        Xaridni davom ettirish
+                    </button>
+                    <a href="{{ route('cart') }}" class="w-full py-3 rounded-xl bg-[#123C2F] hover:bg-[#0d2a21] text-[#C9F46B] text-xs font-black flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer">
+                        <span>Savatga o'tish</span>
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
         </div>
 
     </div>

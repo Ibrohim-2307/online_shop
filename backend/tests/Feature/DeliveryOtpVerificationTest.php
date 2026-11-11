@@ -155,4 +155,18 @@ class DeliveryOtpVerificationTest extends TestCase
         $courierSummary = $trackingService->getTrackingSummary($shipment, $courier);
         $this->assertNull($courierSummary['delivery_otp']);
     }
+
+    public function test_delivery_otp_is_hidden_from_json_serialization(): void
+    {
+        $shipment = new Shipment([
+            'tracking_number' => 'TRK-SECRET-OTP-001',
+            'status' => 'assigned',
+            'delivery_otp' => '9988',
+            'delivery_otp_expires_at' => now()->addHours(24),
+        ]);
+
+        $json = $shipment->toArray();
+        $this->assertArrayNotHasKey('delivery_otp', $json, 'delivery_otp must be hidden from serialized array / JSON');
+        $this->assertArrayNotHasKey('delivery_otp_expires_at', $json, 'delivery_otp_expires_at must be hidden');
+    }
 }

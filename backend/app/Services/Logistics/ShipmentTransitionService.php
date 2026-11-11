@@ -102,6 +102,27 @@ class ShipmentTransitionService
             if ($suborder) {
                 if ($newStatus === 'delivered') {
                     $suborder->update(['status' => 'delivered']);
+
+                    // 1. Deduct physical inventory & finalize stock reservations
+                    try {
+                        app(\App\Services\Checkout\InventoryReservationService::class)->fulfillForSuborder($suborder);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Inventory fulfillment warning for suborder {$suborder->id}: " . $e->getMessage());
+                    }
+
+                    // 2. Settle COD (Cash on Delivery) revenue into seller ledger & mark payment as paid
+                    try {
+                        $order = $suborder->order;
+                        $payment = $order?->latest_payment;
+                        if ($payment && $payment->payment_method === 'cash_on_delivery') {
+                            app(\App\Services\Ledger\SellerLedgerService::class)->recordOrderSale($suborder);
+                            if ($payment->status !== 'paid') {
+                                $payment->update(['status' => 'paid']);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("COD ledger credit warning for suborder {$suborder->id}: " . $e->getMessage());
+                    }
                 } elseif ($newStatus === 'in_transit') {
                     $suborder->update(['status' => 'shipped']);
                 } elseif ($newStatus === 'picked_up') {

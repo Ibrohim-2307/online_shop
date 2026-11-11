@@ -102,87 +102,96 @@ class ProfileController extends Controller
         $sellerSalesStats = [];
 
         if ($user->isSeller()) {
-            $seller = $user->activeSeller() ?? Seller::where('id', $user->seller_id)->first();
-            if (!$seller) {
-                $membership = SellerMember::where('user_id', $user->id)->first();
-                if ($membership) {
-                    $seller = Seller::find($membership->seller_id);
+            try {
+                $seller = $user->activeSeller() ?? Seller::where('id', $user->seller_id)->first();
+                if (!$seller) {
+                    $membership = SellerMember::where('user_id', $user->id)->first();
+                    if ($membership) {
+                        $seller = Seller::find($membership->seller_id);
+                    }
                 }
+                if (!$seller) {
+                    $safeSlug = Str::slug($user->name ?: 'seller') . '-store-' . Str::lower(Str::random(4));
+                    $seller = Seller::firstOrCreate(
+                        ['slug' => $safeSlug],
+                        [
+                            'name' => ($user->name ?: "Sotuvchi") . " Do'koni",
+                            'legal_name' => ($user->name ?: "Sotuvchi") . " XK",
+                            'status' => 'pending',
+                            'commission_rate' => 5.0,
+                            'rating' => 5.0,
+                            'phone' => $user->phone,
+                            'email' => $user->email,
+                        ]
+                    );
+                    SellerMember::firstOrCreate(
+                        ['seller_id' => $seller->id, 'user_id' => $user->id],
+                        ['role' => 'owner', 'is_active' => true]
+                    );
+                    $user->update(['seller_id' => $seller->id]);
+                }
+
+                if ($seller) {
+                    $sellerProducts = Product::where('seller_id', $seller->id)
+                        ->with(['category', 'variants.priceTiers', 'variants.inventoryBalances.warehouse'])
+                        ->latest()
+                        ->get();
+
+                    $sellerSuborders = Suborder::where('seller_id', $seller->id)
+                        ->with(['order.user', 'items.product', 'shipments.courier'])
+                        ->latest()
+                        ->limit(100)
+                        ->get();
+
+                    $needsAction = fn($sub) => in_array($sub->status, ['pending', 'confirmed'], true)
+                        && in_array($sub->order?->status, ['processing'], true);
+                    $sellerNeedsActionCount = $sellerSuborders->filter($needsAction)->count();
+                    $sellerSuborders = $sellerSuborders->sortBy(fn($sub) => $needsAction($sub) ? 0 : 1)->values();
+
+                    $recentSales = Suborder::where('seller_id', $seller->id)
+                        ->where('created_at', '>=', now()->subDays(30))
+                        ->where('status', '!=', 'cancelled')
+                        ->whereHas('order', fn($q) => $q->whereNotIn('status', ['cancelled', 'pending_payment']))
+                        ->get(['id', 'status', 'items_subtotal']);
+
+                    $topProducts = collect();
+                    if ($recentSales->isNotEmpty()) {
+                        $topProducts = \App\Models\OrderItem::whereIn('suborder_id', $recentSales->pluck('id'))
+                            ->selectRaw('product_name, SUM(quantity) as qty, SUM(subtotal) as revenue')
+                            ->groupBy('product_name')
+                            ->orderByDesc('revenue')
+                            ->limit(5)
+                            ->get();
+                    }
+
+                    $sellerSalesStats = [
+                        'revenue' => (int) $recentSales->sum('items_subtotal'),
+                        'orders' => $recentSales->count(),
+                        'delivered' => $recentSales->where('status', 'delivered')->count(),
+                        'average' => $recentSales->count() ? (int) round($recentSales->avg('items_subtotal')) : 0,
+                        'top_products' => $topProducts,
+                        'out_of_stock' => $sellerProducts->filter(fn($p) => $p->is_active
+                            && $p->variants->flatMap->inventoryBalances->sum(fn($b) => (float) $b->quantity - (float) $b->reserved_quantity) <= 0)->count(),
+                    ];
+
+                    $sellerWarehouses = Warehouse::where('seller_id', $seller->id)
+                        ->with('balances.variant')
+                        ->get();
+
+                    $sellerLedger = SellerLedger::where('seller_id', $seller->id)->latest('id')->limit(30)->get();
+                    $ledgerService = app(SellerLedgerService::class);
+                    $sellerFinance = $ledgerService->summary($seller);
+                    $sellerFinance['has_dispute'] = $ledgerService->hasOpenDispute($seller);
+                    $sellerBalance = $sellerFinance['balance'] ?? 0;
+                    $sellerPayouts = SellerPayout::where('seller_id', $seller->id)->latest('id')->limit(20)->get();
+                    $canRequestPayout = $this->mayRequestPayout($user, $seller);
+
+                    $categories = Category::where('is_active', true)->orderBy('name')->get();
+                    $couriers = User::whereHas('roles', fn($q) => $q->whereIn('name', ['courier', 'logistics_operator']))->get();
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Profile seller section error: ' . $e->getMessage(), ['exception' => $e]);
             }
-            if (!$seller) {
-                $seller = Seller::firstOrCreate(
-                    ['slug' => Str::slug($user->name . '-store')],
-                    [
-                        'name' => $user->name . " Do'koni",
-                        'legal_name' => $user->name . " XK",
-                        // A store created implicitly still needs admin approval before it can sell
-                        'status' => 'pending',
-                        'commission_rate' => 5.0,
-                        'rating' => 5.0,
-                        'phone' => $user->phone,
-                        'email' => $user->email,
-                    ]
-                );
-                SellerMember::firstOrCreate(
-                    ['seller_id' => $seller->id, 'user_id' => $user->id],
-                    ['role' => 'owner', 'is_active' => true]
-                );
-                $user->update(['seller_id' => $seller->id]);
-            }
-
-            $sellerProducts = Product::where('seller_id', $seller->id)
-                ->with(['category', 'variants.priceTiers', 'variants.inventoryBalances.warehouse'])
-                ->latest()
-                ->get();
-
-            $sellerSuborders = Suborder::where('seller_id', $seller->id)
-                ->with(['order.user', 'items.product', 'shipments.courier'])
-                ->latest()
-                ->limit(100)
-                ->get();
-
-            // Orders the seller must act on now (paid or cash-on-delivery, not yet being packed) go to the top
-            $needsAction = fn($sub) => in_array($sub->status, ['pending', 'confirmed'], true)
-                && in_array($sub->order?->status, ['processing'], true);
-            $sellerNeedsActionCount = $sellerSuborders->filter($needsAction)->count();
-            $sellerSuborders = $sellerSuborders->sortBy(fn($sub) => $needsAction($sub) ? 0 : 1)->values();
-
-            // Last 30 days of real sales (not cancelled, not awaiting online payment)
-            $recentSales = Suborder::where('seller_id', $seller->id)
-                ->where('created_at', '>=', now()->subDays(30))
-                ->where('status', '!=', 'cancelled')
-                ->whereHas('order', fn($q) => $q->whereNotIn('status', ['cancelled', 'pending_payment']))
-                ->get(['id', 'status', 'items_subtotal']);
-            $topProducts = \App\Models\OrderItem::whereIn('suborder_id', $recentSales->pluck('id'))
-                ->selectRaw('product_name, SUM(quantity) as qty, SUM(subtotal) as revenue')
-                ->groupBy('product_name')
-                ->orderByDesc('revenue')
-                ->limit(5)
-                ->get();
-            $sellerSalesStats = [
-                'revenue' => (int) $recentSales->sum('items_subtotal'),
-                'orders' => $recentSales->count(),
-                'delivered' => $recentSales->where('status', 'delivered')->count(),
-                'average' => $recentSales->count() ? (int) round($recentSales->avg('items_subtotal')) : 0,
-                'top_products' => $topProducts,
-                'out_of_stock' => $sellerProducts->filter(fn($p) => $p->is_active
-                    && $p->variants->flatMap->inventoryBalances->sum(fn($b) => (float) $b->quantity - (float) $b->reserved_quantity) <= 0)->count(),
-            ];
-
-            $sellerWarehouses = Warehouse::where('seller_id', $seller->id)
-                ->with('balances.variant')
-                ->get();
-
-            $sellerLedger = SellerLedger::where('seller_id', $seller->id)->latest('id')->limit(30)->get();
-            $ledgerService = app(SellerLedgerService::class);
-            $sellerFinance = $ledgerService->summary($seller);
-            $sellerFinance['has_dispute'] = $ledgerService->hasOpenDispute($seller);
-            $sellerBalance = $sellerFinance['balance'];
-            $sellerPayouts = SellerPayout::where('seller_id', $seller->id)->latest('id')->limit(20)->get();
-            $canRequestPayout = $this->mayRequestPayout($user, $seller);
-
-            $categories = Category::where('is_active', true)->orderBy('name')->get();
-            $couriers = User::whereHas('roles', fn($q) => $q->whereIn('name', ['courier', 'logistics_operator']))->get();
         }
 
         // 5. Courier Context & Data (if courier)
@@ -195,40 +204,44 @@ class ProfileController extends Controller
         $courierStats = [];
 
         if ($user->isCourier()) {
-            $courierShipments = Shipment::where('courier_id', $user->id)
-                ->with([
-                    'suborder.seller',
-                    'suborder.order.user',
-                    'suborder.order.payments',
-                    'suborder.items.product',
-                ])
-                ->latest()
-                ->get();
+            try {
+                $courierShipments = Shipment::where('courier_id', $user->id)
+                    ->with([
+                        'suborder.seller',
+                        'suborder.order.user',
+                        'suborder.order.payments',
+                        'suborder.items.product',
+                    ])
+                    ->latest()
+                    ->get();
 
-            $isCod = fn($s) => $s->suborder?->order?->latest_payment?->payment_method === 'cash_on_delivery';
-            $isCancelled = fn($s) => $s->suborder?->order?->status === 'cancelled' || $s->suborder?->status === 'cancelled';
+                $isCod = fn($s) => $s->suborder?->order?->latest_payment?->payment_method === 'cash_on_delivery';
+                $isCancelled = fn($s) => $s->suborder?->order?->status === 'cancelled' || $s->suborder?->status === 'cancelled';
 
-            // Work to do now: on the road first, then picked up, then waiting at the store
-            $priority = ['in_transit' => 0, 'out_for_delivery' => 0, 'picked_up' => 1, 'failed' => 2, 'assigned' => 3, 'pending' => 4];
-            $courierActiveShipments = $courierShipments
-                ->filter(fn($s) => !in_array($s->status, ['delivered'], true) && !$isCancelled($s))
-                ->sortBy(fn($s) => $priority[$s->status] ?? 9)
-                ->values();
-            $courierFinishedShipments = $courierShipments
-                ->filter(fn($s) => $s->status === 'delivered' || $isCancelled($s))
-                ->values();
+                // Work to do now: on the road first, then picked up, then waiting at the store
+                $priority = ['in_transit' => 0, 'out_for_delivery' => 0, 'picked_up' => 1, 'failed' => 2, 'assigned' => 3, 'pending' => 4];
+                $courierActiveShipments = $courierShipments
+                    ->filter(fn($s) => !in_array($s->status, ['delivered'], true) && !$isCancelled($s))
+                    ->sortBy(fn($s) => $priority[$s->status] ?? 9)
+                    ->values();
+                $courierFinishedShipments = $courierShipments
+                    ->filter(fn($s) => $s->status === 'delivered' || $isCancelled($s))
+                    ->values();
 
-            $courierActiveCount = $courierActiveShipments->count();
-            $courierDeliveredCount = $courierShipments->where('status', 'delivered')->count();
-            $courierTotalCashToCollect = $courierActiveShipments->filter($isCod)->sum(fn($s) => $s->suborder?->total_amount ?? 0);
+                $courierActiveCount = $courierActiveShipments->count();
+                $courierDeliveredCount = $courierShipments->where('status', 'delivered')->count();
+                $courierTotalCashToCollect = $courierActiveShipments->filter($isCod)->sum(fn($s) => $s->suborder?->total_amount ?? 0);
 
-            $deliveredToday = $courierShipments->filter(fn($s) => $s->status === 'delivered' && $s->delivered_at?->isToday());
-            $courierStats = [
-                'active' => $courierActiveCount,
-                'delivered_today' => $deliveredToday->count(),
-                'cash_to_collect' => $courierTotalCashToCollect,
-                'cash_collected_today' => $deliveredToday->filter($isCod)->sum(fn($s) => $s->suborder?->total_amount ?? 0),
-            ];
+                $deliveredToday = $courierShipments->filter(fn($s) => $s->status === 'delivered' && ($s->delivered_at instanceof \Carbon\Carbon ? $s->delivered_at->isToday() : false));
+                $courierStats = [
+                    'active' => $courierActiveCount,
+                    'delivered_today' => $deliveredToday->count(),
+                    'cash_to_collect' => $courierTotalCashToCollect,
+                    'cash_collected_today' => $deliveredToday->filter($isCod)->sum(fn($s) => $s->suborder?->total_amount ?? 0),
+                ];
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Profile courier section error: ' . $e->getMessage(), ['exception' => $e]);
+            }
         }
 
         // 6. Superadmin / Admin Quick Stats

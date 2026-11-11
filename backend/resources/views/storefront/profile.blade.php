@@ -79,7 +79,7 @@
                 <div class="flex items-center gap-3.5 sm:gap-5">
                     <div class="relative shrink-0">
                         <div class="w-14 h-14 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-[#123C2F] to-[#1f5c49] text-[#C9F46B] flex items-center justify-center font-black text-xl sm:text-3xl shadow-sm border-2 sm:border-4 border-white ring-2 ring-[#E8ECE4]">
-                            {{ strtoupper(substr($user->name, 0, 1)) }}{{ strtoupper(substr(strstr($user->name, ' ') ?: $user->name, 1, 1)) }}
+                            {{ mb_strtoupper(mb_substr($user->name ?: 'U', 0, 1)) }}{{ mb_strtoupper(mb_substr(trim(strstr($user->name ?: '', ' ') ?: ($user->name ?: '')), 0, 1)) }}
                         </div>
                         <span class="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-[10px] sm:text-[11px] font-bold" title="Faol hisob">
                             ✓
@@ -1751,7 +1751,7 @@
                                 @foreach($order->suborders as $sub)
                                     <div class="space-y-3">
                                         <div class="flex items-center justify-between text-xs pb-2 border-b border-[#E8ECE4]">
-                                            <span class="font-bold text-[#172326]">🏢 Sotuvchi: {{ $sub->seller->name }}</span>
+                                            <span class="font-bold text-[#172326]">🏢 Sotuvchi: {{ $sub->seller?->name ?? 'Do\'kon' }}</span>
                                             <span class="font-mono text-[#64748B] text-[11px]">Suborder: {{ $sub->suborder_number }}</span>
                                         </div>
 
@@ -1776,14 +1776,14 @@
                                 <div class="pt-3 border-t border-[#E8ECE4] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-[#FAFBF7] p-3 rounded-2xl">
                                     <div class="space-y-0.5">
                                         <span class="text-[10px] font-bold uppercase text-[#64748B]">Yetkazish manzili:</span>
-                                        <p class="font-semibold text-[#172326]">{{ $order->shipping_address['address_line'] ?? 'Mustaqillik shoh ko\'chasi, 105-uy' }}</p>
+                                        <p class="font-semibold text-[#172326]">{{ is_array($order->shipping_address) ? ($order->shipping_address['address_line'] ?? $order->shipping_address['full_address'] ?? 'Mustaqillik shoh ko\'chasi, 105-uy') : ($order->shipping_address ?: 'Mustaqillik shoh ko\'chasi, 105-uy') }}</p>
                                     </div>
 
                                     @if($shipment)
                                         <div class="flex items-center gap-3">
                                             <div class="text-right">
                                                 <span class="text-[10px] font-bold uppercase text-[#64748B] block">Qabul qilish kodi (OTP):</span>
-                                                <span class="font-mono font-black text-sm text-[#123C2F] bg-white px-2.5 py-0.5 rounded-lg border border-[#E8ECE4]">8492</span>
+                                                <span class="font-mono font-black text-sm text-[#123C2F] bg-white px-2.5 py-0.5 rounded-lg border border-[#E8ECE4] tracking-wider">{{ $shipment->delivery_otp ?: $shipment->ensureDeliveryOtp() }}</span>
                                             </div>
                                             <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" class="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs hover:bg-emerald-200 transition">
                                                 Jonli Marshrut

@@ -100,6 +100,11 @@ class User extends Authenticatable
         return $this->roles->pluck('name')->intersect($roleList)->isNotEmpty();
     }
 
+    public function hasAnyRole(string|array $roles): bool
+    {
+        return $this->hasRole($roles);
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->hasRole(['superadmin', 'admin']);

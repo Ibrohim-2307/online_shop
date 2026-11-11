@@ -45,6 +45,38 @@ class Category extends Model
     }
 
     /**
+     * Professional high-resolution category photography visual (Uzum / Amazon marketplace grade).
+     */
+    public function getDisplayImageAttribute(): string
+    {
+        $slug = strtolower(trim((string)$this->slug));
+
+        if (str_contains($slug, 'qurilish') || str_contains($slug, 'sement') || str_contains($slug, 'gisht')) {
+            return '/images/products/cement.jpg';
+        }
+        if (str_contains($slug, 'sanoat') || str_contains($slug, 'uskuna') || str_contains($slug, 'generator')) {
+            return '/images/products/generator.jpg';
+        }
+        if (str_contains($slug, 'oziq-ovqat') || str_contains($slug, 'ichimlik') || str_contains($slug, 'don')) {
+            return '/images/products/yog.jpg';
+        }
+        if (str_contains($slug, 'elektr') || str_contains($slug, 'yoritish') || str_contains($slug, 'kabel')) {
+            return '/images/products/proyektor.jpg';
+        }
+        if (str_contains($slug, 'boyoq') || str_contains($slug, 'kimyo')) {
+            return '/images/products/boyoq.jpg';
+        }
+        if (str_contains($slug, 'santexnika') || str_contains($slug, 'quvur') || str_contains($slug, 'suv')) {
+            return '/images/products/quvur.jpg';
+        }
+        if (str_contains($slug, 'asbob') || str_contains($slug, 'instrument')) {
+            return '/images/products/nivelir.jpg';
+        }
+
+        return '/images/products/cement.jpg';
+    }
+
+    /**
      * Get handsome emoji or icon for display across storefront and dashboards.
      */
     public function getDisplayIconAttribute(): string

@@ -35,9 +35,23 @@ class Shipment extends Model
         'delivered_at' => 'datetime',
     ];
 
+    /**
+     * The attributes that should be hidden for serialization (API JSON).
+     * Protects the buyer's delivery OTP from leaking to couriers or unauthorized callers.
+     */
+    protected $hidden = [
+        'delivery_otp',
+        'delivery_otp_expires_at',
+    ];
+
     public function suborder(): BelongsTo
     {
         return $this->belongsTo(Suborder::class);
+    }
+
+    public function order(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
+    {
+        return $this->hasOneThrough(Order::class, Suborder::class, 'id', 'id', 'suborder_id', 'order_id');
     }
 
     public function courier(): BelongsTo

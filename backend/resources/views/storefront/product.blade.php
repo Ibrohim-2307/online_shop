@@ -163,9 +163,9 @@ function productDetails() {
 
             if (matched) {
                 const baseTier = this.activeTiers[0];
-                const unitPrice = BigInt(matched.unit_price);
-                const qtyInt = BigInt(Math.floor(this.quantity));
-                const total = (qtyInt * unitPrice).toString();
+                const unitPrice = Number(matched.unit_price);
+                const qtyNum = Number(this.quantity) || 0;
+                const total = Math.round(qtyNum * unitPrice).toString();
 
                 this.currentQuote = {
                     unit_price: matched.unit_price.toString(),

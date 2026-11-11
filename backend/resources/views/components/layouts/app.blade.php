@@ -198,6 +198,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
                         <span class="hidden xl:inline">Savatcha</span>
+                        @if(($navCartCount ?? 0) > 0)
+                            <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-[#123C2F] text-[#C9F46B] text-[10px] font-black flex items-center justify-center">
+                                {{ $navCartCount > 99 ? '99+' : $navCartCount }}
+                            </span>
+                        @endif
                     </a>
 
                     <!-- Orders Hub Link (Buyurtmalar & Xaridlar) -->
@@ -261,6 +266,11 @@
                         <svg class="w-4 h-4 text-[#123C2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
+                        @if(($navCartCount ?? 0) > 0)
+                            <span class="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#123C2F] text-[#C9F46B] text-[9px] font-black flex items-center justify-center">
+                                {{ $navCartCount > 99 ? '99+' : $navCartCount }}
+                            </span>
+                        @endif
                     </a>
 
                     @auth

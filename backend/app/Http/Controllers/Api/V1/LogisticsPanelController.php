@@ -27,7 +27,7 @@ class LogisticsPanelController extends Controller
         $type = $request->query('type');
         $search = $request->query('search');
 
-        $query = Shipment::with(['order.user', 'suborder.seller', 'suborder.items', 'courier']);
+        $query = Shipment::with(['suborder.order.user', 'suborder.seller', 'suborder.items', 'courier']);
 
         // If courier role, scope to their assigned shipments or available
         if ($user && $user->hasRole('courier') && !$user->hasRole(['admin', 'logistics_operator'])) {
@@ -47,7 +47,7 @@ class LogisticsPanelController extends Controller
             } elseif ($type === 'completed') {
                 $query->where('status', 'delivered');
             } elseif ($type === 'cod') {
-                $query->whereHas('order.payments', fn($pq) => $pq->where('payment_method', 'cash_on_delivery'));
+                $query->whereHas('suborder.order.payments', fn($pq) => $pq->where('payment_method', 'cash_on_delivery'));
             }
         } elseif ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -57,8 +57,8 @@ class LogisticsPanelController extends Controller
             $term = trim($search);
             $query->where(function ($q) use ($term) {
                 $q->where('tracking_number', 'like', "%{$term}%")
-                  ->orWhere('shipping_address', 'like', "%{$term}%")
-                  ->orWhereHas('order.user', fn($uq) => $uq->where('name', 'like', "%{$term}%")->orWhere('phone', 'like', "%{$term}%"))
+                  ->orWhere('delivery_address', 'like', "%{$term}%")
+                  ->orWhereHas('suborder.order.user', fn($uq) => $uq->where('name', 'like', "%{$term}%")->orWhere('phone', 'like', "%{$term}%"))
                   ->orWhereHas('suborder.seller', fn($sq) => $sq->where('name', 'like', "%{$term}%"));
             });
         }
@@ -100,6 +100,14 @@ class LogisticsPanelController extends Controller
         ]);
 
         $shipment = Shipment::findOrFail($id);
+        $user = $request->user();
+
+        // Enforce shipment ownership: A courier can only update their own assigned shipment
+        if ($user && $user->hasRole('courier') && !$user->hasAnyRole(['superadmin', 'admin', 'logistics_operator'])) {
+            if ($shipment->courier_id !== $user->id) {
+                return ApiResponse::forbidden("Sizga biriktirilmagan jo'natma holatini o'zgartira olmaysiz.", 'FORBIDDEN');
+            }
+        }
 
         try {
             $updated = $this->transitionService->transitionStatus(

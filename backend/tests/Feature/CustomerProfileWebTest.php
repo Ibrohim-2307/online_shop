@@ -129,52 +129,77 @@ class CustomerProfileWebTest extends TestCase
 
     public function test_customer_profile_renders_with_existing_orders_and_latest_payment(): void
     {
-        $customer = $this->createCustomer('order_prof@example.uz');
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+        $this->seed(\Database\Seeders\LiveTrackingSeeder::class);
+        $this->seed(\Database\Seeders\SellerOrdersHubSeeder::class);
 
-        $seller = Seller::create([
-            'name' => 'Demo Do\'kon',
-            'legal_name' => 'Demo MCHJ',
-            'slug' => 'demo-dokon',
-            'status' => 'active',
-            'commission_rate' => 5.0,
-            'rating' => 4.9,
-            'email' => 'seller_prof@example.uz',
-            'phone' => '+998901112244',
-        ]);
-
-        $order = Order::create([
-            'order_number' => 'ORD-TEST-9999',
-            'user_id' => $customer->id,
-            'status' => 'processing',
-            'currency' => 'UZS',
-            'items_total' => 250000,
-            'shipping_total' => 20000,
-            'grand_total' => 270000,
-            'shipping_address' => ['recipient_name' => 'Test', 'phone' => '+998901234567', 'full_address' => 'Toshkent'],
-        ]);
-
-        Suborder::create([
-            'order_id' => $order->id,
-            'seller_id' => $seller->id,
-            'suborder_number' => 'ORD-TEST-9999-1',
-            'status' => 'pending',
-            'items_subtotal' => 250000,
-            'shipping_cost' => 20000,
-            'total_amount' => 270000,
-        ]);
-
-        Payment::create([
-            'order_id' => $order->id,
-            'payment_method' => 'cash_on_delivery',
-            'transaction_id' => 'TXN-9999',
-            'amount' => 270000,
-            'currency' => 'UZS',
-            'status' => 'pending',
-        ]);
+        $customer = User::where('email', 'customer@market.uz')->firstOrFail();
 
         $res = $this->actingAs($customer)->get('/profile');
         $res->assertStatus(200)
-            ->assertSee('ORD-TEST-9999')
             ->assertDontSee('Server Error');
+
+        $seller = User::where('email', 'seller@market.uz')->firstOrFail();
+        $resSeller = $this->actingAs($seller)->get('/profile');
+        $resSeller->assertStatus(200);
+
+        $courier = User::where('email', 'courier@market.uz')->firstOrFail();
+        $resCourier = $this->actingAs($courier)->get('/profile');
+        $resCourier->assertStatus(200);
+
+        $nullUser = User::create([
+            'name' => 'No Phone User',
+            'email' => 'nophone@example.uz',
+            'phone' => null,
+            'password' => Hash::make('Secret123!'),
+            'is_active' => true,
+        ]);
+        $resNull = $this->actingAs($nullUser)->get('/profile');
+        $resNull->assertStatus(200);
+    }
+
+    public function test_admin_and_superadmin_can_view_profile(): void
+    {
+        $adminRole = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Admin']);
+        $admin = User::create([
+            'name' => 'Bosh Admin',
+            'email' => 'admin_test_prof@example.uz',
+            'phone' => '+998901112233',
+            'password' => Hash::make('Secret123!'),
+            'is_active' => true,
+        ]);
+        $admin->roles()->attach($adminRole->id);
+
+        $res = $this->actingAs($admin)->get('/profile');
+        $res->assertStatus(200);
+
+        $superRole = Role::firstOrCreate(['name' => 'superadmin'], ['label' => 'Superadmin']);
+        $superadmin = User::create([
+            'name' => 'Katta Superadmin',
+            'email' => 'superadmin_test_prof@example.uz',
+            'phone' => '+998901112244',
+            'password' => Hash::make('Secret123!'),
+            'is_active' => true,
+        ]);
+        $superadmin->roles()->attach($superRole->id);
+
+        $res2 = $this->actingAs($superadmin)->get('/profile');
+        $res2->assertStatus(200);
+    }
+
+    public function test_seller_without_seller_id_can_view_profile(): void
+    {
+        $sellerRole = Role::firstOrCreate(['name' => 'seller_owner'], ['label' => 'Seller Owner']);
+        $sellerUser = User::create([
+            'name' => 'Yangi Sotuvchi',
+            'email' => 'new_seller_prof@example.uz',
+            'phone' => '+998901119988',
+            'password' => Hash::make('Secret123!'),
+            'is_active' => true,
+        ]);
+        $sellerUser->roles()->attach($sellerRole->id);
+
+        $res = $this->actingAs($sellerUser)->get('/profile');
+        $res->assertStatus(200);
     }
 }

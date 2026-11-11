@@ -498,6 +498,58 @@ class SellerAndAdminPanelTest extends TestCase
         $illegalRes->assertStatus(422);
     }
 
+    public function test_logistics_search_and_courier_bola_protection(): void
+    {
+        $operator = $this->setupUserWithRole('logistics_operator', 'op_search@market.uz');
+        $courierA = $this->setupUserWithRole('courier', 'courier_a@market.uz');
+        $courierB = $this->setupUserWithRole('courier', 'courier_b@market.uz');
+
+        $seller = $this->createSeller('Logistics Test Seller', 'logistics-test-seller');
+        $customer = $this->setupUserWithRole('customer', 'cust_logistics@market.uz');
+        $order = Order::create([
+            'order_number' => 'ORD-SEARCH-001',
+            'user_id' => $customer->id,
+            'status' => 'processing',
+            'currency' => 'UZS',
+            'items_total' => 200000,
+            'shipping_total' => 10000,
+            'grand_total' => 210000,
+            'shipping_address' => ['recipient_name' => 'Chilonzor Guy', 'phone' => '+998901234567'],
+        ]);
+        $suborder = Suborder::create([
+            'order_id' => $order->id,
+            'seller_id' => $seller->id,
+            'suborder_number' => 'SUB-SEARCH-001',
+            'status' => 'pending',
+            'items_subtotal' => 200000,
+            'shipping_cost' => 10000,
+            'total_amount' => 210000,
+        ]);
+        $shipment = Shipment::create([
+            'suborder_id' => $suborder->id,
+            'tracking_number' => 'TRK-SEARCH-999',
+            'status' => 'assigned',
+            'courier_id' => $courierA->id,
+            'delivery_address' => ['address_line' => 'Chilonzor 9-mavze', 'city' => 'Toshkent'],
+        ]);
+
+        // 1. Search works without SQL 1054 error
+        $searchRes = $this->actingAs($operator, 'sanctum')->getJson('/api/v1/logistics/shipments?search=Chilonzor');
+        $searchRes->assertStatus(200);
+
+        // 2. Courier B cannot modify Courier A's assigned shipment (BOLA)
+        $tamperRes = $this->actingAs($courierB, 'sanctum')->postJson("/api/v1/logistics/shipments/{$shipment->id}/status", [
+            'status' => 'picked_up',
+        ]);
+        $tamperRes->assertStatus(403);
+
+        // 3. Courier A CAN modify their own shipment
+        $legitRes = $this->actingAs($courierA, 'sanctum')->postJson("/api/v1/logistics/shipments/{$shipment->id}/status", [
+            'status' => 'picked_up',
+        ]);
+        $legitRes->assertStatus(200);
+    }
+
     public function test_seller_can_create_product_with_uploaded_image_and_tiered_pricing(): void
     {
         $seller = $this->createSeller('Stroy Express', 'stroy-express');

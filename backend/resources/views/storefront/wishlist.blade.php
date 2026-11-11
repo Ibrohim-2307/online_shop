@@ -5,7 +5,7 @@
                  // Sync guest localStorage favorites with server if authenticated
                  @auth
                      try {
-                         let localItems = JSON.parse(localStorage.getItem('wishlist') || '[]');
+                         let localItems = JSON.parse(localStorage.getItem('market_wishlist') || localStorage.getItem('wishlist') || '[]');
                          if (Array.isArray(localItems) && localItems.length > 0) {
                              fetch('{{ route('wishlist.sync') }}', {
                                  method: 'POST',

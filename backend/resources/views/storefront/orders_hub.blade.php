@@ -242,7 +242,7 @@
                                         </div>
                                         <div>
                                             <span class="text-[#64748B] block text-[10px] uppercase font-bold">Kuryerga aytiladigan kod (OTP):</span>
-                                            <span class="font-mono font-black text-[#123C2F] text-sm bg-white px-2.5 py-0.5 rounded border border-[#E8ECE4]">8492</span>
+                                            <span class="font-mono font-black text-[#123C2F] text-sm bg-white px-2.5 py-0.5 rounded border border-[#E8ECE4] tracking-wider">{{ $sh->delivery_otp ?: $sh->ensureDeliveryOtp() }}</span>
                                         </div>
                                     </div>
 

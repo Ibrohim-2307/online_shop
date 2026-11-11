@@ -17,6 +17,8 @@ class Shipment extends Model
         'courier_id',
         'status',
         'delay_reason',
+        'delivery_otp',
+        'delivery_otp_expires_at',
         'shipping_method',
         'shipping_cost',
         'pickup_address',
@@ -51,5 +53,19 @@ class Shipment extends Model
     public function events(): HasMany
     {
         return $this->hasMany(ShipmentEvent::class);
+    }
+
+    /**
+     * Ensure a 4-digit delivery confirmation code (OTP) exists for the buyer.
+     */
+    public function ensureDeliveryOtp(): string
+    {
+        if (empty($this->delivery_otp)) {
+            $code = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+            $this->update(['delivery_otp' => $code]);
+            $this->delivery_otp = $code;
+        }
+
+        return $this->delivery_otp;
     }
 }

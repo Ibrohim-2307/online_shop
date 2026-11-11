@@ -28,11 +28,14 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
     }
   }
 
-  Future<void> _updateStatus(String status, {String? delayReason}) async {
+  Future<void> _updateStatus(String status, {String? delayReason, String? otpCode}) async {
     setState(() => _isActionLoading = true);
     final payload = <String, dynamic>{'status': status};
     if (delayReason != null) {
       payload['delay_reason'] = delayReason;
+    }
+    if (otpCode != null) {
+      payload['otp_code'] = otpCode;
     }
     try {
       await CourierApiClient().post('/logistics/shipments/${widget.delivery.id}/status', payload);
@@ -51,15 +54,16 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
           Navigator.pop(context);
         }
       }
-    } catch (_) {
-      // Offline fallback state change
-      setState(() {
-        _currentStatus = status;
-        _isActionLoading = false;
-      });
-      if (status == 'delivered') {
-        _gpsService.stopTracking();
-        if (mounted) Navigator.pop(context);
+    } catch (e) {
+      setState(() => _isActionLoading = false);
+      if (mounted) {
+        String errMsg = e.toString().replaceAll('Exception:', '').trim();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errMsg.isNotEmpty ? errMsg : 'Xatolik yuz berdi. Kodni tekshirib qayta urinib ko\'ring.'),
+            backgroundColor: AppColors.statusError,
+          ),
+        );
       }
     }
   }
@@ -138,9 +142,17 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
               foregroundColor: AppColors.brandDark,
             ),
             onPressed: () {
-              if (otpCtrl.text.trim().length >= 4) {
+              final otp = otpCtrl.text.trim();
+              if (otp.length == 4) {
                 Navigator.pop(ctx);
-                _updateStatus('delivered');
+                _updateStatus('delivered', otpCode: otp);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Iltimos, 4 xonali kodni to\'liq kiriting.'),
+                    backgroundColor: AppColors.statusError,
+                  ),
+                );
               }
             },
             child: const Text('Topshirishni yakunlash', style: TextStyle(fontWeight: FontWeight.bold)),

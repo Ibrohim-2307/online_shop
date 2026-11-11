@@ -96,6 +96,7 @@ class LogisticsPanelController extends Controller
         $validated = $request->validate([
             'status' => 'required|string|in:assigned,picked_up,in_transit,delayed,delivered,failed,cancelled',
             'delay_reason' => 'nullable|string|max:255',
+            'otp_code' => 'nullable|string|max:10',
         ]);
 
         $shipment = Shipment::findOrFail($id);
@@ -104,7 +105,8 @@ class LogisticsPanelController extends Controller
             $updated = $this->transitionService->transitionStatus(
                 $shipment,
                 $validated['status'],
-                $validated['delay_reason'] ?? null
+                $validated['delay_reason'] ?? null,
+                $validated['otp_code'] ?? null
             );
             return ApiResponse::success($updated, "Jo'natma holati muvaffaqiyatli yangilandi.");
         } catch (InvalidArgumentException $e) {

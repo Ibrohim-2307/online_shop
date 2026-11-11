@@ -306,26 +306,33 @@
 
             <!-- Mobile Horizontal Scrollable Category Pills -->
             <div class="pb-2.5 md:hidden overflow-x-auto no-scrollbar flex items-center gap-1.5 text-xs">
-                <a href="{{ route('home') }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request()->routeIs('home') ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
-                    🏠 Bosh sahifa
+                <a href="{{ route('home') }}" class="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request()->routeIs('home') ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span>Bosh sahifa</span>
                 </a>
-                <a href="{{ route('catalog', ['category' => 'qurilish-materiallari']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'qurilish-materiallari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
-                    🧱 Qurilish
+                <a href="{{ route('catalog', ['category' => 'qurilish-materiallari']) }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'qurilish-materiallari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    <x-category-icon slug="qurilish-materiallari" class="w-3.5 h-3.5 shrink-0" />
+                    <span>Qurilish</span>
                 </a>
-                <a href="{{ route('catalog', ['category' => 'sanoat-uskunalari']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'sanoat-uskunalari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
-                    ⚙️ Sanoat
+                <a href="{{ route('catalog', ['category' => 'sanoat-uskunalari']) }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'sanoat-uskunalari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    <x-category-icon slug="sanoat-uskunalari" class="w-3.5 h-3.5 shrink-0" />
+                    <span>Sanoat</span>
                 </a>
-                <a href="{{ route('catalog', ['category' => 'elektr-jihozlari']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'elektr-jihozlari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
-                    ⚡ Elektr
+                <a href="{{ route('catalog', ['category' => 'elektr-jihozlari']) }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'elektr-jihozlari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    <x-category-icon slug="elektr-jihozlari" class="w-3.5 h-3.5 shrink-0" />
+                    <span>Elektr</span>
                 </a>
-                <a href="{{ route('catalog', ['category' => 'santexnika-va-quvurlar']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'santexnika-va-quvurlar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
-                    🚰 Santexnika
+                <a href="{{ route('catalog', ['category' => 'santexnika-va-quvurlar']) }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'santexnika-va-quvurlar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    <x-category-icon slug="santexnika-va-quvurlar" class="w-3.5 h-3.5 shrink-0" />
+                    <span>Santexnika</span>
                 </a>
-                <a href="{{ route('catalog', ['category' => 'boyoqlar-va-kimyo']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'boyoqlar-va-kimyo' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
-                    🎨 Bo'yoq
+                <a href="{{ route('catalog', ['category' => 'boyoqlar-va-kimyo']) }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'boyoqlar-va-kimyo' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    <x-category-icon slug="boyoqlar-va-kimyo" class="w-3.5 h-3.5 shrink-0" />
+                    <span>Bo'yoq</span>
                 </a>
-                <a href="{{ route('catalog', ['category' => 'asbob-uskunalar']) }}" class="px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'asbob-uskunalar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
-                    🔧 Asboblar
+                <a href="{{ route('catalog', ['category' => 'asbob-uskunalar']) }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap border shadow-2xs {{ request('category') === 'asbob-uskunalar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-white text-[#172326] border-[#D8E2D2]' }}">
+                    <x-category-icon slug="asbob-uskunalar" class="w-3.5 h-3.5 shrink-0" />
+                    <span>Asboblar</span>
                 </a>
             </div>
 
@@ -342,7 +349,7 @@
                         <!-- Bosh sahifa Tab -->
                         <a href="{{ route('home') }}" 
                            class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all font-extrabold whitespace-nowrap border shadow-2xs {{ request()->routeIs('home') ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:bg-[#EEF5EA] border-[#D8E2D2] hover:border-[#123C2F]' }}">
-                            <span>🏠</span>
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                             <span>Bosh sahifa</span>
                         </a>
 
@@ -351,37 +358,37 @@
                         <!-- Real Catalog Categories as Distinct Capsule Cards -->
                         <a href="{{ route('catalog', ['category' => 'qurilish-materiallari']) }}" 
                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'qurilish-materiallari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
-                            <span>🧱</span>
+                            <x-category-icon slug="qurilish-materiallari" class="w-3.5 h-3.5 shrink-0" />
                             <span>Qurilish mollari</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'sanoat-uskunalari']) }}" 
                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'sanoat-uskunalari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
-                            <span>⚙️</span>
+                            <x-category-icon slug="sanoat-uskunalari" class="w-3.5 h-3.5 shrink-0" />
                             <span>Sanoat uskunalari</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'elektr-jihozlari']) }}" 
                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'elektr-jihozlari' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
-                            <span>⚡</span>
+                            <x-category-icon slug="elektr-jihozlari" class="w-3.5 h-3.5 shrink-0" />
                             <span>Elektr & Yoritish</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'santexnika-va-quvurlar']) }}" 
                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'santexnika-va-quvurlar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
-                            <span>🚰</span>
+                            <x-category-icon slug="santexnika-va-quvurlar" class="w-3.5 h-3.5 shrink-0" />
                             <span>Santexnika</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'boyoqlar-va-kimyo']) }}" 
                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'boyoqlar-va-kimyo' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
-                            <span>🎨</span>
+                            <x-category-icon slug="boyoqlar-va-kimyo" class="w-3.5 h-3.5 shrink-0" />
                             <span>Bo'yoqlar</span>
                         </a>
 
                         <a href="{{ route('catalog', ['category' => 'asbob-uskunalar']) }}" 
                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border shadow-2xs {{ request('category') === 'asbob-uskunalar' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] ring-2 ring-[#C9F46B]/40' : 'bg-white text-[#172326] hover:text-[#123C2F] border-[#D8E2D2] hover:border-[#123C2F] hover:bg-[#EEF5EA]' }}">
-                            <span>🔧</span>
+                            <x-category-icon slug="asbob-uskunalar" class="w-3.5 h-3.5 shrink-0" />
                             <span>Asbob-uskunalar</span>
                         </a>
                     </nav>

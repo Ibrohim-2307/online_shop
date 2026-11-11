@@ -170,7 +170,7 @@
                                     <a href="{{ route('catalog', request()->except('category', 'page')) }}" 
                                        class="flex items-center justify-between px-3 py-2 rounded-xl text-xs {{ !request('category') ? 'bg-[#123C2F] text-white font-bold' : 'text-[#64748B] hover:bg-[#FAFBF7] border border-[#E8ECE4]' }}">
                                         <span class="flex items-center gap-2">
-                                            <span>🌐</span>
+                                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                                             <span>Barcha toifalar</span>
                                         </span>
                                     </a>
@@ -178,7 +178,7 @@
                                         <a href="{{ route('catalog', array_merge(request()->except('page'), ['category' => $cat->slug])) }}" 
                                            class="flex items-center justify-between px-3 py-2 rounded-xl text-xs {{ request('category') === $cat->slug ? 'bg-[#123C2F] text-white font-bold' : 'text-[#172326] hover:bg-[#FAFBF7] border border-[#E8ECE4]' }}">
                                             <span class="flex items-center gap-2">
-                                                <span>{{ $cat->display_icon }}</span>
+                                                <x-category-icon :slug="$cat->slug" class="w-4 h-4 shrink-0" />
                                                 <span class="leading-snug">{{ $cat->name }}</span>
                                             </span>
                                         </a>
@@ -249,7 +249,7 @@
                             <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                                 <a href="{{ route('catalog', request()->except('category', 'page')) }}" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs {{ !request('category') ? 'bg-[#123C2F] text-white font-bold' : 'text-[#64748B] hover:bg-[#FAFBF7]' }}">
                                     <span class="flex items-center gap-2">
-                                        <span class="text-sm">🌐</span>
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                                         <span>Barcha toifalar</span>
                                     </span>
                                 </a>
@@ -257,7 +257,7 @@
                                     <a href="{{ route('catalog', array_merge(request()->except('page'), ['category' => $cat->slug])) }}" 
                                        class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs {{ request('category') === $cat->slug ? 'bg-[#123C2F] text-white font-bold' : 'text-[#172326] hover:bg-[#FAFBF7]' }}">
                                         <span class="flex items-center gap-2.5">
-                                            <span class="text-base select-none">{{ $cat->display_icon }}</span>
+                                            <x-category-icon :slug="$cat->slug" class="w-4 h-4 shrink-0" />
                                             <span class="leading-snug">{{ $cat->name }}</span>
                                         </span>
                                     </a>

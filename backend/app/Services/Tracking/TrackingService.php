@@ -156,11 +156,18 @@ class TrackingService
 
         $isClosed = in_array($shipment->status, ['delivered', 'cancelled']);
 
+        // OTP is ONLY visible to the customer who owns this order or superadmin
+        $deliveryOtp = null;
+        if ($user && ($order->user_id === $user->id || $user->hasRole(['admin', 'superadmin']))) {
+            $deliveryOtp = $shipment->delivery_otp ?: $shipment->ensureDeliveryOtp();
+        }
+
         return [
             'tracking_number' => $shipment->tracking_number,
             'status' => $shipment->status,
             'delay_reason' => $shipment->delay_reason,
             'courier_name' => $shipment->courier ? $shipment->courier->name : 'Tayinlanmagan',
+            'delivery_otp' => $deliveryOtp,
             'latest_location' => $latestLocation,
             'tracking_closed' => $isClosed,
             'estimated_delivery_at' => $shipment->estimated_delivery_at?->toIso8601String(),

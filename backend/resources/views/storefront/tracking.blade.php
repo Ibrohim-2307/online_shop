@@ -168,6 +168,27 @@
             <!-- Right: Delivery Details, Courier Info & Timeline (4 cols) -->
             <div class="lg:col-span-4 space-y-5">
                 
+                @if(!empty($deliveryOtp) && !in_array($shipment->status, ['delivered', 'cancelled']))
+                <!-- Delivery OTP Security Card -->
+                <div class="bg-gradient-to-br from-[#123C2F] to-[#1e5846] rounded-3xl p-6 text-white shadow-lg space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-extrabold uppercase tracking-widest text-[#C9F46B] flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            Xavfsiz topshirish kodi (OTP)
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-400/20 text-[#C9F46B] text-[10px] font-bold">Faol</span>
+                    </div>
+                    <div class="py-2 flex items-center justify-center">
+                        <div class="bg-white/10 backdrop-blur-md px-6 py-2.5 rounded-2xl border border-white/20 text-center">
+                            <span class="font-mono text-3xl font-black tracking-[0.3em] text-[#C9F46B]">{{ $deliveryOtp }}</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-white/80 leading-relaxed text-center">
+                        Ushbu kodni kuryer tovarni yetkazganda unga ayting. <span class="font-bold text-[#C9F46B]">Tovarni tekshirib qabul qilmasdan turib kodni bermang!</span>
+                    </p>
+                </div>
+                @endif
+
                 <!-- Courier Profile Card -->
                 <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 shadow-xs space-y-5">
                     <div class="flex items-center justify-between pb-4 border-b border-[#E8ECE4]">

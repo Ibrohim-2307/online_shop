@@ -156,6 +156,72 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       ),
                     ),
 
+                    // Delivery OTP Security Card
+                    if (_trackingData?['delivery_otp'] != null &&
+                        !['delivered', 'cancelled'].contains(status)) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.brandDark, Color(0xFF1E5846)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.brandDark.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.shield_outlined, color: AppColors.brandLime, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Topshirish kodi (OTP)',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                _trackingData!['delivery_otp'].toString(),
+                                style: const TextStyle(
+                                  color: AppColors.brandLime,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 8,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Kuryer tovarni olib kelganida ushbu kodni unga ayting. Tovarni to\'liq qabul qilmasdan turib kodni bermang!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white70, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 16),
 
                     // Live GPS Coordinates Card

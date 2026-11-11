@@ -228,11 +228,13 @@ class CheckoutService
 
                 // Create Shipment for this suborder
                 $trackingNumber = 'TRK-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
+                $deliveryOtp = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
                 Shipment::create([
                     'suborder_id' => $suborder->id,
                     'tracking_number' => $trackingNumber,
                     'courier_id' => null,
                     'status' => 'pending',
+                    'delivery_otp' => $deliveryOtp,
                     'shipping_method' => 'standard',
                     'shipping_cost' => (int) $sellerData['shipping_cost'],
                     'pickup_address' => [

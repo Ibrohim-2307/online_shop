@@ -71,27 +71,35 @@
                 </a>
             </div>
 
-            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-4">
                 @forelse($categories as $category)
                     <a href="{{ route('catalog', ['category' => $category->slug]) }}" 
-                       class="group bg-white p-2.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-[#E8ECE4] hover:border-[#123C2F] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden shadow-2xs">
+                       class="group bg-white hover:bg-gradient-to-b hover:from-white hover:to-[#FAFBF7] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#E2E8F0] hover:border-[#123C2F] shadow-xs hover:shadow-xl hover:shadow-[#123C2F]/10 hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center justify-between min-h-[148px] sm:min-h-[180px] relative overflow-hidden">
                         
-                        <!-- Icon / Emoji Container with Soft Tint & Hover Bounce -->
-                        <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl {{ $category->bg_color }} border border-black/5 group-hover:border-[#123C2F]/20 flex items-center justify-center mb-1.5 sm:mb-3 transition-all duration-300 group-hover:scale-110 shadow-xs">
-                            <span class="text-xl sm:text-3xl select-none filter drop-shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-                                {{ $category->display_icon }}
+                        <!-- Top Accent Highlight on Hover -->
+                        <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#C9F46B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                        <!-- Professional Vector Icon Pod (Clean & Modern, No Cartoon Emojis) -->
+                        <div class="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] group-hover:border-[#123C2F]/25 group-hover:bg-white flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-black/5">
+                            <x-category-icon :slug="$category->slug" class="w-7 h-7 sm:w-8 sm:h-8 transition-transform duration-300 group-hover:scale-110" />
+                        </div>
+
+                        <!-- Category Name with Balanced Proportions -->
+                        <div class="flex-1 flex items-center justify-center w-full px-1">
+                            <span class="font-bold text-xs sm:text-[13px] text-[#1E293B] group-hover:text-[#123C2F] transition-colors leading-snug line-clamp-2">
+                                {{ $category->name }}
                             </span>
                         </div>
 
-                        <!-- Category Name -->
-                        <span class="font-bold text-xs sm:text-sm text-[#172326] group-hover:text-[#123C2F] transition-colors leading-tight line-clamp-2">
-                            {{ $category->name }}
-                        </span>
-
-                        <!-- Product Count Badge if available -->
+                        <!-- Refined Count Pill Badge -->
                         @if(isset($category->products_count) && $category->products_count > 0)
-                            <span class="text-[9px] sm:text-[11px] font-medium text-[#64748B] mt-0.5 sm:mt-1.5 group-hover:text-[#123C2F] transition-colors">
-                                {{ $category->products_count }} ta
+                            <span class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F9] group-hover:bg-[#123C2F] text-[10px] sm:text-[11px] font-semibold text-[#64748B] group-hover:text-[#C9F46B] transition-all duration-300">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] group-hover:bg-[#C9F46B] transition-colors"></span>
+                                <span>{{ $category->products_count }} ta</span>
+                            </span>
+                        @else
+                            <span class="mt-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-transparent select-none">
+                                &nbsp;
                             </span>
                         @endif
                     </a>

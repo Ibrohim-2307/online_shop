@@ -49,7 +49,7 @@ class ShipmentTransitionService
      * Enforces required delay_reason on 'delayed' and 'failed' statuses.
      * Guards parent order from premature completion when only partial shipments are delivered.
      */
-    public function transitionStatus(Shipment $shipment, string $newStatus, ?string $delayReason = null): Shipment
+    public function transitionStatus(Shipment $shipment, string $newStatus, ?string $delayReason = null, ?string $otpCode = null): Shipment
     {
         $currentStatus = $shipment->status;
 
@@ -64,6 +64,24 @@ class ShipmentTransitionService
         // Reason enforcement
         if (in_array($newStatus, ['delayed', 'failed']) && empty($delayReason)) {
             throw new InvalidArgumentException("Jo'natma '{$newStatus}' holatiga o'tkazilganda kechikish yoki muammo sababi kiritilishi shart.");
+        }
+
+        // Fraud prevention: OTP verification required when marking as delivered by couriers
+        if ($newStatus === 'delivered') {
+            $user = auth()->user();
+            $isCourier = $user?->hasRole('courier') ?? false;
+
+            if ($isCourier || !empty($otpCode)) {
+                $expectedOtp = $shipment->delivery_otp ?: $shipment->ensureDeliveryOtp();
+
+                if (empty($otpCode)) {
+                    throw new InvalidArgumentException("Tovarni topshirish uchun xaridorning 4 xonali tasdiqlash kodi (OTP) kiritilishi shart.");
+                }
+
+                if (trim((string) $otpCode) !== trim((string) $expectedOtp)) {
+                    throw new InvalidArgumentException("Kiritilgan topshirish kodi (OTP) noto'g'ri. Xaridordan to'g'ri 4 xonali kodni so'rang.");
+                }
+            }
         }
 
         return DB::transaction(function () use ($shipment, $newStatus, $delayReason) {

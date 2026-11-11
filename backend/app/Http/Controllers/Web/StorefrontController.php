@@ -612,11 +612,18 @@ class StorefrontController extends Controller
             'recorded_at' => now()->format('H:i'),
         ];
 
+        // Only order owner or admin sees OTP (Courier must NOT see it)
+        $deliveryOtp = null;
+        if ($order && self::canAccessOrder($request, $order) && (!$user || !$user->hasRole('courier') || $order->user_id === $user->id)) {
+            $deliveryOtp = $shipment->delivery_otp ?: $shipment->ensureDeliveryOtp();
+        }
+
         // Return JSON for client polling
         if ($request->wantsJson() || $request->has('json')) {
             return response()->json([
                 'tracking_number' => $shipment->tracking_number,
                 'status' => $shipment->status,
+                'delivery_otp' => $deliveryOtp,
                 'courier' => [
                     'name' => $shipment->courier?->name ?? 'Kuryer hali tayinlanmagan',
                     'phone' => $canSeeDetails ? $shipment->courier?->phone : null,
@@ -640,7 +647,7 @@ class StorefrontController extends Controller
                 ->get()
             : collect();
 
-        return view('storefront.tracking', compact('shipment', 'warehouse', 'destination', 'locations', 'latest', 'allShipments', 'canSeeDetails'));
+        return view('storefront.tracking', compact('shipment', 'warehouse', 'destination', 'locations', 'latest', 'allShipments', 'canSeeDetails', 'deliveryOtp'));
     }
 
     /**

@@ -3,7 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Address;
+use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Role;
+use App\Models\Seller;
+use App\Models\Suborder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -121,5 +125,56 @@ class CustomerProfileWebTest extends TestCase
         $res->assertStatus(200)
             ->assertSee('Buyurtmalar va Yetkazib Berishlar')
             ->assertSee($customer->name);
+    }
+
+    public function test_customer_profile_renders_with_existing_orders_and_latest_payment(): void
+    {
+        $customer = $this->createCustomer('order_prof@example.uz');
+
+        $seller = Seller::create([
+            'name' => 'Demo Do\'kon',
+            'legal_name' => 'Demo MCHJ',
+            'slug' => 'demo-dokon',
+            'status' => 'active',
+            'commission_rate' => 5.0,
+            'rating' => 4.9,
+            'email' => 'seller_prof@example.uz',
+            'phone' => '+998901112244',
+        ]);
+
+        $order = Order::create([
+            'order_number' => 'ORD-TEST-9999',
+            'user_id' => $customer->id,
+            'status' => 'processing',
+            'currency' => 'UZS',
+            'items_total' => 250000,
+            'shipping_total' => 20000,
+            'grand_total' => 270000,
+            'shipping_address' => ['recipient_name' => 'Test', 'phone' => '+998901234567', 'full_address' => 'Toshkent'],
+        ]);
+
+        Suborder::create([
+            'order_id' => $order->id,
+            'seller_id' => $seller->id,
+            'suborder_number' => 'ORD-TEST-9999-1',
+            'status' => 'pending',
+            'items_subtotal' => 250000,
+            'shipping_cost' => 20000,
+            'total_amount' => 270000,
+        ]);
+
+        Payment::create([
+            'order_id' => $order->id,
+            'payment_method' => 'cash_on_delivery',
+            'transaction_id' => 'TXN-9999',
+            'amount' => 270000,
+            'currency' => 'UZS',
+            'status' => 'pending',
+        ]);
+
+        $res = $this->actingAs($customer)->get('/profile');
+        $res->assertStatus(200)
+            ->assertSee('ORD-TEST-9999')
+            ->assertDontSee('Server Error');
     }
 }

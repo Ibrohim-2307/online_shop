@@ -142,6 +142,23 @@ class CheckoutService
 
         $grandTotal = bcadd($overallItemsTotal, $overallShippingTotal, 0);
 
+        // Calculate Promocode Discount if provided
+        $discountTotal = 0;
+        $appliedPromoCode = null;
+        if (!empty($payload['promocode'])) {
+            $codeStr = strtoupper(trim((string)$payload['promocode']));
+            $promo = \App\Models\Promocode::where('code', $codeStr)->first();
+            if ($promo) {
+                $validation = $promo->validateForSubtotal((int)$overallItemsTotal);
+                if ($validation['valid']) {
+                    $discountTotal = $promo->calculateDiscount((int)$overallItemsTotal);
+                    $appliedPromoCode = $promo->code;
+                    $promo->increment('used_count');
+                }
+            }
+        }
+        $grandTotal = max(0, bcsub($grandTotal, (string)$discountTotal, 0));
+
         // 4. Atomic Execution inside Database Transaction
         $createdOrder = DB::transaction(function () use (
             $user,
@@ -151,6 +168,8 @@ class CheckoutService
             $sellersGrouped,
             $overallItemsTotal,
             $overallShippingTotal,
+            $discountTotal,
+            $appliedPromoCode,
             $grandTotal,
             $variantsToReserve,
             $requestHash
@@ -164,6 +183,8 @@ class CheckoutService
                 'user_id' => $user->id,
                 'status' => 'pending_payment',
                 'currency' => 'UZS',
+                'promocode' => $appliedPromoCode,
+                'discount_total' => (int) $discountTotal,
                 'items_total' => (int) $overallItemsTotal,
                 'shipping_total' => (int) $overallShippingTotal,
                 'grand_total' => (int) $grandTotal,

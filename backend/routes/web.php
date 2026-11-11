@@ -88,6 +88,27 @@ Route::post('/admin/payouts/{id}/review', [\App\Http\Controllers\Web\AdminDashbo
 Route::post('/admin/backups',[\App\Http\Controllers\Web\AdminDashboardController::class, 'createBackup'])->middleware('throttle:3,1')->name('admin.backups.create');
 Route::get('/admin/backups/{filename}/download', [\App\Http\Controllers\Web\AdminDashboardController::class, 'downloadBackup'])->where('filename', \App\Services\Backup\DatabaseBackupService::FILENAME_PATTERN)->middleware('throttle:10,1')->name('admin.backups.download');
 
+// Categories Management
+Route::post('/admin/categories', [\App\Http\Controllers\Web\AdminDashboardController::class, 'storeCategory'])->name('admin.categories.store');
+Route::post('/admin/categories/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateCategoryStatus'])->name('admin.categories.status');
+Route::delete('/admin/categories/{id}', [\App\Http\Controllers\Web\AdminDashboardController::class, 'deleteCategory'])->name('admin.categories.delete');
+
+// Promocodes & Banners Management
+Route::post('/admin/promocodes', [\App\Http\Controllers\Web\AdminDashboardController::class, 'storePromocode'])->name('admin.promocodes.store');
+Route::post('/admin/promocodes/{id}/toggle', [\App\Http\Controllers\Web\AdminDashboardController::class, 'togglePromocode'])->name('admin.promocodes.toggle');
+Route::delete('/admin/promocodes/{id}', [\App\Http\Controllers\Web\AdminDashboardController::class, 'deletePromocode'])->name('admin.promocodes.delete');
+
+Route::post('/admin/banners', [\App\Http\Controllers\Web\AdminDashboardController::class, 'storeBanner'])->name('admin.banners.store');
+Route::post('/admin/banners/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateBannerStatus'])->name('admin.banners.status');
+Route::delete('/admin/banners/{id}', [\App\Http\Controllers\Web\AdminDashboardController::class, 'deleteBanner'])->name('admin.banners.delete');
+
+// Excel / CSV Export
+Route::get('/admin/export/orders', [\App\Http\Controllers\Web\AdminDashboardController::class, 'exportOrdersCsv'])->name('admin.export.orders');
+Route::get('/admin/export/sellers', [\App\Http\Controllers\Web\AdminDashboardController::class, 'exportSellersCsv'])->name('admin.export.sellers');
+
+// Checkout Promocode Verification
+Route::post('/checkout/promocode/check', [\App\Http\Controllers\Web\StorefrontController::class, 'checkPromocode'])->name('checkout.promocode.check');
+
 // Seller Web Dashboard
 Route::get('/seller', [\App\Http\Controllers\Web\SellerDashboardController::class, 'index'])->name('seller.dashboard');
 Route::post('/seller/products', [\App\Http\Controllers\Web\SellerDashboardController::class, 'storeProduct'])->name('seller.products.store');

@@ -102,48 +102,71 @@
             </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 mb-6 pb-2">
-            <button @click="currentTab = 'sellers'" :class="currentTab === 'sellers' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                💼 Sotuvchilar ({{ $sellers->count() }})
-            </button>
-            <button @click="currentTab = 'products'" :class="currentTab === 'products' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                📦 Mahsulotlar ({{ $products->total() }})
-            </button>
-            <button @click="currentTab = 'users'" :class="currentTab === 'users' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                👥 Foydalanuvchilar & Rollar ({{ $users->total() }})
-            </button>
-            <button @click="currentTab = 'shipments'" :class="currentTab === 'shipments' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                🚚 Yetkazish & Kuryerlar ({{ $shipments->total() }})
-            </button>
-            <button @click="currentTab = 'orders'" :class="currentTab === 'orders' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                🛒 Buyurtmalar ({{ $recentOrders->count() }})
-            </button>
-            <button @click="currentTab = 'refunds'" :class="currentTab === 'refunds' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                ↩ Qaytarishlar
-                @if(($stats['open_refunds'] ?? 0) > 0)
-                    <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_refunds'] }}</span>
-                @endif
-            </button>
-            @if($canManagePayouts)
-                <button @click="currentTab = 'payouts'" :class="currentTab === 'payouts' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                    💸 Sotuvchilarga to'lov
-                    @if(($stats['open_payouts'] ?? 0) > 0)
-                        <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_payouts'] }}</span>
+        <!-- Navigation Tabs & Fast Actions -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 mb-6 pb-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <button @click="currentTab = 'analytics'" :class="currentTab === 'analytics' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <span>📈</span> <span>Savdo Analitikasi</span>
+                </button>
+                <button @click="currentTab = 'sellers'" :class="currentTab === 'sellers' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    💼 Sotuvchilar ({{ $sellers->count() }})
+                </button>
+                <button @click="currentTab = 'products'" :class="currentTab === 'products' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    📦 Mahsulotlar ({{ $products->total() }})
+                </button>
+                <button @click="currentTab = 'categories'" :class="currentTab === 'categories' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    🗂️ Kategoriyalar ({{ $categories->count() }})
+                </button>
+                <button @click="currentTab = 'marketing'" :class="currentTab === 'marketing' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    🏷️ Promokod & Banner
+                </button>
+                <button @click="currentTab = 'users'" :class="currentTab === 'users' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    👥 Foydalanuvchilar ({{ $users->total() }})
+                </button>
+                <button @click="currentTab = 'shipments'" :class="currentTab === 'shipments' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    🚚 Yetkazish ({{ $shipments->total() }})
+                </button>
+                <button @click="currentTab = 'orders'" :class="currentTab === 'orders' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    🛒 Buyurtmalar ({{ $recentOrders->count() }})
+                </button>
+                <button @click="currentTab = 'refunds'" :class="currentTab === 'refunds' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    ↩ Qaytarish
+                    @if(($stats['open_refunds'] ?? 0) > 0)
+                        <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_refunds'] }}</span>
                     @endif
                 </button>
-                <button @click="currentTab = 'finance'" :class="currentTab === 'finance' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                    📊 Moliya
+                @if($canManagePayouts)
+                    <button @click="currentTab = 'payouts'" :class="currentTab === 'payouts' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                        💸 To'lov
+                        @if(($stats['open_payouts'] ?? 0) > 0)
+                            <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px]">{{ $stats['open_payouts'] }}</span>
+                        @endif
+                    </button>
+                    <button @click="currentTab = 'finance'" :class="currentTab === 'finance' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                        📊 Moliya
+                    </button>
+                @endif
+                <button @click="currentTab = 'audit'" :class="currentTab === 'audit' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    🔍 Audit
                 </button>
-            @endif
-            <button @click="currentTab = 'audit'" :class="currentTab === 'audit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                🔍 Audit Jurnali
-            </button>
-            @if($canManageBackups)
-                <button @click="currentTab = 'backups'" :class="currentTab === 'backups' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                    💾 Zaxira nusxalar
-                </button>
-            @endif
+                @if($canManageBackups)
+                    <button @click="currentTab = 'backups'" :class="currentTab === 'backups' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                        💾 Zaxira
+                    </button>
+                @endif
+            </div>
+
+            <!-- Fast Excel / CSV Export Dropdown / Buttons -->
+            <div class="flex items-center gap-2">
+                <a href="{{ route('admin.export.orders') }}" class="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition shadow-2xs" title="Barcha buyurtmalarni Excel CSV formatida yuklab olish">
+                    <span>📊</span>
+                    <span>Buyurtmalar Excel</span>
+                </a>
+                <a href="{{ route('admin.export.sellers') }}" class="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-bold flex items-center gap-1.5 transition shadow-2xs" title="Sotuvchilar ro'yxati va balanslarini yuklab olish">
+                    <span>📥</span>
+                    <span>Sotuvchilar Excel</span>
+                </a>
+            </div>
         </div>
 
         <!-- TAB 1: SELLERS -->
@@ -833,6 +856,437 @@
                 </div>
             </div>
         @endif
+
+        <!-- TAB: ANALYTICS (Savdo Analitikasi & Hisobotlar) -->
+        <div x-show="currentTab === 'analytics'" class="space-y-6">
+            <!-- Analytics Summary KPIs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Jami Savdo Tushumi</span>
+                    <span class="text-2xl font-black text-slate-900">{{ number_format($stats['total_revenue']) }} <span class="text-xs text-slate-400 font-normal">UZS</span></span>
+                    <span class="text-xs text-emerald-600 block mt-1 font-semibold">✓ Tasdiqlangan buyurtmalar</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Jami Buyurtmalar</span>
+                    <span class="text-2xl font-black text-slate-900">{{ number_format($stats['total_orders']) }} <span class="text-xs text-slate-400 font-normal">ta</span></span>
+                    <span class="text-xs text-blue-600 block mt-1 font-semibold">Barcha sotuvchilardan</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">O'rtacha Buyurtma Cheki</span>
+                    @php
+                        $avgCheck = $stats['total_orders'] > 0 ? (int)($stats['total_revenue'] / $stats['total_orders']) : 0;
+                    @endphp
+                    <span class="text-2xl font-black text-emerald-700">{{ number_format($avgCheck) }} <span class="text-xs text-slate-400 font-normal">UZS</span></span>
+                    <span class="text-xs text-slate-500 block mt-1">Har bir xarid uchun</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Faol Sotuvchi Do'konlar</span>
+                    <span class="text-2xl font-black text-amber-700">{{ number_format($stats['active_sellers']) }} / {{ number_format($stats['total_sellers']) }}</span>
+                    <span class="text-xs text-amber-600 block mt-1 font-semibold">Platforma hamkorlari</span>
+                </div>
+            </div>
+
+            <!-- Daily Sales Dynamic Bar Chart (So'nggi 14 kunlik savdo grafigi) -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-black text-slate-900 text-base">So'nggi 14 Kunlik Savdo Dinamikasi</h3>
+                        <p class="text-xs text-slate-500">Kunlar kesimida tasdiqlangan va to'langan buyurtmalar</p>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">Jonli Statistika</span>
+                </div>
+
+                @php
+                    $maxDaily = $dailySales->max('total') ?: 1;
+                @endphp
+                <div class="pt-6 pb-2">
+                    <div class="flex items-end gap-2 sm:gap-4 h-48 sm:h-56 border-b border-slate-100 px-2">
+                        @forelse($dailySales as $day)
+                            @php
+                                $heightPercent = min(100, max(12, (int)(($day->total / $maxDaily) * 100)));
+                            @endphp
+                            <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                <!-- Tooltip on hover -->
+                                <div class="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded-lg pointer-events-none whitespace-nowrap shadow-lg z-20">
+                                    <span>{{ number_format($day->total) }} UZS</span> • <span>{{ $day->count }} ta buyurtma</span>
+                                </div>
+                                <div class="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all duration-300 group-hover:from-emerald-700 group-hover:to-lime-400"
+                                     style="height: {{ $heightPercent }}%;">
+                                </div>
+                                <span class="text-[9px] sm:text-[10px] font-semibold text-slate-500 mt-2 truncate max-w-full">
+                                    {{ \Carbon\Carbon::parse($day->date)->format('d.m') }}
+                                </span>
+                            </div>
+                        @empty
+                            <div class="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                                So'nggi 14 kunda yangi savdolar qayd etilmagan
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 5 Products & Top 5 Sellers Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Top 5 Products -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">🔥 Eng Ko'p Sotilgan Mahsulotlar (Top 5)</h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-3">Mahsulot</th>
+                                    <th class="p-3 text-center">Hajm</th>
+                                    <th class="p-3 text-right">Jami Tushum</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @forelse($topProducts as $idx => $p)
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="p-3 font-medium text-slate-900 truncate max-w-[200px]">
+                                            <span class="font-black text-slate-400 mr-1.5">#{{ $idx + 1 }}</span>
+                                            {{ $p->product_name }}
+                                        </td>
+                                        <td class="p-3 text-center font-bold text-slate-700">{{ number_format($p->total_qty) }}</td>
+                                        <td class="p-3 text-right font-black text-emerald-700">{{ number_format($p->total_revenue) }} UZS</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="p-6 text-center text-slate-400">Hozircha sotuvlar yo'q</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Top 5 Sellers -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">🏆 Yetakchi Sotuvchilar (Top 5)</h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-3">Do'kon Nomi</th>
+                                    <th class="p-3 text-center">Buyurtmalar</th>
+                                    <th class="p-3 text-right">Jami Savdosi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @forelse($topSellers as $idx => $s)
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="p-3 font-medium text-slate-900">
+                                            <span class="font-black text-slate-400 mr-1.5">#{{ $idx + 1 }}</span>
+                                            {{ $s->seller->name ?? "Do'kon #{$s->seller_id}" }}
+                                        </td>
+                                        <td class="p-3 text-center font-bold text-slate-700">{{ $s->count }} ta</td>
+                                        <td class="p-3 text-right font-black text-slate-900">{{ number_format($s->total_revenue) }} UZS</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="p-6 text-center text-slate-400">Hozircha sotuvchilar statistikasi yo'q</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CATEGORIES (Kategoriyalar Boshqaruvi) -->
+        <div x-show="currentTab === 'categories'" class="space-y-6">
+            <!-- Add Category Form Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
+                <h3 class="font-black text-slate-900 text-base mb-1">Yangi Kategoriya Qo'shish</h3>
+                <p class="text-xs text-slate-500 mb-4">Marketpleys katalogi va bosh sahifasida aks etadigan bo'lim</p>
+
+                <form action="{{ route('admin.categories.store') }}" method="POST" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 items-end">
+                    @csrf
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nomi *</label>
+                        <input type="text" name="name" required placeholder="Masalan: Avto ehtiyot qismlar" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Slug (URL)</label>
+                        <input type="text" name="slug" placeholder="avto-ehtiyot-qismlar (ixtiyoriy)" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Ikonka / Emoji</label>
+                        <input type="text" name="icon" value="📦" placeholder="Masalan: 🚗 yoki 🧱" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900 text-center text-base">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Tartib Raqami</label>
+                        <input type="number" name="sort_order" value="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input type="checkbox" name="is_active" value="1" checked class="rounded text-slate-900">
+                            <span>Faol</span>
+                        </label>
+                        <button type="submit" class="flex-1 py-2 px-4 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition cursor-pointer shadow-xs">
+                            + Qo'shish
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Categories List Table -->
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-900 text-sm">Barcha Mavjud Kategoriyalar ({{ $categories->count() }})</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                            <tr>
+                                <th class="p-3.5">Ikonka</th>
+                                <th class="p-3.5">Nomi</th>
+                                <th class="p-3.5">Slug (Havola)</th>
+                                <th class="p-3.5 text-center">Mahsulotlar</th>
+                                <th class="p-3.5 text-center">Tartib</th>
+                                <th class="p-3.5 text-center">Holati</th>
+                                <th class="p-3.5 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach($categories as $cat)
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-3.5 text-xl font-mono">{{ $cat->display_icon }}</td>
+                                    <td class="p-3.5 font-bold text-slate-900">{{ $cat->name }}</td>
+                                    <td class="p-3.5 font-mono text-[11px] text-slate-500">{{ $cat->slug }}</td>
+                                    <td class="p-3.5 text-center font-bold text-slate-700">{{ $cat->products_count }} ta</td>
+                                    <td class="p-3.5 text-center font-mono">{{ $cat->sort_order }}</td>
+                                    <td class="p-3.5 text-center">
+                                        @if($cat->is_active)
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Faol</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">Nofaol</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3.5 text-right space-x-1.5">
+                                        <form action="{{ route('admin.categories.status', $cat->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 hover:bg-slate-100 transition">
+                                                {{ $cat->is_active ? 'Nofaol qilish' : 'Faollashtirish' }}
+                                            </button>
+                                        </form>
+                                        <form action="{{ route('admin.categories.delete', $cat->id) }}" method="POST" class="inline" onsubmit="return confirm('Kategoriyani o\'chirishni tasdiqlaysizmi?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition">
+                                                O'chirish
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: MARKETING (Promokodlar & Bannerlar) -->
+        <div x-show="currentTab === 'marketing'" class="space-y-8">
+            <!-- 1. PROMOCODES ENGINE -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-black text-slate-900 text-base">Chegirma Promokodlari va Vaucherlar</h3>
+                        <p class="text-xs text-slate-500">Xaridorlar checkout sahifasida kiritib chegirma oladigan maxsus kodlar</p>
+                    </div>
+                </div>
+
+                <!-- Add Promocode Form -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+                    <form action="{{ route('admin.promocodes.store') }}" method="POST" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 items-end">
+                        @csrf
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Kod *</label>
+                            <input type="text" name="code" required placeholder="UZUM2026" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase font-bold focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Turi *</label>
+                            <select name="type" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900 bg-white">
+                                <option value="fixed">Aniq Summa (UZS)</option>
+                                <option value="percentage">Foiz (%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Qiymat *</label>
+                            <input type="number" name="value" required placeholder="50000 yoki 10" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Min. Xarid (UZS)</label>
+                            <input type="number" name="min_order_amount" value="100000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Ishlatish Limiti</label>
+                            <input type="number" name="usage_limit" placeholder="100 (ixtiyoriy)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Tugash Sanasi</label>
+                            <input type="date" name="expires_at" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-xs font-bold text-slate-700">
+                                <input type="checkbox" name="is_active" value="1" checked class="rounded">
+                                <span>Faol</span>
+                            </label>
+                            <button type="submit" class="flex-1 py-2 px-3 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition cursor-pointer">
+                                + Yaratish
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Promocodes List Table -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                                <tr>
+                                    <th class="p-3.5">Kod</th>
+                                    <th class="p-3.5">Chegirma</th>
+                                    <th class="p-3.5">Min. Xarid</th>
+                                    <th class="p-3.5 text-center">Ishlatildi / Limit</th>
+                                    <th class="p-3.5">Amal Qilish Muddati</th>
+                                    <th class="p-3.5 text-center">Holati</th>
+                                    <th class="p-3.5 text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @forelse($promocodes as $pr)
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="p-3.5 font-mono font-black text-slate-900 text-sm">
+                                            <span class="px-2 py-0.5 rounded-lg bg-lime-100 text-slate-900">{{ $pr->code }}</span>
+                                        </td>
+                                        <td class="p-3.5 font-bold text-emerald-700">
+                                            @if($pr->type === 'percentage')
+                                                {{ $pr->value }}% chegirma
+                                            @else
+                                                {{ number_format($pr->value) }} UZS chegirma
+                                            @endif
+                                        </td>
+                                        <td class="p-3.5 font-mono">{{ number_format($pr->min_order_amount) }} UZS</td>
+                                        <td class="p-3.5 text-center font-bold">
+                                            {{ $pr->used_count }} / {{ $pr->usage_limit ?: 'cheksiz' }}
+                                        </td>
+                                        <td class="p-3.5 text-slate-500 font-mono text-[11px]">
+                                            {{ $pr->expires_at ? $pr->expires_at->format('d.m.Y') : 'Cheklovlarsiz' }}
+                                        </td>
+                                        <td class="p-3.5 text-center">
+                                            @if($pr->is_active)
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Faol</span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">To'xtatilgan</span>
+                                            @endif
+                                        </td>
+                                        <td class="p-3.5 text-right space-x-1.5">
+                                            <form action="{{ route('admin.promocodes.toggle', $pr->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 hover:bg-slate-100 transition">
+                                                    {{ $pr->is_active ? 'To\'xtatish' : 'Faollashtirish' }}
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('admin.promocodes.delete', $pr->id) }}" method="POST" class="inline" onsubmit="return confirm('Promokodni o\'chirishni tasdiqlaysizmi?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition">
+                                                    O'chirish
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="p-8 text-center text-slate-400">Hozircha promokodlar yaratilmagan</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. MARKETING BANNERS ENGINE -->
+            <div class="space-y-4 pt-6 border-t border-slate-200">
+                <div>
+                    <h3 class="font-black text-slate-900 text-base">Bosh Sahifa va Aksiya Bannerlari</h3>
+                    <p class="text-xs text-slate-500">Bosh sahifaning yuqori qismida yoki katalogda aks etadigan katta reklama slayderlari</p>
+                </div>
+
+                <!-- Add Banner Form -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+                    <form action="{{ route('admin.banners.store') }}" method="POST" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+                        @csrf
+                        <div class="lg:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Sarlavha *</label>
+                            <input type="text" name="title" required placeholder="Masalan: Katta Bahorgi Chegirmalar 50%" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div class="lg:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Rasm URL *</label>
+                            <input type="text" name="image_url" required placeholder="https://images.unsplash.com/..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Havola URL</label>
+                            <input type="text" name="link_url" value="/catalog" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-xs font-bold text-slate-700">
+                                <input type="checkbox" name="is_active" value="1" checked class="rounded">
+                                <span>Faol</span>
+                            </label>
+                            <button type="submit" class="flex-1 py-2 px-3 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition cursor-pointer">
+                                + Joylash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Banners Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @forelse($banners as $bn)
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs flex flex-col justify-between">
+                            <div class="relative aspect-16/9 bg-slate-100 overflow-hidden">
+                                <img src="{{ $bn->image_url }}" alt="{{ $bn->title }}" class="w-full h-full object-cover">
+                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold {{ $bn->is_active ? 'bg-emerald-500 text-white' : 'bg-slate-600 text-white' }}">
+                                    {{ $bn->is_active ? 'Faol' : 'Nofaol' }}
+                                </span>
+                            </div>
+                            <div class="p-4 space-y-2">
+                                <h4 class="font-bold text-sm text-slate-900">{{ $bn->title }}</h4>
+                                <p class="text-xs font-mono text-slate-500 truncate">{{ $bn->link_url }}</p>
+                                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                                    <form action="{{ route('admin.banners.status', $bn->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-xs font-semibold text-slate-600 hover:text-slate-900">
+                                            {{ $bn->is_active ? 'Nofaol qilish' : 'Faollashtirish' }}
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('admin.banners.delete', $bn->id) }}" method="POST" class="inline" onsubmit="return confirm('Bannerni o\'chirmoqchimisiz?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-800">
+                                            O'chirish
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-span-full p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">
+                            Hozircha bannerlar joylanmagan
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
 
         <!-- TAB 4: AUDIT LOGS -->
         <div x-show="currentTab === 'audit'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">

@@ -6,7 +6,57 @@
              timer: null,
              selectedMethod: '{{ request('payment_method', 'click') }}',
              nasiyaMonths: {{ (int)request('months', 6) }},
+             itemsTotal: {{ (float)$quote['items_total'] }},
+             shippingTotal: {{ (float)$quote['shipping_total'] }},
              grandTotal: {{ (float)$quote['grand_total'] }},
+             promocodeInput: '',
+             promocodeApplied: '',
+             discount: 0,
+             promoLoading: false,
+             promoError: '',
+             promoSuccess: '',
+             async applyPromocode() {
+                 if (!this.promocodeInput.trim()) return;
+                 this.promoLoading = true;
+                 this.promoError = '';
+                 this.promoSuccess = '';
+                 try {
+                     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                     const res = await fetch('{{ route('checkout.promocode.check') }}', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'Accept': 'application/json',
+                             'X-CSRF-TOKEN': token
+                         },
+                         body: JSON.stringify({
+                             code: this.promocodeInput,
+                             subtotal: this.itemsTotal
+                         })
+                     });
+                     const data = await res.json();
+                     if (res.ok && data.success) {
+                         this.discount = data.data.discount;
+                         this.promocodeApplied = data.data.code;
+                         this.promoSuccess = data.message;
+                         this.grandTotal = Math.max(0, this.itemsTotal + this.shippingTotal - this.discount);
+                     } else {
+                         this.promoError = data.message || 'Promokod noto\'g\'ri';
+                     }
+                 } catch (e) {
+                     this.promoError = 'Ulanishda xatolik yuz berdi';
+                 } finally {
+                     this.promoLoading = false;
+                 }
+             },
+             removePromocode() {
+                 this.promocodeApplied = '';
+                 this.promocodeInput = '';
+                 this.discount = 0;
+                 this.promoSuccess = '';
+                 this.promoError = '';
+                 this.grandTotal = this.itemsTotal + this.shippingTotal;
+             },
              getNasiyaMonthly(m) {
                  if (m === 3) return Math.ceil(this.grandTotal / 3);
                  if (m === 6) return Math.ceil((this.grandTotal * 1.08) / 6);
@@ -319,6 +369,35 @@
                     @endforeach
                 </div>
 
+                <!-- Promocode / Kupon bo'limi -->
+                <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4] space-y-2">
+                    <label class="block text-xs font-bold text-[#172326]">Promokod yoki vaucher</label>
+                    <div class="flex gap-2">
+                        <input type="text"
+                               x-model="promocodeInput"
+                               :disabled="promocodeApplied !== '' || promoLoading"
+                               placeholder="Masalan: CHEGIRMA"
+                               class="flex-1 px-3 py-2 rounded-xl border border-[#E8ECE4] bg-white text-xs uppercase font-bold text-[#172326] focus:outline-none focus:border-[#123C2F]">
+                        <button type="button"
+                                x-show="!promocodeApplied"
+                                @click="applyPromocode()"
+                                :disabled="promoLoading || !promocodeInput.trim()"
+                                class="px-3.5 py-2 rounded-xl bg-[#123C2F] text-[#C9F46B] text-xs font-bold hover:brightness-110 disabled:opacity-50 transition cursor-pointer">
+                            <span x-show="!promoLoading">Qo'llash</span>
+                            <span x-show="promoLoading" x-cloak>...</span>
+                        </button>
+                        <button type="button"
+                                x-show="promocodeApplied"
+                                @click="removePromocode()"
+                                class="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold hover:bg-rose-100 transition cursor-pointer">
+                            Bekor qilish
+                        </button>
+                    </div>
+                    <p x-show="promoSuccess" x-text="promoSuccess" class="text-[11px] text-emerald-700 font-bold"></p>
+                    <p x-show="promoError" x-text="promoError" class="text-[11px] text-rose-600 font-medium"></p>
+                    <input type="hidden" name="promocode" :value="promocodeApplied">
+                </div>
+
                 <!-- Totals -->
                 <div class="pt-4 border-t border-[#E8ECE4] space-y-2.5 text-xs">
                     <div class="flex items-center justify-between text-[#64748B]">
@@ -329,9 +408,16 @@
                         <span>Yetkazib berish (barcha sotuvchilar):</span>
                         <span class="font-bold text-[#172326]">{{ number_format($quote['shipping_total'], 0, '.', ' ') }} UZS</span>
                     </div>
+
+                    <!-- Promocode discount row -->
+                    <div x-show="discount > 0" x-cloak class="flex items-center justify-between text-emerald-700 font-bold">
+                        <span>Promokod chegirmasi (<span x-text="promocodeApplied"></span>):</span>
+                        <span>-<span x-text="discount.toLocaleString('uz-UZ')"></span> UZS</span>
+                    </div>
+
                     <div class="pt-3 border-t border-[#E8ECE4] flex items-center justify-between text-sm">
                         <span class="font-black text-[#172326]">Jami to'lov:</span>
-                        <span class="font-black text-2xl text-[#123C2F]">{{ number_format($quote['grand_total'], 0, '.', ' ') }} UZS</span>
+                        <span class="font-black text-2xl text-[#123C2F]" x-text="grandTotal.toLocaleString('uz-UZ') + ' UZS'"></span>
                     </div>
 
                     <!-- Nasiya breakdown summary inside sidebar -->

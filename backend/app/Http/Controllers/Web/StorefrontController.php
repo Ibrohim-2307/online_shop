@@ -462,6 +462,7 @@ class StorefrontController extends Controller
             'notes' => 'nullable|string|max:500',
             'payment_method' => 'nullable|string|in:cash_on_delivery,click,payme,uzum,nasiya,demo',
             'nasiya_months' => 'nullable|integer|in:3,6,12',
+            'promocode' => 'nullable|string|max:32',
             'idempotency_key' => 'nullable|string|max:100',
         ]);
 
@@ -487,6 +488,7 @@ class StorefrontController extends Controller
             'notes' => $validated['notes'] ?? null,
             'payment_method' => $paymentMethod,
             'nasiya_months' => $validated['nasiya_months'] ?? 6,
+            'promocode' => $validated['promocode'] ?? null,
         ];
 
         try {
@@ -687,5 +689,40 @@ class StorefrontController extends Controller
         return $order->suborders->contains(
             fn($sub) => $user->seller_id === $sub->seller_id || $user->belongsToSeller($sub->seller_id)
         );
+    }
+
+    /**
+     * Check and validate promocode on checkout via AJAX.
+     */
+    public function checkPromocode(Request $request): JsonResponse
+    {
+        $code = strtoupper(trim((string)$request->input('code', '')));
+        $subtotal = (int)$request->input('subtotal', 0);
+
+        if (empty($code)) {
+            return response()->json(['success' => false, 'message' => 'Promokod kiritilmadi.'], 422);
+        }
+
+        $promo = \App\Models\Promocode::where('code', $code)->first();
+        if (!$promo) {
+            return response()->json(['success' => false, 'message' => 'Bunday promokod mavjud emas.'], 404);
+        }
+
+        $res = $promo->validateForSubtotal($subtotal);
+        if (!$res['valid']) {
+            return response()->json(['success' => false, 'message' => $res['message']], 422);
+        }
+
+        $discount = $promo->calculateDiscount($subtotal);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Promokod muvaffaqiyatli qo\'llandi!',
+            'data' => [
+                'code' => $promo->code,
+                'discount' => $discount,
+                'discount_formatted' => number_format($discount, 0, '.', ' ') . ' UZS',
+            ]
+        ]);
     }
 }

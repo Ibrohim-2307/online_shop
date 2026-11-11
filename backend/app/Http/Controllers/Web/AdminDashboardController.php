@@ -4,14 +4,19 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Banner;
+use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Promocode;
 use App\Models\Refund;
 use App\Models\Role;
 use App\Models\Seller;
 use App\Models\SellerMember;
 use App\Models\SellerPayout;
 use App\Models\Shipment;
+use App\Models\Suborder;
 use App\Models\User;
 use App\Services\Audit\AuditService;
 use App\Services\Backup\DatabaseBackupService;
@@ -23,6 +28,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminDashboardController extends Controller
 {
@@ -84,7 +90,38 @@ class AdminDashboardController extends Controller
         $backups = $canManageBackups ? app(DatabaseBackupService::class)->all() : collect();
         $lastDailyBackup = $backups->firstWhere('type', 'daily');
 
-        $tabs = ['sellers', 'products', 'users', 'shipments', 'orders', 'refunds', 'audit'];
+        // Categories & Marketing
+        $categories = Category::withCount('products')->orderBy('sort_order')->get();
+        $promocodes = Promocode::latest()->get();
+        $banners = Banner::orderBy('sort_order')->latest()->get();
+
+        // 14 days daily sales analytics for charts
+        $dailySales = Order::where('created_at', '>=', now()->subDays(14))
+            ->whereIn('status', ['processing', 'completed'])
+            ->selectRaw("DATE(created_at) as date, COUNT(*) as count, SUM(grand_total) as total")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Top 5 selling products by revenue
+        $topProducts = OrderItem::selectRaw("product_name, SUM(quantity) as total_qty, SUM(subtotal) as total_revenue")
+            ->groupBy('product_name')
+            ->orderByDesc('total_revenue')
+            ->limit(5)
+            ->get();
+
+        // Top 5 sellers by revenue
+        $topSellers = Suborder::with('seller')
+            ->selectRaw("seller_id, COUNT(*) as count, SUM(total_amount) as total_revenue")
+            ->groupBy('seller_id')
+            ->orderByDesc('total_revenue')
+            ->limit(5)
+            ->get();
+
+        // Blocked / Suspicious Users
+        $blockedUsers = User::where('is_active', false)->with('roles')->latest()->get();
+
+        $tabs = ['sellers', 'products', 'categories', 'marketing', 'analytics', 'users', 'shipments', 'orders', 'refunds', 'audit'];
         if ($canManageBackups) {
             $tabs[] = 'backups';
         }
@@ -106,8 +143,15 @@ class AdminDashboardController extends Controller
             'stats',
             'sellers',
             'users',
+            'blockedUsers',
             'roles',
             'products',
+            'categories',
+            'promocodes',
+            'banners',
+            'dailySales',
+            'topProducts',
+            'topSellers',
             'recentOrders',
             'shipments',
             'couriers',
@@ -460,5 +504,282 @@ class AdminDashboardController extends Controller
         ]);
 
         return back()->with('success', "Kuryer ({$courier->name}) jo'natma #{$shipment->tracking_number} ga biriktirildi.");
+    }
+
+    /**
+     * Categories Management
+     */
+    public function storeCategory(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'slug' => ['nullable', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'icon' => ['nullable', 'string', 'max:50'],
+            'sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $slug = !empty($validated['slug']) ? Str::slug($validated['slug']) : Str::slug($validated['name']);
+        if (Category::where('slug', $slug)->exists()) {
+            $slug .= '-' . rand(100, 999);
+        }
+
+        $category = Category::create([
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'description' => $validated['description'] ?? null,
+            'icon' => $validated['icon'] ?? '📦',
+            'sort_order' => (int)($validated['sort_order'] ?? 0),
+            'is_active' => (bool)$request->has('is_active'),
+        ]);
+
+        AuditService::log('admin.category_created', $category, null, ['name' => $category->name]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'categories'])->with('success', "Yangi kategoriya ({$category->name}) muvaffaqiyatli yaratildi.");
+    }
+
+    public function updateCategoryStatus(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $category = Category::findOrFail($id);
+        $category->update(['is_active' => !$category->is_active]);
+
+        AuditService::log('admin.category_status_toggled', $category, null, ['is_active' => $category->is_active]);
+
+        $statusStr = $category->is_active ? 'faollashtirildi' : 'nofaol qilindi';
+        return redirect()->route('admin.dashboard', ['tab' => 'categories'])->with('success', "Kategoriya ({$category->name}) {$statusStr}.");
+    }
+
+    public function deleteCategory(int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $category = Category::withCount('products')->findOrFail($id);
+        if ($category->products_count > 0) {
+            $category->update(['is_active' => false]);
+            return redirect()->route('admin.dashboard', ['tab' => 'categories'])->with('error', "Kategoriyada {$category->products_count} ta mahsulot borligi sababli u o'chirilmadi, balki nofaol holatga o'tkazildi.");
+        }
+
+        $name = $category->name;
+        $category->delete();
+
+        AuditService::log('admin.category_deleted', null, null, ['name' => $name]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'categories'])->with('success', "Kategoriya ({$name}) o'chirildi.");
+    }
+
+    /**
+     * Marketing & Promocodes
+     */
+    public function storePromocode(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:32', 'unique:promocodes,code'],
+            'title' => ['nullable', 'string', 'max:150'],
+            'type' => ['required', 'in:fixed,percentage'],
+            'value' => ['required', 'integer', 'min:1'],
+            'min_order_amount' => ['nullable', 'integer', 'min:0'],
+            'max_discount_amount' => ['nullable', 'integer', 'min:0'],
+            'usage_limit' => ['nullable', 'integer', 'min:1'],
+            'expires_at' => ['nullable', 'date'],
+        ]);
+
+        $promocode = Promocode::create([
+            'code' => strtoupper(trim($validated['code'])),
+            'title' => $validated['title'] ?? null,
+            'type' => $validated['type'],
+            'value' => (int)$validated['value'],
+            'min_order_amount' => (int)($validated['min_order_amount'] ?? 0),
+            'max_discount_amount' => !empty($validated['max_discount_amount']) ? (int)$validated['max_discount_amount'] : null,
+            'usage_limit' => !empty($validated['usage_limit']) ? (int)$validated['usage_limit'] : null,
+            'expires_at' => !empty($validated['expires_at']) ? $validated['expires_at'] : null,
+            'is_active' => (bool)$request->has('is_active'),
+        ]);
+
+        AuditService::log('admin.promocode_created', $promocode, null, ['code' => $promocode->code]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'marketing'])->with('success', "Promokod ({$promocode->code}) muvaffaqiyatli yaratildi.");
+    }
+
+    public function togglePromocode(int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $promo = Promocode::findOrFail($id);
+        $promo->update(['is_active' => !$promo->is_active]);
+
+        $statusStr = $promo->is_active ? 'faollashtirildi' : 'to\'xtatildi';
+        return redirect()->route('admin.dashboard', ['tab' => 'marketing'])->with('success', "Promokod ({$promo->code}) {$statusStr}.");
+    }
+
+    public function deletePromocode(int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $promo = Promocode::findOrFail($id);
+        $code = $promo->code;
+        $promo->delete();
+
+        return redirect()->route('admin.dashboard', ['tab' => 'marketing'])->with('success', "Promokod ({$code}) o'chirildi.");
+    }
+
+    /**
+     * Marketing & Banners
+     */
+    public function storeBanner(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'image_url' => ['required', 'string', 'max:500'],
+            'link_url' => ['nullable', 'string', 'max:500'],
+            'position' => ['nullable', 'string', 'max:50'],
+            'sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $banner = Banner::create([
+            'title' => $validated['title'],
+            'image_url' => $validated['image_url'],
+            'link_url' => $validated['link_url'] ?? '/',
+            'position' => $validated['position'] ?? 'home_hero',
+            'sort_order' => (int)($validated['sort_order'] ?? 0),
+            'is_active' => (bool)$request->has('is_active'),
+        ]);
+
+        AuditService::log('admin.banner_created', $banner, null, ['title' => $banner->title]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'marketing'])->with('success', "Yangi aksiya banneri ({$banner->title}) qo'shildi.");
+    }
+
+    public function updateBannerStatus(int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $banner = Banner::findOrFail($id);
+        $banner->update(['is_active' => !$banner->is_active]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'marketing'])->with('success', "Banner holati yangilandi.");
+    }
+
+    public function deleteBanner(int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $banner = Banner::findOrFail($id);
+        $title = $banner->title;
+        $banner->delete();
+
+        return redirect()->route('admin.dashboard', ['tab' => 'marketing'])->with('success', "Banner ({$title}) o'chirildi.");
+    }
+
+    /**
+     * CSV / Excel Export
+     */
+    public function exportOrdersCsv(): StreamedResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $fileName = 'buyurtmalar_' . date('Y_m_d_His') . '.csv';
+        $orders = Order::with(['user'])->latest()->get();
+
+        return response()->streamDownload(function () use ($orders) {
+            $handle = fopen('php://output', 'w');
+            fputs($handle, "\xEF\xBB\xBF"); // UTF-8 BOM for Microsoft Excel
+
+            fputcsv($handle, ['Buyurtma Raqami', 'Xaridor Ismi', 'Telefon', 'Holati', 'Promokod', 'Chegirma (UZS)', 'Mahsulotlar (UZS)', 'Yetkazish (UZS)', 'Jami Summa (UZS)', 'Sana']);
+
+            foreach ($orders as $o) {
+                fputcsv($handle, [
+                    $o->order_number,
+                    $o->user?->name ?? 'Mehmon',
+                    $o->shipping_address['phone'] ?? $o->user?->phone ?? '',
+                    $o->status,
+                    $o->promocode ?? '-',
+                    $o->discount_total ?? 0,
+                    $o->items_total,
+                    $o->shipping_total,
+                    $o->grand_total,
+                    $o->created_at?->format('d.m.Y H:i') ?? '',
+                ]);
+            }
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function exportSellersCsv(): StreamedResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403);
+        }
+
+        $fileName = 'sotuvchilar_' . date('Y_m_d_His') . '.csv';
+        $sellers = Seller::withCount('products')->get();
+        $ledger = app(SellerLedgerService::class);
+
+        return response()->streamDownload(function () use ($sellers, $ledger) {
+            $handle = fopen('php://output', 'w');
+            fputs($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, ['ID', 'Do\'kon Nomi', 'Yuridik Nomi', 'STIR (INN)', 'Holati', 'Komissiya %', 'Reyting', 'Mahsulotlar Soni', 'Joriy Balans (UZS)', 'Telefon', 'Email']);
+
+            foreach ($sellers as $s) {
+                $balance = $ledger->getSellerBalance($s->id);
+                fputcsv($handle, [
+                    $s->id,
+                    $s->name,
+                    $s->legal_name ?? '',
+                    $s->tax_id ?? '',
+                    $s->status,
+                    $s->commission_rate . '%',
+                    $s->rating,
+                    $s->products_count,
+                    $balance,
+                    $s->phone ?? '',
+                    $s->email ?? '',
+                ]);
+            }
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }

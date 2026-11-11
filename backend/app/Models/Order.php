@@ -17,6 +17,8 @@ class Order extends Model
         'user_id',
         'status',
         'currency',
+        'promocode',
+        'discount_total',
         'items_total',
         'shipping_total',
         'grand_total',
@@ -27,6 +29,7 @@ class Order extends Model
 
     protected $casts = [
         'items_total' => 'integer',
+        'discount_total' => 'integer',
         'shipping_total' => 'integer',
         'grand_total' => 'integer',
         'shipping_address' => 'array',

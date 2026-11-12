@@ -822,11 +822,10 @@ class ProfileController extends Controller
             abort(403, 'Faqat kuryer yetkazish holatini o\'zgartirishi mumkin.');
         }
 
+        // A courier works only on shipments a seller or admin gave to them.
+        // (Before, any courier could take any unassigned shipment, even one not yet packed.)
         $shipment = Shipment::where('id', $id)
-            ->where(function ($q) use ($user) {
-                $q->where('courier_id', $user->id)
-                  ->orWhereNull('courier_id');
-            })
+            ->where('courier_id', $user->id)
             ->firstOrFail();
 
         $validated = $request->validate([
@@ -849,6 +848,30 @@ class ProfileController extends Controller
         if ($shipment->status === 'delivered') {
             return redirect()->route('profile', ['tab' => 'courier_shipments'])
                 ->with('error', "Jo'natma #{$shipment->tracking_number} allaqachon yetkazilgan.");
+        }
+
+        // Steps must go in order: take from the shop -> on the way -> handed over.
+        $allowedNext = [
+            'assigned' => ['picked_up', 'in_transit', 'delivered', 'failed'],
+            'picked_up' => ['in_transit', 'delivered', 'failed'],
+            'in_transit' => ['delivered', 'failed'],
+            'out_for_delivery' => ['delivered', 'failed'],
+            'delayed' => ['in_transit', 'delivered', 'failed'],
+            'failed' => ['in_transit', 'delivered'],
+        ][$shipment->status] ?? [];
+        if (!in_array($status, $allowedNext, true)) {
+            $labels = [
+                'pending' => "hali kuryerga berilmagan",
+                'assigned' => "do'kondan olinishi kutilmoqda",
+                'picked_up' => "do'kondan olingan",
+                'in_transit' => "yo'lda",
+                'failed' => "yetkazib bo'lmagan",
+                'cancelled' => "bekor qilingan",
+            ];
+            return redirect()->route('profile', ['tab' => 'courier_shipments'])
+                ->with('error', "Jo'natma #{$shipment->tracking_number} hozir "
+                    . ($labels[$shipment->status] ?? $shipment->status)
+                    . ". Bu amalni hozir bajarib bo'lmaydi.");
         }
 
         DB::transaction(function () use ($shipment, $suborder, $order, $status, $validated, $user) {
@@ -965,6 +988,16 @@ class ProfileController extends Controller
             'email' => ['required', 'email', 'max:150', 'unique:users,email,' . $user->id],
         ]);
 
+        $validated['phone'] = \App\Support\Phone::normalize($validated['phone']);
+        $request->merge(['phone' => $validated['phone']]);
+        $request->validate([
+            'phone' => ['regex:' . \App\Support\Phone::PATTERN, 'unique:users,phone,' . $user->id],
+        ], [
+            'phone.regex' => \App\Support\Phone::MESSAGE,
+            'phone.unique' => "Bu telefon raqami boshqa hisobga biriktirilgan.",
+        ]);
+        $validated['email'] = mb_strtolower(trim($validated['email']));
+
         $user->update($validated);
 
         return back()->with('success', 'Profil ma\'lumotlari muvaffaqiyatli saqlandi.');
@@ -1003,13 +1036,15 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
         if (!$user) {
-            $user = User::where('email', 'customer@market.uz')->first();
+            // Used to save a guest's address into the demo customer's account
+            return redirect()->route('login')->with('error', 'Iltimos, tizimga kiring.');
         }
 
+        $request->merge(['phone' => \App\Support\Phone::normalize((string) $request->input('phone'))]);
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
             'recipient_name' => ['required', 'string', 'max:100'],
-            'phone' => ['required', 'string', 'max:25'],
+            'phone' => ['required', 'string', 'max:25', 'regex:' . \App\Support\Phone::PATTERN],
             'full_address' => ['required', 'string', 'max:255'],
             'landmark' => ['nullable', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
@@ -1040,7 +1075,10 @@ class ProfileController extends Controller
     public function deleteAddress(int $id): RedirectResponse
     {
         $user = Auth::user();
-        $userId = $user ? $user->id : User::where('email', 'customer@market.uz')->value('id');
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Iltimos, tizimga kiring.');
+        }
+        $userId = $user->id;
 
         $address = Address::where('id', $id)->where('user_id', $userId)->firstOrFail();
         $address->delete();
@@ -1054,7 +1092,10 @@ class ProfileController extends Controller
     public function setDefaultAddress(int $id): RedirectResponse
     {
         $user = Auth::user();
-        $userId = $user ? $user->id : User::where('email', 'customer@market.uz')->value('id');
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Iltimos, tizimga kiring.');
+        }
+        $userId = $user->id;
 
         Address::where('user_id', $userId)->update(['is_default' => false]);
         Address::where('id', $id)->where('user_id', $userId)->update(['is_default' => true]);

@@ -453,9 +453,10 @@ class StorefrontController extends Controller
      */
     public function processCheckout(Request $request): RedirectResponse
     {
+        $request->merge(['phone' => \App\Support\Phone::normalize((string) $request->input('phone'))]);
         $validated = $request->validate([
             'recipient_name' => 'required|string|max:100',
-            'phone' => 'required|string|max:20',
+            'phone' => ['required', 'string', 'max:20', 'regex:' . \App\Support\Phone::PATTERN],
             'region' => 'required|string|max:50',
             'city' => 'required|string|max:50',
             'address_line' => 'required|string|max:255',
@@ -464,6 +465,9 @@ class StorefrontController extends Controller
             'nasiya_months' => 'nullable|integer|in:3,6,12',
             'promocode' => 'nullable|string|max:32',
             'idempotency_key' => 'nullable|string|max:100',
+        ], [
+            'phone.regex' => \App\Support\Phone::MESSAGE,
+            'payment_method.in' => "To'lov usulini ro'yxatdan tanlang.",
         ]);
 
         $user = $request->user();

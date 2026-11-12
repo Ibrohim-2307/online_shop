@@ -248,7 +248,7 @@
                                     <textarea name="details" rows="2" maxlength="400" placeholder="Qo'shimcha izoh (ixtiyoriy)"
                                               class="w-full px-3 py-2.5 rounded-xl border border-[#E8ECE4] bg-white text-xs"></textarea>
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                        <span class="text-[11px] text-[#64748B]">Qaytariladigan summa: <b>{{ number_format($suborder->items_subtotal, 0, '.', ' ') }} UZS</b>. <a href="{{ route('returns') }}" class="underline">Qaytarish shartlari</a></span>
+                                        <span class="text-[11px] text-[#64748B]">Qaytariladigan summa: <b>{{ number_format($suborder->refundableGoodsAmount(), 0, '.', ' ') }} UZS</b>@if($suborder->discountShare() > 0) <span class="text-[10px]">(promokod chegirmasi ayirilgan)</span>@endif. <a href="{{ route('returns') }}" class="underline">Qaytarish shartlari</a></span>
                                         <button type="submit" class="px-4 py-2.5 rounded-xl bg-[#123C2F] text-[#C9F46B] font-bold text-xs">So'rov yuborish</button>
                                     </div>
                                 </form>

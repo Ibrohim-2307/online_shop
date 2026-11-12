@@ -108,6 +108,7 @@ class SellerLedgerService
         return DB::transaction(function () use ($refund, $suborder) {
             $sellerId = $suborder->seller_id;
             $currentBalance = $this->getSellerBalance($sellerId);
+
             $deduction = (int) $refund->amount;
             $newBalance = $currentBalance - $deduction;
 
@@ -389,7 +390,7 @@ class SellerLedgerService
             $commissionTotal += $suborder->commission_amount;
         }
 
-        $expectedGrandTotal = $itemsTotal + $shippingTotal;
+        $expectedGrandTotal = max(0, $itemsTotal + $shippingTotal - (int) ($order->discount_total ?? 0));
 
         return $paidAmount === $expectedGrandTotal;
     }

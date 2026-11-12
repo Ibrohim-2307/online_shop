@@ -231,7 +231,7 @@ class OrderHubController extends Controller
         $reason = $validated['reason'] . (!empty($validated['details']) ? ': ' . $validated['details'] : '');
 
         try {
-            $refund = $refundService->requestRefund($user, $order, (int) $suborder->items_subtotal, $reason, $suborder);
+            $refund = $refundService->requestRefund($user, $order, $suborder->refundableGoodsAmount(), $reason, $suborder);
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }

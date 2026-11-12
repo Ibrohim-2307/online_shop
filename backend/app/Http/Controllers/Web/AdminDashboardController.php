@@ -25,6 +25,7 @@ use App\Services\Refund\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -50,7 +51,11 @@ class AdminDashboardController extends Controller
             'active_sellers' => Seller::where('status', 'active')->count(),
             'total_products' => Product::count(),
             'total_orders' => Order::count(),
-            'total_revenue' => Order::whereIn('status', ['paid', 'processing', 'completed'])->sum('grand_total'),
+            // Only money that actually came in: "processing" also holds unpaid cash-on-delivery and nasiya orders
+            'total_revenue' => (int) \App\Models\Payment::whereIn('status', ['paid', 'partially_refunded'])->sum('amount')
+                - (int) Refund::where('status', 'completed')
+                    ->whereIn('order_id', \App\Models\Payment::where('status', 'partially_refunded')->select('order_id'))
+                    ->sum('amount'),
             'total_couriers' => $couriers->count(),
             'active_shipments' => Shipment::whereIn('status', ['assigned', 'picked_up', 'in_transit', 'out_for_delivery'])->count(),
         ];
@@ -103,8 +108,10 @@ class AdminDashboardController extends Controller
             ->orderBy('date')
             ->get();
 
-        // Top 5 selling products by revenue
-        $topProducts = OrderItem::selectRaw("product_name, SUM(quantity) as total_qty, SUM(subtotal) as total_revenue")
+        // Top 5 selling products by revenue (cancelled orders are not sales)
+        $topProducts = OrderItem::whereHas('suborder', fn($q) => $q->where('status', '!=', 'cancelled')
+                ->whereHas('order', fn($o) => $o->whereNotIn('status', ['cancelled', 'pending_payment'])))
+            ->selectRaw("product_name, SUM(quantity) as total_qty, SUM(subtotal) as total_revenue")
             ->groupBy('product_name')
             ->orderByDesc('total_revenue')
             ->limit(5)
@@ -112,6 +119,8 @@ class AdminDashboardController extends Controller
 
         // Top 5 sellers by revenue
         $topSellers = Suborder::with('seller')
+            ->where('status', '!=', 'cancelled')
+            ->whereHas('order', fn($o) => $o->whereNotIn('status', ['cancelled', 'pending_payment']))
             ->selectRaw("seller_id, COUNT(*) as count, SUM(total_amount) as total_revenue")
             ->groupBy('seller_id')
             ->orderByDesc('total_revenue')
@@ -375,6 +384,40 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * Superadmin / Admin: Reset any user's password (superadmin, admin, seller, customer, courier).
+     */
+    public function updateUserPassword(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Faqat administrator foydalanuvchi parolini o'zgartira oladi.");
+        }
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $targetUser = User::findOrFail($id);
+
+        // Security check: A standard admin cannot reset the password of a superadmin
+        if ($targetUser->hasRole('superadmin') && !$user->hasRole('superadmin')) {
+            return back()->with('error', "Standart administrator Superadmin parolini o'zgartira olmaydi.");
+        }
+
+        $targetUser->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        AuditService::log('admin.user_password_reset', $targetUser, null, [
+            'reset_by' => $user->id,
+            'target_user_id' => $targetUser->id,
+            'target_user_email' => $targetUser->email,
+        ]);
+
+        return back()->with('success', "Foydalanuvchi ({$targetUser->name}) paroli muvaffaqiyatli yangilandi.");
+    }
+
+    /**
      * Moderator approves or rejects a customer's return request.
      */
     public function reviewRefund(Request $request, int $id, RefundService $refundService): RedirectResponse
@@ -490,8 +533,19 @@ class AdminDashboardController extends Controller
             'courier_id' => ['required', 'exists:users,id'],
         ]);
 
-        $shipment = Shipment::findOrFail($id);
+        $shipment = Shipment::with('suborder.order')->findOrFail($id);
         $courier = User::findOrFail($validated['courier_id']);
+
+        if (!$courier->hasRole(['courier', 'logistics_operator'])) {
+            return back()->with('error', "Tanlangan foydalanuvchi kuryer emas.");
+        }
+        $orderStatus = $shipment->suborder?->order?->status;
+        if (in_array($orderStatus, ['cancelled', 'pending_payment'], true)
+            || in_array($shipment->status, ['delivered', 'cancelled'], true)) {
+            return back()->with('error', "Jo'natma #{$shipment->tracking_number}: "
+                . ($orderStatus === 'pending_payment' ? "buyurtma hali to'lanmagan." : "buyurtma yopilgan yoki bekor qilingan.")
+                . " Kuryer biriktirib bo'lmaydi.");
+        }
 
         $shipment->update([
             'courier_id' => $courier->id,
@@ -590,15 +644,25 @@ class AdminDashboardController extends Controller
             abort(403);
         }
 
+        // Codes are matched in upper case at checkout, so check uniqueness in upper case too
+        // ("sinov10" next to "SINOV10" used to crash with a database error)
+        $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
         $validated = $request->validate([
-            'code' => ['required', 'string', 'max:32', 'unique:promocodes,code'],
+            'code' => ['required', 'string', 'max:32', 'regex:/^[A-Z0-9_-]+$/', 'unique:promocodes,code'],
             'title' => ['nullable', 'string', 'max:150'],
             'type' => ['required', 'in:fixed,percentage'],
-            'value' => ['required', 'integer', 'min:1'],
+            'value' => ['required', 'integer', 'min:1', $request->input('type') === 'percentage' ? 'max:100' : 'max:100000000'],
             'min_order_amount' => ['nullable', 'integer', 'min:0'],
             'max_discount_amount' => ['nullable', 'integer', 'min:0'],
             'usage_limit' => ['nullable', 'integer', 'min:1'],
-            'expires_at' => ['nullable', 'date'],
+            'expires_at' => ['nullable', 'date', 'after_or_equal:today'],
+        ], [
+            'code.unique' => 'Bunday promokod allaqachon bor.',
+            'code.regex' => "Promokodda faqat lotin harflari, raqamlar, - va _ bo'lsin.",
+            'value.max' => $request->input('type') === 'percentage'
+                ? "Foizli chegirma 100% dan oshmasin."
+                : "Chegirma summasi juda katta.",
+            'expires_at.after_or_equal' => "Tugash sanasi o'tib ketgan.",
         ]);
 
         $promocode = Promocode::create([
@@ -658,10 +722,14 @@ class AdminDashboardController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'image_url' => ['required', 'string', 'max:500'],
-            'link_url' => ['nullable', 'string', 'max:500'],
+            // Only real web addresses or site paths: "javascript:..." in a banner link runs code for every visitor
+            'image_url' => ['required', 'string', 'max:500', 'regex:#^(https?://|/)[^\s<>"\']*$#i'],
+            'link_url' => ['nullable', 'string', 'max:500', 'regex:#^(https?://|/)[^\s<>"\']*$#i'],
             'position' => ['nullable', 'string', 'max:50'],
             'sort_order' => ['nullable', 'integer'],
+        ], [
+            'image_url.regex' => "Rasm manzili https:// yoki / bilan boshlansin.",
+            'link_url.regex' => "Havola https:// yoki / bilan boshlansin.",
         ]);
 
         $banner = Banner::create([

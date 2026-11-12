@@ -32,8 +32,8 @@ function productDetails() {
         getNasiyaMonthly(months) {
             const total = parseFloat(this.currentQuote.total_price) || 0;
             if (months === 3) return Math.ceil(total / 3);
-            if (months === 6) return Math.ceil((total * 1.08) / 6);
-            if (months === 12) return Math.ceil((total * 1.18) / 12);
+            if (months === 6) return Math.ceil((total * 108) / 600); // whole numbers: 1.08 gave 324 001
+            if (months === 12) return Math.ceil((total * 118) / 1200);
             return 0;
         },
 
@@ -60,7 +60,7 @@ function productDetails() {
                 if (res.ok && data.success) {
                     window.location.href = '/checkout?payment_method=nasiya&months=' + this.selectedNasiyaMonths;
                 } else {
-                    alert(data.message || 'Xatolik yuz berdi');
+                    alert(data.message || (data.error && data.error.message) || 'Xatolik yuz berdi');
                 }
             } catch (e) {
                 alert('Serverga ulanishda xatolik yuz berdi');
@@ -70,6 +70,10 @@ function productDetails() {
         },
 
         async addToCart(goToCart = false) {
+            if (this.qtyError) {
+                alert(this.qtyError);
+                return;
+            }
             this.addingToCart = true;
             this.redirectingToCart = goToCart;
             try {
@@ -97,7 +101,7 @@ function productDetails() {
                         this.showCartModal = true;
                     }
                 } else {
-                    alert(data.message || 'Xatolik yuz berdi');
+                    alert(data.message || (data.error && data.error.message) || 'Xatolik yuz berdi');
                 }
             } catch (e) {
                 alert('Serverga ulanishda xatolik yuz berdi');
@@ -143,8 +147,32 @@ function productDetails() {
             }
         },
 
+        qtyError: '',
+
+        validateQuantity() {
+            const q = Number(this.quantity);
+            if (!isFinite(q) || this.quantity === '' || this.quantity === null) {
+                return 'Miqdorni raqam bilan kiriting.';
+            }
+            if (q < this.minQuantity) {
+                return 'Eng kam miqdor: ' + this.minQuantity + ' ' + this.unit + '.';
+            }
+            const steps = (q - this.minQuantity) / this.step;
+            if (Math.abs(steps - Math.round(steps)) > 0.0001) {
+                return 'Miqdor ' + this.step + ' ' + this.unit + ' qadam bilan bo\'lishi kerak (masalan: '
+                    + this.minQuantity + ', ' + (this.minQuantity + this.step) + ').';
+            }
+            return '';
+        },
+
         recalculate() {
+            this.qtyError = this.validateQuantity();
             if (!this.activeTiers || this.activeTiers.length === 0) return;
+            if (this.qtyError) {
+                // A negative, empty or off-step amount must never show a price (it used to show -1 500 000)
+                this.currentQuote = { ...this.currentQuote, total_price: '0' };
+                return;
+            }
 
             // Find matching tier (all-units model)
             let matched = null;
@@ -540,12 +568,15 @@ function imageMagnifier(imgUrl) {
                             <label class="block text-xs font-bold uppercase tracking-wider text-[#172326] mb-1">
                                 Miqdorni kiriting (Min: {{ $minQty }}, Qadam: {{ $step }})
                             </label>
-                            <span class="text-[11px] text-[#64748B]">
-                                Sinov: <button type="button" @click="setQuantity(299)" class="underline hover:text-[#123C2F] font-bold">299</button>, 
-                                <button type="button" @click="setQuantity(300)" class="underline hover:text-[#123C2F] font-bold text-[#123C2F]">300</button>, 
-                                <button type="button" @click="setQuantity(999)" class="underline hover:text-[#123C2F] font-bold">999</button>, 
-                                <button type="button" @click="setQuantity(1000)" class="underline hover:text-[#123C2F] font-bold text-[#123C2F]">1000</button>
+                            <span class="text-[11px] text-[#64748B]" x-show="activeTiers.length > 1">
+                                Narx pog'onalari:
+                                <template x-for="tier in activeTiers" :key="tier.id">
+                                    <button type="button" @click="setQuantity(Math.max(minQuantity, parseFloat(tier.min_quantity)))"
+                                            class="underline hover:text-[#123C2F] font-bold mr-1"
+                                            x-text="formatNumber(Math.max(minQuantity, parseFloat(tier.min_quantity))) + '+'"></button>
+                                </template>
                             </span>
+                            <p x-show="qtyError" x-cloak x-text="qtyError" class="mt-1 text-[11px] font-semibold text-rose-600" role="alert"></p>
                         </div>
 
                         <!-- Quantity Selector Counter -->
@@ -589,18 +620,15 @@ function imageMagnifier(imgUrl) {
                         </div>
                     </div>
 
-                    <!-- 299 vs 300 savings banner alert -->
-                    <div x-show="quantity === 300" x-cloak class="p-3 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-semibold flex items-center gap-2">
+                    <!-- Savings note, worked out from this product's own price tiers -->
+                    <div x-show="!qtyError && activeTiers.length > 1 && currentQuote.unit_price !== currentQuote.base_unit_price" x-cloak
+                         class="p-3 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-semibold flex items-center gap-2">
                         <span>💡</span>
                         <span>
-                            <strong>All-Units afzalligi:</strong> 300 dona xarid qilganda butun hajm 270 000 UZS dan hisoblanadi (jami 81 000 000 UZS). Bu 299 donadan (89 700 000 UZS) <strong>8 700 000 UZS ga arzonroq!</strong>
-                        </span>
-                    </div>
-
-                    <div x-show="quantity >= 1000" x-cloak class="p-3 rounded-xl bg-[#C9F46B]/30 text-[#123C2F] border border-[#123C2F]/20 text-xs font-semibold flex items-center gap-2">
-                        <span>🚀</span>
-                        <span>
-                            <strong>Eng yuqori optom chegirma:</strong> 1 000+ dona uchun donasiga 250 000 UZS! (1 000 dona = 250 000 000 UZS).
+                            <strong>Optom narx qo'llandi:</strong>
+                            donasiga <span x-text="formatNumber(currentQuote.unit_price)"></span> UZS
+                            (<span x-text="formatNumber(currentQuote.base_unit_price)"></span> o'rniga).
+                            Tejaysiz: <strong><span x-text="formatNumber(Math.round((Number(currentQuote.base_unit_price) - Number(currentQuote.unit_price)) * Number(quantity)))"></span> UZS</strong>.
                         </span>
                     </div>
                 </div>

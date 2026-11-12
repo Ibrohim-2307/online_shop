@@ -36,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Dates like "6 kun oldin" in Latin script ("uz" alone makes Carbon write "6 кун аввал")
+        \Carbon\Carbon::setLocale('uz_Latn');
+
         if (request()->server('HTTP_X_FORWARDED_PROTO') === 'https' || request()->isSecure()) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }

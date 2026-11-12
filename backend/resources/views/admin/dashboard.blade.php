@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="/css/app.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>[x-cloak] { display: none !important; }</style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: '{{ $initialTab ?? 'sellers' }}' }" x-init="$watch('currentTab', t => history.replaceState(null, '', '?tab=' + t))">
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: '{{ $initialTab ?? 'sellers' }}', passwordModal: false, targetUser: { id: null, name: '', email: '' } }" x-init="$watch('currentTab', t => history.replaceState(null, '', '?tab=' + t))">
 
     <!-- Top Admin Header -->
     <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
@@ -412,12 +413,20 @@
                                     @endif
                                 </td>
                                 <td class="p-3.5 text-right">
-                                    <form action="{{ route('admin.users.status', $u->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-bold {{ $u->is_active ? 'bg-slate-200 hover:bg-rose-100 hover:text-rose-700 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}">
-                                            {{ $u->is_active ? 'Bloklash' : 'Faollashtirish' }}
+                                    <div class="inline-flex items-center justify-end gap-1.5">
+                                        <button type="button" 
+                                                @click="passwordModal = true; targetUser = { id: {{ $u->id }}, name: '{{ addslashes($u->name) }}', email: '{{ addslashes($u->email) }}' }"
+                                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition"
+                                                title="Parolni yangilash">
+                                            🔑 Parol
                                         </button>
-                                    </form>
+                                        <form action="{{ route('admin.users.status', $u->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-bold {{ $u->is_active ? 'bg-slate-200 hover:bg-rose-100 hover:text-rose-700 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}">
+                                                {{ $u->is_active ? 'Bloklash' : 'Faollashtirish' }}
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -1320,6 +1329,55 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Password Reset Modal for Superadmin / Admin -->
+        <div x-show="passwordModal" 
+             x-cloak 
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+             @keydown.escape.window="passwordModal = false">
+            <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 relative" 
+                 @click.away="passwordModal = false">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-base shadow-xs">🔑</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Foydalanuvchi Parolini Yangilash</h4>
+                            <p class="text-[11px] text-slate-500">
+                                <span class="font-semibold text-slate-700" x-text="targetUser.name"></span>
+                                <span class="text-slate-400" x-text="'(' + targetUser.email + ')'"></span>
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" @click="passwordModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition text-lg leading-none" title="Yopish">&times;</button>
+                </div>
+
+                <form :action="'/admin/users/' + (targetUser.id || '') + '/password'" method="POST" class="mt-4 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Yangi Parol <span class="text-rose-500">*</span></label>
+                        <input type="password" name="password" required minlength="8"
+                               placeholder="Kamida 8 ta belgi"
+                               class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 outline-none focus:border-amber-500 focus:bg-white transition">
+                        <p class="text-[10px] text-slate-400 mt-1">Kamida 8 ta belgi bo'lishi shart</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Yangi Parolni Tasdiqlang <span class="text-rose-500">*</span></label>
+                        <input type="password" name="password_confirmation" required minlength="8"
+                               placeholder="Parolni qayta kiriting"
+                               class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 outline-none focus:border-amber-500 focus:bg-white transition">
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button type="button" @click="passwordModal = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition">
+                            Parolni Yangilash
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

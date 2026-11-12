@@ -142,22 +142,49 @@ class CheckoutService
 
         $grandTotal = bcadd($overallItemsTotal, $overallShippingTotal, 0);
 
-        // Calculate Promocode Discount if provided
-        $discountTotal = 0;
+        // Calculate Promocode Discount if provided.
+        // A code that was typed but cannot be used stops the checkout with a clear message,
+        // so the customer never pays a different total than the one shown on the page.
+        $discountTotal = '0';
         $appliedPromoCode = null;
+        $promoId = null;
         if (!empty($payload['promocode'])) {
-            $codeStr = strtoupper(trim((string)$payload['promocode']));
+            $codeStr = strtoupper(trim((string) $payload['promocode']));
             $promo = \App\Models\Promocode::where('code', $codeStr)->first();
-            if ($promo) {
-                $validation = $promo->validateForSubtotal((int)$overallItemsTotal);
-                if ($validation['valid']) {
-                    $discountTotal = $promo->calculateDiscount((int)$overallItemsTotal);
-                    $appliedPromoCode = $promo->code;
-                    $promo->increment('used_count');
-                }
+            if (!$promo) {
+                throw ValidationException::withMessages(['promocode' => ['Bunday promokod mavjud emas.']]);
             }
+            $validation = $promo->validateForSubtotal((int) $overallItemsTotal);
+            if (!$validation['valid']) {
+                throw ValidationException::withMessages(['promocode' => [$validation['message']]]);
+            }
+            $discountTotal = (string) $promo->calculateDiscount((int) $overallItemsTotal);
+            $appliedPromoCode = $promo->code;
+            $promoId = $promo->id;
         }
-        $grandTotal = max(0, bcsub($grandTotal, (string)$discountTotal, 0));
+
+        // Spread the discount over the sellers by their share of the goods, so that every
+        // suborder (what the courier collects) adds up to the order's grand total.
+        // The promocode is the marketplace's offer: the seller is still credited the full goods price.
+        $discountLeft = $discountTotal;
+        $groupKeys = array_keys($sellersGrouped);
+        foreach ($groupKeys as $i => $key) {
+            $isLast = $i === count($groupKeys) - 1;
+            if (bccomp($overallItemsTotal, '0', 0) <= 0 || bccomp($discountTotal, '0', 0) <= 0) {
+                $share = '0';
+            } elseif ($isLast) {
+                $share = $discountLeft;
+            } else {
+                $share = bcdiv(bcmul($discountTotal, $sellersGrouped[$key]['items_subtotal'], 0), $overallItemsTotal, 0);
+            }
+            $discountLeft = bcsub($discountLeft, $share, 0);
+            $sellersGrouped[$key]['discount'] = $share;
+        }
+
+        $grandTotal = bcsub($grandTotal, $discountTotal, 0);
+        if (bccomp($grandTotal, '0', 0) < 0) {
+            $grandTotal = '0';
+        }
 
         // 4. Atomic Execution inside Database Transaction
         $createdOrder = DB::transaction(function () use (
@@ -170,10 +197,21 @@ class CheckoutService
             $overallShippingTotal,
             $discountTotal,
             $appliedPromoCode,
+            $promoId,
             $grandTotal,
             $variantsToReserve,
             $requestHash
         ) {
+            // Count the promocode use inside the transaction and re-check its limit under a row lock,
+            // so two customers cannot both take the last use of a limited code.
+            if ($promoId) {
+                $lockedPromo = \App\Models\Promocode::where('id', $promoId)->lockForUpdate()->first();
+                if (!$lockedPromo || ($lockedPromo->usage_limit !== null && $lockedPromo->used_count >= $lockedPromo->usage_limit)) {
+                    throw ValidationException::withMessages(['promocode' => ['Ushbu promokoddan foydalanish limiti tugagan.']]);
+                }
+                $lockedPromo->increment('used_count');
+            }
+
             // Generate unique Order Number
             $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
 
@@ -215,7 +253,14 @@ class CheckoutService
                     0
                 );
 
-                $suborderTotal = bcadd($sellerData['items_subtotal'], $sellerData['shipping_cost'], 0);
+                $suborderTotal = bcsub(
+                    bcadd($sellerData['items_subtotal'], $sellerData['shipping_cost'], 0),
+                    $sellerData['discount'] ?? '0',
+                    0
+                );
+                if (bccomp($suborderTotal, '0', 0) < 0) {
+                    $suborderTotal = '0';
+                }
 
                 $suborder = Suborder::create([
                     'order_id' => $order->id,
@@ -227,7 +272,9 @@ class CheckoutService
                     'total_amount' => (int) $suborderTotal,
                     'commission_rate' => $commRate,
                     'commission_amount' => (int) $commAmount,
-                    'notes' => null,
+                    'notes' => bccomp($sellerData['discount'] ?? '0', '0', 0) > 0
+                        ? "Promokod {$appliedPromoCode}: -" . ($sellerData['discount']) . ' UZS (sayt hisobidan)'
+                        : null,
                 ]);
 
                 // Create Order Items snapshot
@@ -274,13 +321,16 @@ class CheckoutService
                 : ('TXN-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4))));
 
             $nasiyaMonths = (int)($payload['nasiya_months'] ?? 6);
-            $totalAmount = (float)$order->grand_total;
-            $monthlyAmount = match ($nasiyaMonths) {
-                3 => ceil($totalAmount / 3),
-                6 => ceil(($totalAmount * 1.08) / 6),
-                12 => ceil(($totalAmount * 1.18) / 12),
-                default => ceil($totalAmount / 6),
+            // Whole-sum arithmetic: float math turned 1 944 000 / 6 into 324 001
+            $markupPercent = match ($nasiyaMonths) {
+                3 => '0',
+                6 => '8',
+                12 => '18',
+                default => '0',
             };
+            $months = in_array($nasiyaMonths, [3, 6, 12], true) ? (string) $nasiyaMonths : '6';
+            $nasiyaTotal = bcdiv(bcmul((string) $order->grand_total, bcadd('100', $markupPercent, 0), 0), '100', 0);
+            $monthlyAmount = (int) bcdiv(bcadd($nasiyaTotal, bcsub($months, '1', 0), 0), $months, 0); // round up
 
             \App\Models\Payment::create([
                 'order_id' => $order->id,

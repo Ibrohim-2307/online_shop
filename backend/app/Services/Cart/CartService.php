@@ -86,6 +86,31 @@ class CartService
     /**
      * Add an item to the cart, validating MOQ and unit step.
      */
+    /**
+     * Stock that can still be sold: on hand minus what other orders have reserved.
+     */
+    protected function availableStock(int $variantId): float
+    {
+        $row = \App\Models\InventoryBalance::where('product_variant_id', $variantId)
+            ->selectRaw('COALESCE(SUM(quantity), 0) as on_hand, COALESCE(SUM(reserved_quantity), 0) as reserved')
+            ->first();
+
+        return max(0.0, (float) ($row->on_hand ?? 0) - (float) ($row->reserved ?? 0));
+    }
+
+    protected function assertInStock(int $variantId, float $wanted, string $unit): void
+    {
+        $available = $this->availableStock($variantId);
+        if ($wanted > $available + 0.0001) {
+            $availableText = rtrim(rtrim(number_format($available, 3, '.', ' '), '0'), '.');
+            throw new InvalidArgumentException(
+                $available <= 0
+                    ? "Bu mahsulot omborda qolmagan."
+                    : "Omborda faqat {$availableText} {$unit} bor. Savatdagi miqdorni kamaytiring."
+            );
+        }
+    }
+
     public function addItem(Cart $cart, int $variantId, float|string $quantity): CartItem
     {
         $variant = ProductVariant::with('product')->findOrFail($variantId);
@@ -112,6 +137,8 @@ class CartService
         $existing = CartItem::where('cart_id', $cart->id)
             ->where('product_variant_id', $variantId)
             ->first();
+
+        $this->assertInStock($variantId, ($existing ? (float) $existing->quantity : 0.0) + $qtyFloat, (string) $product->unit);
 
         if ($existing) {
             $newQty = (float) $existing->quantity + $qtyFloat;
@@ -151,6 +178,8 @@ class CartService
                 "Miqdor qadami noto'g'ri. Minimal: {$minQty}, qadam: {$step} {$product->unit}."
             );
         }
+
+        $this->assertInStock($item->product_variant_id, $qtyFloat, (string) $product->unit);
 
         $item->update(['quantity' => $qtyFloat]);
         return $item;

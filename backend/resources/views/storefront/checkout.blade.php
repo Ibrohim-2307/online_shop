@@ -4,8 +4,8 @@
              minutes: 14,
              seconds: 59,
              timer: null,
-             selectedMethod: '{{ request('payment_method', 'click') }}',
-             nasiyaMonths: {{ (int)request('months', 6) }},
+             selectedMethod: '{{ in_array(request('payment_method'), ['click', 'payme', 'uzum', 'nasiya', 'cash_on_delivery'], true) ? request('payment_method') : 'click' }}',
+             nasiyaMonths: {{ in_array((int) request('months', 6), [3, 6, 12], true) ? (int) request('months', 6) : 6 }},
              itemsTotal: {{ (float)$quote['items_total'] }},
              shippingTotal: {{ (float)$quote['shipping_total'] }},
              grandTotal: {{ (float)$quote['grand_total'] }},
@@ -21,7 +21,7 @@
                  this.promoError = '';
                  this.promoSuccess = '';
                  try {
-                     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                     const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
                      const res = await fetch('{{ route('checkout.promocode.check') }}', {
                          method: 'POST',
                          headers: {
@@ -59,8 +59,8 @@
              },
              getNasiyaMonthly(m) {
                  if (m === 3) return Math.ceil(this.grandTotal / 3);
-                 if (m === 6) return Math.ceil((this.grandTotal * 1.08) / 6);
-                 if (m === 12) return Math.ceil((this.grandTotal * 1.18) / 12);
+                 if (m === 6) return Math.ceil((this.grandTotal * 108) / 600);
+                 if (m === 12) return Math.ceil((this.grandTotal * 118) / 1200);
                  return 0;
              },
              init() {
@@ -107,6 +107,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
                 <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
+        @if($errors->hasAny(['payment_method', 'promocode', 'nasiya_months']))
+            <div class="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold" role="alert">
+                @foreach(['payment_method', 'promocode', 'nasiya_months'] as $field)
+                    @error($field)<p>{{ $message }}</p>@enderror
+                @endforeach
             </div>
         @endif
 

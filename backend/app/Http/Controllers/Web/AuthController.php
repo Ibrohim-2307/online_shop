@@ -36,11 +36,12 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $login = $credentials['login'];
-
-        $user = User::where('email', $login)
-            ->orWhere('phone', $login)
-            ->first();
+        // "998901234567", "90 123 45 67" and "Admin@Market.uz" should all find the same account
+        $login = trim($credentials['login']);
+        $user = \App\Support\Phone::looksLikePhone($login)
+            // older accounts may have been saved without the "+"
+            ? User::whereIn('phone', [\App\Support\Phone::normalize($login), ltrim(\App\Support\Phone::normalize($login), '+')])->first()
+            : User::whereRaw('LOWER(email) = ?', [mb_strtolower($login)])->first();
 
         $demoEmails = ['admin@market.uz', 'seller@market.uz', 'customer@market.uz', 'courier@market.uz'];
         $isDemoAccount = $user && in_array($user->email, $demoEmails, true);
@@ -106,12 +107,13 @@ class AuthController extends Controller
     public function register(Request $request): RedirectResponse
     {
         $request->merge([
-            'phone' => $request->filled('phone') ? preg_replace('/[^\d+]/', '', (string) $request->input('phone')) : null,
+            'phone' => $request->filled('phone') ? \App\Support\Phone::normalize((string) $request->input('phone')) : null,
+            'email' => $request->filled('email') ? mb_strtolower(trim((string) $request->input('email'))) : null,
         ]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'phone' => ['required', 'string', 'regex:/^\+?998\d{9}$/', 'unique:users,phone'],
+            'phone' => ['required', 'string', 'regex:' . \App\Support\Phone::PATTERN, 'unique:users,phone'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'account_type' => ['required', 'string', Rule::in(['customer', 'wholesale_customer', 'seller'])],

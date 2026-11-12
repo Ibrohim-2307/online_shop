@@ -51,4 +51,22 @@ class Suborder extends Model
     {
         return $this->hasMany(Shipment::class);
     }
+
+    /**
+     * Promocode discount carried by this seller's part of the order
+     * (goods + delivery - what the customer is charged for this part).
+     */
+    public function discountShare(): int
+    {
+        return max(0, (int) $this->items_subtotal + (int) $this->shipping_cost - (int) $this->total_amount);
+    }
+
+    /**
+     * What the customer actually paid for the goods in this part, i.e. the most they can get back.
+     * A 3 000 000 item bought with a 3 000 000 promocode refunds 0, not 3 000 000.
+     */
+    public function refundableGoodsAmount(): int
+    {
+        return max(0, (int) $this->items_subtotal - $this->discountShare());
+    }
 }

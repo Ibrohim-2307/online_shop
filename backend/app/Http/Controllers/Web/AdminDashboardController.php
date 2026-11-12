@@ -25,7 +25,9 @@ use App\Services\Refund\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -399,14 +401,31 @@ class AdminDashboardController extends Controller
 
         $targetUser = User::findOrFail($id);
 
-        // Security check: A standard admin cannot reset the password of a superadmin
-        if ($targetUser->hasRole('superadmin') && !$user->hasRole('superadmin')) {
-            return back()->with('error', "Standart administrator Superadmin parolini o'zgartira olmaydi.");
+        // Security check: Only superadmin can reset administrative or moderator accounts
+        if ($targetUser->hasRole(['superadmin', 'admin', 'moderator']) && !$user->hasRole('superadmin')) {
+            return back()->with('error', "Administrator yoki moderator parolini faqat Bosh Superadmin o'zgartira oladi.");
         }
 
-        $targetUser->update([
+        $targetUser->forceFill([
             'password' => Hash::make($validated['password']),
-        ]);
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // Revoke all existing Sanctum personal access tokens
+        $targetUser->tokens()->delete();
+
+        // Invalidate active web sessions from database if sessions table exists
+        if (Schema::hasTable('sessions')) {
+            $currentSessionId = session()->getId();
+            if ($user->id === $targetUser->id && $currentSessionId) {
+                DB::table('sessions')
+                    ->where('user_id', $targetUser->id)
+                    ->where('id', '!=', $currentSessionId)
+                    ->delete();
+            } else {
+                DB::table('sessions')->where('user_id', $targetUser->id)->delete();
+            }
+        }
 
         AuditService::log('admin.user_password_reset', $targetUser, null, [
             'reset_by' => $user->id,
@@ -414,7 +433,7 @@ class AdminDashboardController extends Controller
             'target_user_email' => $targetUser->email,
         ]);
 
-        return back()->with('success', "Foydalanuvchi ({$targetUser->name}) paroli muvaffaqiyatli yangilandi.");
+        return back()->with('success', "Foydalanuvchi ({$targetUser->name}) paroli muvaffaqiyatli yangilandi va barcha faol sessiyalari tugatildi.");
     }
 
     /**

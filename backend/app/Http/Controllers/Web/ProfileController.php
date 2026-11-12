@@ -29,6 +29,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -1022,9 +1023,22 @@ class ProfileController extends Controller
             return back()->withErrors(['current_password' => 'Joriy parol noto\'g\'ri kiritildi.']);
         }
 
-        $user->update([
+        $user->forceFill([
             'password' => Hash::make($validated['new_password']),
-        ]);
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // Revoke all existing personal access tokens
+        $user->tokens()->delete();
+
+        // Invalidate all other active database web sessions
+        if (Schema::hasTable('sessions')) {
+            $currentSessionId = session()->getId();
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->when($currentSessionId, fn($q) => $q->where('id', '!=', $currentSessionId))
+                ->delete();
+        }
 
         return back()->with('success', 'Parolingiz muvaffaqiyatli yangilandi.');
     }

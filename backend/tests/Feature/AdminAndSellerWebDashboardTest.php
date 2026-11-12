@@ -150,6 +150,82 @@ class AdminAndSellerWebDashboardTest extends TestCase
         $this->assertFalse(Hash::check('HackedPassword123!', $superadmin->fresh()->password));
     }
 
+    public function test_admin_cannot_reset_another_admin_or_moderator_password(): void
+    {
+        $admin1 = User::where('email', 'admin@market.uz')->first();
+
+        $admin2 = User::factory()->create([
+            'password' => bcrypt('OriginalAdmin2Pass123!'),
+        ]);
+        $admin2->assignRole('admin');
+
+        $moderator = User::factory()->create([
+            'password' => bcrypt('OriginalModPass123!'),
+        ]);
+        $moderator->assignRole('moderator');
+
+        // Admin1 attempts to reset Admin2 password -> should fail
+        $response1 = $this->actingAs($admin1)->post("/admin/users/{$admin2->id}/password", [
+            'password' => 'HackedAdmin2Password123!',
+            'password_confirmation' => 'HackedAdmin2Password123!',
+        ]);
+        $response1->assertRedirect();
+        $response1->assertSessionHas('error');
+        $this->assertFalse(Hash::check('HackedAdmin2Password123!', $admin2->fresh()->password));
+
+        // Admin1 attempts to reset Moderator password -> should fail
+        $response2 = $this->actingAs($admin1)->post("/admin/users/{$moderator->id}/password", [
+            'password' => 'HackedModPassword123!',
+            'password_confirmation' => 'HackedModPassword123!',
+        ]);
+        $response2->assertRedirect();
+        $response2->assertSessionHas('error');
+        $this->assertFalse(Hash::check('HackedModPassword123!', $moderator->fresh()->password));
+    }
+
+    public function test_password_reset_revokes_tokens_and_database_sessions(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $customer = User::where('email', 'customer@market.uz')->first();
+
+        // Create an API token for customer
+        $customer->createToken('mobile-device');
+        $this->assertGreaterThan(0, $customer->tokens()->count());
+
+        // Create a fake database session for customer
+        \Illuminate\Support\Facades\DB::table('sessions')->insert([
+            'id' => 'fake_session_' . \Illuminate\Support\Str::random(10),
+            'user_id' => $customer->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Mozilla/5.0',
+            'payload' => 'dummy_payload',
+            'last_activity' => time(),
+        ]);
+        $this->assertEquals(1, \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $customer->id)->count());
+
+        $oldRememberToken = $customer->remember_token;
+
+        // Reset customer password
+        $response = $this->actingAs($superadmin)->post("/admin/users/{$customer->id}/password", [
+            'password' => 'NewSecuredPass123!',
+            'password_confirmation' => 'NewSecuredPass123!',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        // Verify tokens deleted
+        $this->assertEquals(0, $customer->fresh()->tokens()->count());
+
+        // Verify sessions deleted
+        $this->assertEquals(0, \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $customer->id)->count());
+
+        // Verify remember token rotated
+        $this->assertNotEquals($oldRememberToken, $customer->fresh()->remember_token);
+    }
+
     public function test_password_reset_validation(): void
     {
         $admin = User::where('email', 'admin@market.uz')->first();

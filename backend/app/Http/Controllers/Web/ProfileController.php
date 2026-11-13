@@ -257,10 +257,14 @@ class ProfileController extends Controller
             ];
         }
 
+        // 7. Mobile APK Downloads Data
+        $mobileApks = ApkDownloadController::getApkList();
+
         return view('storefront.profile', compact(
             'user',
             'isDemo',
             'activeTab',
+            'mobileApks',
             'orders',
             'activeOrdersCount',
             'addresses',

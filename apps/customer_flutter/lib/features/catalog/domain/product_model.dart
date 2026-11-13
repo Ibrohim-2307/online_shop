@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'category_visual.dart';
+
 class PriceTier {
   final double minQuantity;
   final double? maxQuantity;
@@ -131,6 +134,13 @@ class CategoryModel {
   final String slug;
 
   CategoryModel({required this.id, required this.name, required this.slug});
+
+  CategoryVisual get visual => CategoryVisual.forSlugOrName(slug, name);
+  String get emoji => visual.emoji;
+  IconData get icon => visual.icon;
+  Color get color => visual.primaryColor;
+  Color get bgColor => visual.bgColor;
+  String get subtitle => visual.subtitle;
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(

@@ -32,6 +32,11 @@ Route::middleware('auth')->group(function () {
 });
 Route::get('/tracking/{trackingNumber?}', [StorefrontController::class, 'tracking'])->name('tracking');
 
+// Mobile APK Downloads
+Route::get('/download/apk', [\App\Http\Controllers\Web\ApkDownloadController::class, 'index'])->name('apk.index');
+Route::get('/download/apk/info', [\App\Http\Controllers\Web\ApkDownloadController::class, 'info'])->name('apk.info');
+Route::get('/download/apk/{type}', [\App\Http\Controllers\Web\ApkDownloadController::class, 'download'])->name('apk.download');
+
 // Customer Service, Legal & Policy Pages
 Route::view('/delivery', 'storefront.delivery')->name('delivery');
 Route::view('/returns', 'storefront.returns')->name('returns');

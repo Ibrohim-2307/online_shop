@@ -56,6 +56,34 @@
             </div>
         </div>
 
+        <!-- Category Quick Capsule Navigation (Horizontal Scroll with Rich Emoji Pods) -->
+        <div class="mb-4 sm:mb-6 -mx-3 sm:mx-0 px-3 sm:px-0 overflow-x-auto no-scrollbar py-1">
+            <div class="flex items-center gap-2 sm:gap-2.5 min-w-max">
+                <a href="{{ route('catalog', request()->except('category', 'page')) }}" 
+                   class="group inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all duration-200 border shadow-2xs {{ !request('category') ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] shadow-sm ring-2 ring-[#C9F46B]/30' : 'bg-white text-[#172326] border-[#E8ECE4] hover:border-[#123C2F]/30 hover:bg-[#FAFBF7]' }}">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-100 border border-slate-200 text-xs shrink-0 group-hover:scale-110 transition-transform">
+                        <span>🗂️</span>
+                    </span>
+                    <span>Barcha toifalar</span>
+                </a>
+                @foreach($categories as $cat)
+                    @php
+                        $isCatActive = request('category') === $cat->slug;
+                    @endphp
+                    <a href="{{ route('catalog', array_merge(request()->except('page'), ['category' => $cat->slug])) }}" 
+                       class="group inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all duration-200 border shadow-2xs {{ $isCatActive ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F] shadow-sm ring-2 ring-[#C9F46B]/30' : 'bg-white text-[#172326] border-[#E8ECE4] hover:border-[#123C2F]/30 hover:bg-[#FAFBF7]' }}">
+                        <x-category-icon :slug="$cat->slug" variant="chip" :active="$isCatActive" :emoji="$cat->icon" />
+                        <span class="whitespace-nowrap">{{ $cat->name }}</span>
+                        @if(isset($cat->products_count) && $cat->products_count > 0)
+                            <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ $isCatActive ? 'bg-[#C9F46B]/20 text-[#C9F46B]' : 'bg-[#F1F5F9] text-[#64748B] group-hover:bg-[#123C2F]/10 group-hover:text-[#123C2F]' }}">
+                                {{ $cat->products_count }}
+                            </span>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+        </div>
+
         <!-- Mobile Quick Filter Pills (Trade Mode) -->
         <div class="lg:hidden mb-4 overflow-x-auto no-scrollbar flex items-center gap-1.5 text-xs">
             @php
@@ -169,18 +197,23 @@
                                 <div class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                                     <a href="{{ route('catalog', request()->except('category', 'page')) }}" 
                                        class="flex items-center justify-between px-3 py-2 rounded-xl text-xs {{ !request('category') ? 'bg-[#123C2F] text-white font-bold' : 'text-[#64748B] hover:bg-[#FAFBF7] border border-[#E8ECE4]' }}">
-                                        <span class="flex items-center gap-2">
-                                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                                        <span class="flex items-center gap-2.5">
+                                            <span class="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-xs shrink-0">🗂️</span>
                                             <span>Barcha toifalar</span>
                                         </span>
                                     </a>
                                     @foreach($categories as $cat)
                                         <a href="{{ route('catalog', array_merge(request()->except('page'), ['category' => $cat->slug])) }}" 
                                            class="flex items-center justify-between px-3 py-2 rounded-xl text-xs {{ request('category') === $cat->slug ? 'bg-[#123C2F] text-white font-bold' : 'text-[#172326] hover:bg-[#FAFBF7] border border-[#E8ECE4]' }}">
-                                            <span class="flex items-center gap-2">
-                                                <x-category-icon :slug="$cat->slug" class="w-4 h-4 shrink-0" />
+                                            <span class="flex items-center gap-2.5">
+                                                <x-category-icon :slug="$cat->slug" variant="mini" :active="request('category') === $cat->slug" :emoji="$cat->icon" />
                                                 <span class="leading-snug">{{ $cat->name }}</span>
                                             </span>
+                                            @if(isset($cat->products_count) && $cat->products_count > 0)
+                                                <span class="text-[10px] px-2 py-0.5 rounded-full {{ request('category') === $cat->slug ? 'bg-white/20 text-[#C9F46B]' : 'bg-[#F1F5F9] text-[#64748B]' }} font-semibold">
+                                                    {{ $cat->products_count }}
+                                                </span>
+                                            @endif
                                         </a>
                                     @endforeach
                                 </div>
@@ -246,20 +279,25 @@
                             <label class="block text-xs font-extrabold uppercase tracking-wider text-[#64748B] mb-3">
                                 Toifalar
                             </label>
-                            <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                                <a href="{{ route('catalog', request()->except('category', 'page')) }}" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs {{ !request('category') ? 'bg-[#123C2F] text-white font-bold' : 'text-[#64748B] hover:bg-[#FAFBF7]' }}">
-                                    <span class="flex items-center gap-2">
-                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                            <div class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                                <a href="{{ route('catalog', request()->except('category', 'page')) }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors {{ !request('category') ? 'bg-[#123C2F] text-white font-bold shadow-2xs' : 'text-[#64748B] hover:bg-[#FAFBF7] hover:text-[#172326]' }}">
+                                    <span class="flex items-center gap-2.5">
+                                        <span class="w-7 h-7 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-xs shrink-0">🗂️</span>
                                         <span>Barcha toifalar</span>
                                     </span>
                                 </a>
                                 @foreach($categories as $cat)
                                     <a href="{{ route('catalog', array_merge(request()->except('page'), ['category' => $cat->slug])) }}" 
-                                       class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs {{ request('category') === $cat->slug ? 'bg-[#123C2F] text-white font-bold' : 'text-[#172326] hover:bg-[#FAFBF7]' }}">
+                                       class="flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors {{ request('category') === $cat->slug ? 'bg-[#123C2F] text-white font-bold shadow-2xs' : 'text-[#172326] hover:bg-[#FAFBF7] hover:text-[#123C2F]' }}">
                                         <span class="flex items-center gap-2.5">
-                                            <x-category-icon :slug="$cat->slug" class="w-4 h-4 shrink-0" />
-                                            <span class="leading-snug">{{ $cat->name }}</span>
+                                            <x-category-icon :slug="$cat->slug" variant="mini" :active="request('category') === $cat->slug" :emoji="$cat->icon" />
+                                            <span class="leading-snug font-medium">{{ $cat->name }}</span>
                                         </span>
+                                        @if(isset($cat->products_count) && $cat->products_count > 0)
+                                            <span class="text-[10px] px-2 py-0.5 rounded-full {{ request('category') === $cat->slug ? 'bg-white/20 text-[#C9F46B]' : 'bg-[#F1F5F9] text-[#64748B]' }} font-semibold">
+                                                {{ $cat->products_count }}
+                                            </span>
+                                        @endif
                                     </a>
                                 @endforeach
                             </div>

@@ -79,9 +79,10 @@ class CatalogRepository {
       CategoryModel(id: 1, name: 'Qurilish materiallari', slug: 'qurilish-materiallari'),
       CategoryModel(id: 2, name: 'Sanoat uskunalari', slug: 'sanoat-uskunalari'),
       CategoryModel(id: 3, name: 'Oziq-ovqat va ichimliklar', slug: 'oziq-ovqat-va-ichimliklar'),
-      CategoryModel(id: 4, name: 'Elektronika & Texnika', slug: 'elektronika-texnika'),
-      CategoryModel(id: 5, name: 'Santexnika & Isitish', slug: 'santexnika-isitish'),
-      CategoryModel(id: 6, name: 'Avtomobil jihozlari', slug: 'avtomobil-jihozlari'),
+      CategoryModel(id: 4, name: 'Elektr & Yoritish', slug: 'elektr-jihozlari'),
+      CategoryModel(id: 5, name: 'Bo\'yoqlar & Kimyo', slug: 'boyoqlar-va-kimyo'),
+      CategoryModel(id: 6, name: 'Santexnika & Quvurlar', slug: 'santexnika-va-quvurlar'),
+      CategoryModel(id: 7, name: 'Asbob-uskunalar', slug: 'asbob-uskunalar'),
     ];
   }
 

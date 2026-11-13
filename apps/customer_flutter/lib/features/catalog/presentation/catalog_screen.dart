@@ -87,10 +87,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  _buildCategoryChip('Hammasi', null),
+                  _buildCategoryChip(null),
                   ..._categories.map((c) => Padding(
                         padding: const EdgeInsets.only(left: 8),
-                        child: _buildCategoryChip(c.name, c.slug),
+                        child: _buildCategoryChip(c),
                       )),
                 ],
               ),
@@ -136,23 +136,72 @@ class _CatalogScreenState extends State<CatalogScreen> {
     );
   }
 
-  Widget _buildCategoryChip(String label, String? slug) {
+  Widget _buildCategoryChip(CategoryModel? cat) {
+    final slug = cat?.slug;
+    final name = cat?.name ?? 'Hammasi';
     final isSelected = _selectedCategory == slug || (slug == null && (_selectedCategory == null || _selectedCategory == 'all'));
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      side: BorderSide(color: isSelected ? AppColors.brandDark : AppColors.border),
-      labelStyle: TextStyle(
-        fontSize: 12.5,
-        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-        color: isSelected ? Colors.white : AppColors.textPrimary,
-      ),
-      onSelected: (selected) {
+    final emoji = cat?.emoji ?? '⚡';
+    final icon = cat?.icon ?? Icons.grid_view_rounded;
+    final color = cat?.color ?? AppColors.brandDark;
+
+    return InkWell(
+      onTap: () {
         setState(() {
-          _selectedCategory = selected ? slug : null;
+          _selectedCategory = isSelected ? null : slug;
         });
         _fetchData();
       },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.brandDark : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.brandDark : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: AppColors.brandDark.withValues(alpha: 0.18), blurRadius: 6, offset: const Offset(0, 2))]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3.5),
+              decoration: BoxDecoration(
+                color: isSelected 
+                    ? Colors.white.withValues(alpha: 0.18) 
+                    : cat?.bgColor ?? const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(emoji, style: const TextStyle(fontSize: 11)),
+                  const SizedBox(width: 3),
+                  Icon(
+                    icon, 
+                    size: 13, 
+                    color: isSelected ? AppColors.brandLime : color,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -73,39 +73,92 @@
 
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
                 @forelse($categories as $category)
+                    @php
+                        $normSlug = strtolower(trim((string)$category->slug));
+                        $catTheme = match(true) {
+                            str_contains($normSlug, 'qurilish') || str_contains($normSlug, 'sement') || str_contains($normSlug, 'gisht') => [
+                                'glow' => 'from-amber-400 via-orange-400 to-amber-500',
+                                'borderHover' => 'hover:border-amber-400/80',
+                                'shadowHover' => 'hover:shadow-amber-500/15',
+                                'badgeHover' => 'group-hover:bg-amber-600 group-hover:text-amber-50',
+                                'dot' => 'bg-amber-400',
+                            ],
+                            str_contains($normSlug, 'sanoat') || str_contains($normSlug, 'mashina') || (str_contains($normSlug, 'uskuna') && !str_contains($normSlug, 'asbob')) => [
+                                'glow' => 'from-blue-500 via-indigo-500 to-cyan-400',
+                                'borderHover' => 'hover:border-blue-400/80',
+                                'shadowHover' => 'hover:shadow-blue-500/15',
+                                'badgeHover' => 'group-hover:bg-blue-600 group-hover:text-blue-50',
+                                'dot' => 'bg-blue-400',
+                            ],
+                            str_contains($normSlug, 'oziq-ovqat') || str_contains($normSlug, 'ichimlik') || str_contains($normSlug, 'don') => [
+                                'glow' => 'from-emerald-400 via-[#C9F46B] to-teal-500',
+                                'borderHover' => 'hover:border-emerald-400/80',
+                                'shadowHover' => 'hover:shadow-emerald-500/15',
+                                'badgeHover' => 'group-hover:bg-emerald-600 group-hover:text-emerald-50',
+                                'dot' => 'bg-emerald-400',
+                            ],
+                            str_contains($normSlug, 'elektr') || str_contains($normSlug, 'yoritish') || str_contains($normSlug, 'chiroq') => [
+                                'glow' => 'from-yellow-400 via-amber-400 to-yellow-300',
+                                'borderHover' => 'hover:border-yellow-400/80',
+                                'shadowHover' => 'hover:shadow-yellow-500/20',
+                                'badgeHover' => 'group-hover:bg-amber-600 group-hover:text-amber-50',
+                                'dot' => 'bg-yellow-400',
+                            ],
+                            str_contains($normSlug, 'boyoq') || str_contains($normSlug, 'kimyo') => [
+                                'glow' => 'from-purple-500 via-fuchsia-400 to-indigo-500',
+                                'borderHover' => 'hover:border-purple-400/80',
+                                'shadowHover' => 'hover:shadow-purple-500/15',
+                                'badgeHover' => 'group-hover:bg-purple-600 group-hover:text-purple-50',
+                                'dot' => 'bg-purple-400',
+                            ],
+                            str_contains($normSlug, 'santexnika') || str_contains($normSlug, 'quvur') || str_contains($normSlug, 'suv') => [
+                                'glow' => 'from-cyan-400 via-sky-400 to-blue-500',
+                                'borderHover' => 'hover:border-cyan-400/80',
+                                'shadowHover' => 'hover:shadow-cyan-500/15',
+                                'badgeHover' => 'group-hover:bg-cyan-600 group-hover:text-cyan-50',
+                                'dot' => 'bg-cyan-400',
+                            ],
+                            str_contains($normSlug, 'asbob') || str_contains($normSlug, 'instrument') => [
+                                'glow' => 'from-orange-500 via-amber-400 to-rose-400',
+                                'borderHover' => 'hover:border-orange-400/80',
+                                'shadowHover' => 'hover:shadow-orange-500/15',
+                                'badgeHover' => 'group-hover:bg-orange-600 group-hover:text-orange-50',
+                                'dot' => 'bg-orange-400',
+                            ],
+                            default => [
+                                'glow' => 'from-[#C9F46B] via-[#123C2F] to-[#C9F46B]',
+                                'borderHover' => 'hover:border-[#123C2F]/50',
+                                'shadowHover' => 'hover:shadow-[#123C2F]/10',
+                                'badgeHover' => 'group-hover:bg-[#123C2F] group-hover:text-[#C9F46B]',
+                                'dot' => 'bg-[#C9F46B]',
+                            ],
+                        };
+                    @endphp
+
                     <a href="{{ route('catalog', ['category' => $category->slug]) }}" 
-                       class="group bg-white hover:bg-[#FAFBF7] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#E2E8F0] hover:border-[#123C2F] shadow-2xs hover:shadow-xl hover:shadow-[#123C2F]/10 hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center justify-between min-h-[160px] sm:min-h-[195px] relative overflow-hidden">
+                       class="group bg-white hover:bg-[#FAFBF7] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#E2E8F0] {{ $catTheme['borderHover'] }} shadow-2xs hover:shadow-xl {{ $catTheme['shadowHover'] }} hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center justify-between min-h-[168px] sm:min-h-[200px] relative overflow-hidden">
                         
                         <!-- Top Accent Highlight on Hover -->
-                        <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#C9F46B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r {{ $catTheme['glow'] }} opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                        <!-- Professional Photorealistic Category Pod (Uzum / Amazon Marketplace Style) -->
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-[#F8FAFC] to-[#EEF2F6] border border-[#E2E8F0] p-1.5 group-hover:border-[#123C2F]/30 group-hover:bg-white flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:shadow-black/5 overflow-hidden relative">
-                            <img src="{{ $category->display_image }}" 
-                                 alt="{{ $category->name }}" 
-                                 loading="lazy"
-                                 class="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-110">
-                            <!-- Subtle vector badge in the corner -->
-                            <div class="absolute bottom-1 right-1 w-5 h-5 rounded-lg bg-white/95 backdrop-blur-xs shadow-xs border border-[#E2E8F0] flex items-center justify-center text-[#123C2F]">
-                                <x-category-icon :slug="$category->slug" class="w-3 h-3" />
-                            </div>
-                        </div>
+                        <!-- Professional Icon Pod (Crisp Dual-Tone SVG + Tasteful Glassmorphic Emoji Accent) -->
+                        <x-category-icon :slug="$category->slug" variant="pod" :emoji="$category->icon" />
 
                         <!-- Category Name with Balanced Proportions -->
-                        <div class="flex-1 flex items-center justify-center w-full px-1">
-                            <span class="font-bold text-xs sm:text-[13px] text-[#1E293B] group-hover:text-[#123C2F] transition-colors leading-snug line-clamp-2">
+                        <div class="flex-1 flex items-center justify-center w-full px-1 my-1">
+                            <span class="font-bold text-xs sm:text-[13px] text-[#172326] group-hover:text-[#123C2F] transition-colors leading-snug line-clamp-2">
                                 {{ $category->name }}
                             </span>
                         </div>
 
                         <!-- Refined Count Pill Badge -->
                         @if(isset($category->products_count) && $category->products_count > 0)
-                            <span class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F9] group-hover:bg-[#123C2F] text-[10px] sm:text-[11px] font-semibold text-[#64748B] group-hover:text-[#C9F46B] transition-all duration-300">
-                                <span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] group-hover:bg-[#C9F46B] transition-colors"></span>
+                            <span class="mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F9] {{ $catTheme['badgeHover'] }} text-[10px] sm:text-[11px] font-semibold text-[#64748B] transition-all duration-300">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $catTheme['dot'] }} group-hover:bg-white transition-colors"></span>
                                 <span>{{ $category->products_count }} ta tovar</span>
                             </span>
                         @else
-                            <span class="mt-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-transparent select-none">
+                            <span class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-transparent select-none">
                                 &nbsp;
                             </span>
                         @endif

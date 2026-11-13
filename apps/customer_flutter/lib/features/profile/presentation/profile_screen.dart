@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/api_config.dart';
 import '../../auth/auth_modal.dart';
 import '../../auth/auth_notifier.dart';
 import '../../health/presentation/health_screen.dart';
@@ -45,9 +47,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (!auth.isAuthenticated)
-            _buildLoginSection(auth)
-          else ...[
+          if (!auth.isAuthenticated) ...[
+            _buildLoginSection(auth),
+            const SizedBox(height: 16),
+            _buildGuestApkCard(context),
+          ] else ...[
             _buildUserProfileCard(auth),
             const SizedBox(height: 16),
             _buildRoleSwitcherCard(auth),
@@ -483,7 +487,335 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               );
             },
           ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.android_rounded, color: Color(0xFF059669), size: 22),
+            ),
+            title: const Text(
+              'Ilova versiyasi va yangilanish (.APK)',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            ),
+            subtitle: const Text(
+              'v2.4.0 Barqaror • APK yuklab olish havolalari',
+              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: AppColors.brandLime,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'APK',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.brandDark),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right, size: 20, color: AppColors.textSecondary),
+              ],
+            ),
+            onTap: () => _showApkDownloadSheet(context),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGuestApkCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.android_rounded, color: Color(0xFF059669), size: 22),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ilova versiyasi va yangilanish (.APK)',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.brandDark),
+                ),
+                SizedBox(height: 1),
+                Text(
+                  'v2.4.0 • Android uchun APK fayllar',
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.brandDark,
+              foregroundColor: AppColors.brandLime,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => _showApkDownloadSheet(context),
+            child: const Text('Ko\'rish', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showApkDownloadSheet(BuildContext context) {
+    final base = ApiConfig.origin;
+    final apks = [
+      {
+        'title': 'Marketplace SuperApp',
+        'badge': 'Universal (Tavsiya)',
+        'size': '17.7 MB',
+        'tagline': 'Xaridor, Sotuvchi va Kuryer bitta ilovada',
+        'icon': Icons.phone_android_rounded,
+        'color': const Color(0xFF059669),
+        'bgColor': const Color(0xFFD1FAE5),
+        'url': '$base/download/apk/superapp',
+      },
+      {
+        'title': 'Marketplace Xaridor',
+        'badge': 'Faqat xaridlar',
+        'size': '17.2 MB',
+        'tagline': 'Mijozlar uchun tovarlar katalogi va tezkor buyurtma',
+        'icon': Icons.shopping_bag_outlined,
+        'color': const Color(0xFF2563EB),
+        'bgColor': const Color(0xFFDBEAFE),
+        'url': '$base/download/apk/xaridor',
+      },
+      {
+        'title': 'Marketplace Kuryer',
+        'badge': 'Logistika',
+        'size': '16.9 MB',
+        'tagline': 'Yetkazib berish, GPS marshrut va xavfsiz OTP tasdiq',
+        'icon': Icons.delivery_dining_outlined,
+        'color': const Color(0xFFD97706),
+        'bgColor': const Color(0xFFFEF3C7),
+        'url': '$base/download/apk/kuryer',
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.android_rounded, color: Color(0xFF059669), size: 26),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ilova versiyasi va yangilanish',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.brandDark),
+                      ),
+                      Text(
+                        'Android rasmiy .APK to\'plami',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Version status box
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Joriy versiya: v2.4.0 • Eng so\'nggi barqaror nashr',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            const Text(
+              'Fayllarni yuklab olish havolalari:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.brandDark),
+            ),
+            const SizedBox(height: 8),
+
+            ...apks.map((apk) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: apk['bgColor'] as Color,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(apk['icon'] as IconData, color: apk['color'] as Color, size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                apk['title'] as String,
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.brandDark),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: Text(
+                                  apk['size'] as String,
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            apk['tagline'] as String,
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.brandDark,
+                        foregroundColor: AppColors.brandLime,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      icon: const Icon(Icons.copy_rounded, size: 18),
+                      tooltip: 'Havoladan nusxa olish',
+                      onPressed: () {
+                        final url = apk['url'] as String;
+                        Clipboard.setData(ClipboardData(text: url));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${apk['title']} yuklab olish havolasi nusxalandi:\n$url'),
+                            duration: const Duration(seconds: 3),
+                            action: SnackBarAction(
+                              label: 'OK',
+                              textColor: AppColors.brandLime,
+                              onPressed: () {},
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 16),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'APK faylni o\'rnatishda telefoningiz "Noma\'lum manbalarga ruxsat berish"ni so\'rashi mumkin.',
+                      style: TextStyle(fontSize: 10.5, color: Color(0xFF92400E)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

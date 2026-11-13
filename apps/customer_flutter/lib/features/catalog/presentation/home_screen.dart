@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final CatalogRepository _repo = CatalogRepository();
   List<ProductModel> _products = [];
+  List<CategoryModel> _categories = [];
   bool _isLoading = true;
 
   final PageController _bannerController = PageController();
@@ -87,10 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData() async {
     try {
-      final prods = await _repo.getProducts();
+      final results = await Future.wait([
+        _repo.getProducts(),
+        _repo.getCategories(),
+      ]);
       if (mounted) {
         setState(() {
-          _products = prods;
+          _products = results[0] as List<ProductModel>;
+          _categories = results[1] as List<CategoryModel>;
           _isLoading = false;
         });
       }
@@ -379,14 +384,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryStories() {
-    final categories = [
-      {'title': 'Qurilish', 'icon': Icons.construction, 'color': AppColors.brandEmerald, 'slug': 'qurilish-materiallari'},
-      {'title': 'Sanoat', 'icon': Icons.precision_manufacturing_outlined, 'color': AppColors.brandIndigo, 'slug': 'sanoat-uskunalari'},
-      {'title': 'Oziq-ovqat', 'icon': Icons.restaurant_outlined, 'color': AppColors.brandAmber, 'slug': 'oziq-ovqat-va-ichimliklar'},
-      {'title': 'Texnika', 'icon': Icons.devices_other_outlined, 'color': AppColors.brandPurple, 'slug': 'elektronika-texnika'},
-      {'title': 'Santexnika', 'icon': Icons.plumbing, 'color': AppColors.brandTeal, 'slug': 'santexnika-isitish'},
-      {'title': 'Optom Baza', 'icon': Icons.warehouse_outlined, 'color': AppColors.brandRose, 'slug': null},
-    ];
+    final displayCategories = _categories.isNotEmpty 
+        ? _categories 
+        : [
+            CategoryModel(id: 1, name: 'Qurilish mollari', slug: 'qurilish-materiallari'),
+            CategoryModel(id: 2, name: 'Sanoat uskunalari', slug: 'sanoat-uskunalari'),
+            CategoryModel(id: 3, name: 'Oziq-ovqat & Ichimlik', slug: 'oziq-ovqat-va-ichimliklar'),
+            CategoryModel(id: 4, name: 'Elektr & Yoritish', slug: 'elektr-jihozlari'),
+            CategoryModel(id: 5, name: 'Bo\'yoqlar & Kimyo', slug: 'boyoqlar-va-kimyo'),
+            CategoryModel(id: 6, name: 'Santexnika & Quvur', slug: 'santexnika-va-quvurlar'),
+            CategoryModel(id: 7, name: 'Asbob-uskunalar', slug: 'asbob-uskunalar'),
+          ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,47 +402,163 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Toifalar',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.brandDark),
+            const Row(
+              children: [
+                Text(
+                  'Toifalar',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.brandDark),
+                ),
+                SizedBox(width: 6),
+                Text(
+                  '• Rasmiy katalog',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
             ),
             GestureDetector(
               onTap: () => _openCatalog(),
               child: const Text(
                 'Barchasi >',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.brandEmerald, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 90,
+          height: 104,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 14),
+            itemCount: displayCategories.length + 1,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, i) {
-              final cat = categories[i];
-              final color = cat['color'] as Color;
+              if (i == displayCategories.length) {
+                // "All Categories" Pod
+                return GestureDetector(
+                  onTap: () => _openCatalog(),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 62,
+                        height: 62,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.brandLime.withValues(alpha: 0.35), Colors.white],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: AppColors.brandDark.withValues(alpha: 0.25), width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.brandDark.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            const Center(
+                              child: Icon(Icons.grid_view_rounded, color: AppColors.brandDark, size: 28),
+                            ),
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppColors.brandDark.withValues(alpha: 0.2), width: 0.8),
+                                ),
+                                child: const Text('✨', style: TextStyle(fontSize: 11)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const SizedBox(
+                        width: 72,
+                        child: Text(
+                          'Barchasi',
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.brandDark,
+                            height: 1.15,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final cat = displayCategories[i];
               return GestureDetector(
-                onTap: () => _openCatalog(category: cat['slug'] as String?),
+                onTap: () => _openCatalog(category: cat.slug),
                 child: Column(
                   children: [
                     Container(
-                      width: 58,
-                      height: 58,
+                      width: 62,
+                      height: 62,
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [cat.bgColor, Colors.white],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: cat.color.withValues(alpha: 0.28), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: cat.color.withValues(alpha: 0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      child: Icon(cat['icon'] as IconData, color: color, size: 26),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Icon(cat.icon, color: cat.color, size: 28),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.95),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: cat.color.withValues(alpha: 0.2), width: 0.8),
+                              ),
+                              child: Text(cat.emoji, style: const TextStyle(fontSize: 11)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      cat['title'] as String,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    SizedBox(
+                      width: 72,
+                      child: Text(
+                        cat.name,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          height: 1.15,
+                        ),
+                      ),
                     ),
                   ],
                 ),

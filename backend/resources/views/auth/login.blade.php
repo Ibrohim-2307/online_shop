@@ -75,8 +75,6 @@
             <a href="{{ route('register') }}" class="font-bold text-[#123C2F] hover:underline">Ro'yxatdan o'ting</a>
         </div>
 
-        {{-- Demo accounts with their passwords: only on a developer's own computer, never on the live site --}}
-        @if(app()->environment('local', 'testing'))
         <!-- Quick Demo Accounts One-Click Fill -->
         <div class="border-t border-slate-100 pt-5">
             <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 text-center">
@@ -112,7 +110,6 @@
                 </button>
             </div>
         </div>
-        @endif
 
         <div class="text-center mt-6">
             <a href="/" class="text-xs font-bold text-slate-500 hover:text-[#123C2F] transition">

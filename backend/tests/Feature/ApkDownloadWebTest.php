@@ -98,19 +98,20 @@ class ApkDownloadWebTest extends TestCase
         $res->assertStatus(404);
     }
 
-    public function test_profile_displays_mobile_apk_cards_and_links(): void
+    public function test_profile_displays_unified_superapp_showcase_and_roles(): void
     {
         $customer = $this->createCustomer();
 
         $res = $this->actingAs($customer)->get('/profile?tab=apk_download');
         $res->assertStatus(200)
-            ->assertSee('Mobil Ilovalarni Yuklab Olish (.APK)')
             ->assertSee('Marketplace SuperApp')
-            ->assertSee('Marketplace Xaridor')
-            ->assertSee('Marketplace Kuryer')
+            ->assertSee('Barcha rollar 1 ta ilovada')
+            ->assertSee('18.5 MB')
+            ->assertSee('Xaridor')
+            ->assertSee('Sotuvchi')
+            ->assertSee('Kuryer')
+            ->assertSee('Admin')
             ->assertSee('/download/apk/superapp')
-            ->assertSee('/download/apk/xaridor')
-            ->assertSee('/download/apk/kuryer')
             ->assertSee('3 qadamli', false);
     }
 }

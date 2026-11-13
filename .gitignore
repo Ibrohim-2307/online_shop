@@ -46,7 +46,10 @@ apps/**/build/
 
 # Distribution & Artifacts
 *.apk
-/mobile_apks/
+!backend/public/downloads/*.apk
+!mobile_apks/Marketplace_SuperApp.apk
+/mobile_apks/*
+!/mobile_apks/Marketplace_SuperApp.apk
 dist/*.zip
 dist/staging_hosting/
 storage/installed.lock

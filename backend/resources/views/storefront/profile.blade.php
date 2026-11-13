@@ -1,5 +1,6 @@
 <x-layouts.app title="Profil — Boshqaruv va Foydalanuvchi Markazi">
     @php
+        $superApp = $superApp ?? \App\Http\Controllers\Web\ApkDownloadController::getSuperApp();
         $apks = $mobileApks ?? \App\Http\Controllers\Web\ApkDownloadController::getApkList();
     @endphp
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24"
@@ -166,10 +167,10 @@
                         <span>📍 Kuzatuv</span>
                     </a>
 
-                    <button type="button" @click="activeTab = 'apk_download'" class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl bg-[#FAFBF7] hover:bg-emerald-50 text-[#123C2F] border border-[#E8ECE4] hover:border-emerald-300 font-bold text-xs flex items-center gap-1.5 shadow-xs transition" title="Android .APK ilovalarini yuklab olish">
+                    <button type="button" @click="activeTab = 'apk_download'" class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl bg-[#FAFBF7] hover:bg-emerald-50 text-[#123C2F] border border-[#E8ECE4] hover:border-emerald-300 font-bold text-xs flex items-center gap-1.5 shadow-xs transition" title="Android SuperApp ilovasini yuklab olish">
                         <span>📱</span>
-                        <span>Mobil APK</span>
-                        <span class="hidden sm:inline px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">v2.4</span>
+                        <span>SuperApp .APK</span>
+                        <span class="hidden sm:inline px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
                     </button>
 
                     @auth
@@ -334,8 +335,8 @@
                     :class="activeTab === 'apk_download' ? 'bg-[#123C2F] text-[#C9F46B] border-[#123C2F]' : 'bg-emerald-50 text-emerald-900 border-emerald-200'" 
                     class="px-3 py-2 rounded-xl font-bold whitespace-nowrap border shadow-2xs flex items-center gap-1.5">
                 <span>📱</span>
-                <span>Mobil APK</span>
-                <span class="px-1.5 py-0.2 rounded text-[9px] bg-[#C9F46B] text-[#123C2F] font-black">Yangi</span>
+                <span>SuperApp (.APK)</span>
+                <span class="px-1.5 py-0.2 rounded text-[9px] bg-[#C9F46B] text-[#123C2F] font-black">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
             </button>
         </div>
 
@@ -498,10 +499,10 @@
                             class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition">
                         <div class="flex items-center gap-2.5">
                             <span class="text-sm">📱</span>
-                            <span>Mobil APK Yuklab Olish</span>
+                            <span>SuperApp (.APK)</span>
                         </div>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeTab === 'apk_download' ? 'bg-[#C9F46B] text-[#123C2F]' : 'bg-emerald-100 text-emerald-800'">
-                            v2.4.0
+                            {{ $superApp['file_size_formatted'] ?? '18.5 MB' }}
                         </span>
                     </button>
                 </div>
@@ -511,30 +512,30 @@
                     <div class="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-emerald-400/10 pointer-events-none blur-xl"></div>
                     <div class="flex items-center justify-between relative">
                         <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-xl bg-[#C9F46B]/20 border border-[#C9F46B]/40 flex items-center justify-center text-base">🤖</span>
+                            <span class="w-8 h-8 rounded-xl bg-[#C9F46B]/20 border border-[#C9F46B]/40 flex items-center justify-center text-base">📱</span>
                             <div>
-                                <span class="text-[11px] font-black uppercase tracking-wider text-[#C9F46B] block">Android .APK</span>
-                                <span class="text-[10px] text-white/70">Rasmiy reliz</span>
+                                <span class="text-[11px] font-black uppercase tracking-wider text-[#C9F46B] block">SuperApp .APK</span>
+                                <span class="text-[10px] text-white/70">Barchasi 1 ta ilovada</span>
                             </div>
                         </div>
                         <span class="px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-black text-[10px]">v2.4.0</span>
                     </div>
 
                     <p class="text-xs text-white/90 leading-snug">
-                        Do'kon, kuryer va xarid panellarini to'g'ridan-to'g'ri telefoningizga o'rnating.
+                        Xaridor, sotuvchi, kuryer va admin panellari yagona ilovada. Loginingiz bilan kiring — kerakli panellar avtomatik ochiladi.
                     </p>
 
                     <div class="space-y-2 pt-1">
-                        <a href="{{ route('apk.download', 'superapp') }}" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#C9F46B] hover:bg-[#b8e855] text-[#123C2F] font-black text-xs transition shadow-xs group-hover:scale-[1.01]">
+                        <a href="{{ route('apk.download', 'superapp') }}" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#C9F46B] hover:bg-[#b8e855] text-[#123C2F] font-black text-xs transition shadow-xs group-hover:scale-[1.01]">
                             <span class="flex items-center gap-1.5">
                                 <span>⬇️</span>
-                                <span>SuperApp .APK</span>
+                                <span>SuperApp Yuklab Olish</span>
                             </span>
-                            <span class="text-[10px] font-extrabold opacity-80">{{ $apks['superapp']['file_size_formatted'] ?? '17.7 MB' }}</span>
+                            <span class="text-[10px] font-extrabold opacity-80">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
                         </a>
 
                         <button type="button" @click="activeTab = 'apk_download'" class="w-full text-center py-1 text-emerald-300 hover:text-white font-bold text-[11px] transition flex items-center justify-center gap-1">
-                            <span>Barcha APKlar (Xaridor, Kuryer)</span>
+                            <span>Ilova haqida batafsil</span>
                             <span>→</span>
                         </button>
                     </div>
@@ -563,22 +564,22 @@
                         </div>
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="text-sm sm:text-base font-black text-white">Mobil Ilovalar (.APK) rasman tayyor!</h3>
-                                <span class="px-2 py-0.5 rounded-full bg-[#C9F46B] text-[#123C2F] text-[10px] font-black">Android</span>
+                                <h3 class="text-sm sm:text-base font-black text-white">Marketplace SuperApp (.APK) — Barcha rollar 1 ta ilovada!</h3>
+                                <span class="px-2 py-0.5 rounded-full bg-[#C9F46B] text-[#123C2F] text-[10px] font-black uppercase">Universal Reliz</span>
                                 <span class="px-2 py-0.5 rounded-full bg-white/10 text-emerald-200 text-[10px] font-bold">v2.4.0</span>
                             </div>
                             <p class="text-xs text-white/80 mt-0.5">
-                                SuperApp (universal), Xaridor va Kuryer ilovalarini to'g'ridan-to'g'ri yuklab oling va qulay savdo qiling.
+                                Xaridor, do'kon va kuryer panellari yagona ilovada. O'z hisobingiz bilan kirishingiz bilan kerakli panellar avtomatik ochiladi.
                             </p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <a href="{{ route('apk.download', 'superapp') }}" class="px-3.5 py-2.5 rounded-xl bg-[#C9F46B] text-[#123C2F] hover:bg-[#b8e855] text-xs font-black transition flex items-center gap-1.5 shadow-xs whitespace-nowrap">
-                            <span>⬇️</span>
-                            <span>SuperApp ({{ $apks['superapp']['file_size_formatted'] ?? '17.7 MB' }})</span>
+                        <a href="{{ route('apk.download', 'superapp') }}" class="px-4 py-2.5 rounded-xl bg-[#C9F46B] text-[#123C2F] hover:bg-[#b8e855] text-xs font-black transition flex items-center gap-1.5 shadow-xs whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>SuperApp Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
                         </a>
                         <button type="button" @click="activeTab = 'apk_download'" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition whitespace-nowrap border border-white/15">
-                            Barcha APKlar →
+                            Batafsil →
                         </button>
                     </div>
                 </div>
@@ -2094,235 +2095,263 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: MOBIL APK YUKLAB OLISH (Mobile APK Downloads) -->
+                <!-- TAB 5: MOBIL APK YUKLAB OLISH (Mobile SuperApp Showcase) -->
                 <div x-show="activeTab === 'apk_download'" class="space-y-6">
                     
-                    <!-- Hero Header Card -->
-                    <div class="bg-gradient-to-br from-[#123C2F] via-[#164939] to-[#0c271f] text-white rounded-3xl p-6 sm:p-8 shadow-sm border border-emerald-500/30 relative overflow-hidden">
-                        <div class="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-emerald-400/10 pointer-events-none blur-2xl"></div>
-                        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div class="space-y-2">
+                    <!-- Hero Showcase Card -->
+                    <div class="bg-gradient-to-br from-[#123C2F] via-[#164939] to-[#0c271f] text-white rounded-3xl p-6 sm:p-10 shadow-lg border border-emerald-500/30 relative overflow-hidden">
+                        <div class="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-emerald-400/15 pointer-events-none blur-3xl"></div>
+                        <div class="absolute -left-16 -top-16 w-48 h-48 rounded-full bg-[#C9F46B]/10 pointer-events-none blur-2xl"></div>
+
+                        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                            <div class="space-y-3.5 max-w-2xl">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="px-3 py-1 rounded-full bg-[#C9F46B] text-[#123C2F] text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
-                                        <span>🤖</span>
-                                        <span>Android Rasmiy Reliz</span>
+                                    <span class="px-3.5 py-1 rounded-full bg-[#C9F46B] text-[#123C2F] text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                                        <span>📱</span>
+                                        <span>Yagona Universal SuperApp</span>
                                     </span>
-                                    <span class="px-2.5 py-0.5 rounded-full bg-white/10 text-emerald-200 border border-white/15 text-xs font-bold">
-                                        v2.4.0 Barqaror
+                                    <span class="px-3 py-1 rounded-full bg-white/10 text-emerald-200 border border-white/15 text-xs font-bold">
+                                        v2.4.0 Rasmiy Reliz
                                     </span>
-                                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 text-xs font-semibold">
-                                        ✓ Viruslarsiz & Xavfsiz
+                                    <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 text-xs font-semibold flex items-center gap-1">
+                                        <span>🛡️</span>
+                                        <span>Xavfsiz & Viruslarsiz</span>
                                     </span>
                                 </div>
-                                <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                                    Mobil Ilovalarni Yuklab Olish (.APK)
+
+                                <h2 class="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                                    Marketplace SuperApp — Barcha rollar 1 ta ilovada!
                                 </h2>
-                                <p class="text-xs sm:text-sm text-white/80 max-w-2xl leading-relaxed">
-                                    Marketplace platformasining barcha imkoniyatlari cho'ntagingizda! Telefoningizga to'g'ridan-to'g'ri o'rnating va tezkor, tejamkor hamda qulay savdo qiling.
+
+                                <p class="text-sm sm:text-base text-white/90 leading-relaxed font-medium">
+                                    Har xil ilovalarni alohida o'rnatish shart emas. <strong>Xaridor, Sotuvchi, Kuryer va Admin</strong> rollari yagona SuperApp ilovasida jamlangan. Ilovaga o'z hisobingiz bilan kirishingiz bilan tizim avtomatik ravishda sizga tegishli panellarni ochib beradi.
                                 </p>
+
+                                <div class="flex items-center gap-4 pt-1 flex-wrap text-xs text-emerald-200/90 font-medium">
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="text-[#C9F46B]">✓</span>
+                                        <span>Hajmi: <strong>{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</strong></span>
+                                    </span>
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="text-[#C9F46B]">✓</span>
+                                        <span>Format: <strong>.APK (Android 7.0+)</strong></span>
+                                    </span>
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="text-[#C9F46B]">✓</span>
+                                        <span>Tizim: <strong>Tezkor & Oflayn kesh</strong></span>
+                                    </span>
+                                </div>
                             </div>
 
-                            <div class="flex flex-col sm:flex-row items-center gap-3 shrink-0">
-                                <a href="{{ route('apk.download', 'superapp') }}" class="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#C9F46B] hover:bg-[#b8e855] text-[#123C2F] font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition transform active:scale-95">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>SuperApp yuklab olish ({{ $apks['superapp']['file_size_formatted'] ?? '17.7 MB' }})</span>
+                            <!-- Big CTA Download Box -->
+                            <div class="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0 lg:min-w-[280px]">
+                                <a href="{{ route('apk.download', 'superapp') }}" 
+                                   class="px-6 py-4 rounded-2xl bg-[#C9F46B] hover:bg-[#b8e855] text-[#123C2F] font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl transition transform active:scale-95 text-center group">
+                                    <svg class="w-6 h-6 shrink-0 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    <span>SuperApp Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
+                                </a>
+
+                                <a href="{{ url('/downloads/Marketplace_SuperApp.apk') }}" download
+                                   class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition text-center">
+                                    <span>⚡ To'g'ridan-to'g'ri statik havola (.apk)</span>
                                 </a>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3 APK Cards Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        
-                        <!-- CARD 1: SUPERAPP -->
-                        <div class="bg-white rounded-3xl border-2 border-emerald-500/30 p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between relative group">
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
-                                        ⭐ {{ $apks['superapp']['badge'] ?? 'Tavsiya etiladi' }}
-                                    </span>
-                                    <span class="text-xs font-bold text-[#64748B]">v2.4.0</span>
-                                </div>
-
-                                <div class="flex items-center gap-3.5">
-                                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#123C2F] to-[#1f5c49] text-white flex items-center justify-center text-3xl shadow-sm border border-emerald-600/30 shrink-0">
-                                        📱
-                                    </div>
-                                    <div>
-                                        <h3 class="font-black text-lg text-[#172326] leading-tight">
-                                            {{ $apks['superapp']['name'] ?? 'Marketplace SuperApp' }}
-                                        </h3>
-                                        <span class="text-xs font-semibold text-emerald-700 block">
-                                            {{ $apks['superapp']['tagline'] ?? 'Barchasi bitta ilovada' }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <p class="text-xs text-[#64748B] leading-relaxed">
-                                    {{ $apks['superapp']['description'] ?? 'Universal ilova: Xaridor, Sotuvchi va Kuryer panellarini ilovadan chiqmasdan 1 bosishda almashtiring.' }}
+                    <!-- Role Architecture Breakdown: How 1 APK serves 4 roles -->
+                    <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs space-y-6">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#E8ECE4] pb-5">
+                            <div>
+                                <h3 class="text-lg sm:text-xl font-black text-[#172326] flex items-center gap-2">
+                                    <span>🔄</span>
+                                    <span>Yagona Login — 4 xil Boshqaruv Paneli</span>
+                                </h3>
+                                <p class="text-xs sm:text-sm text-[#64748B] mt-1">
+                                    Ilovada barcha rollar o'rnatilgan. Qaysi login va parol bilan kirsangiz, o'sha funksiyalar faollashadi:
                                 </p>
-
-                                <div class="pt-2 border-t border-[#E8ECE4] space-y-2">
-                                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#172326] block">Asosiy imkoniyatlar:</span>
-                                    <ul class="text-xs text-[#64748B] space-y-1.5">
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-emerald-600 font-bold">✓</span>
-                                            <span>Xaridor, Sotuvchi va Kuryer 1 ta ilovada</span>
-                                        </li>
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-emerald-600 font-bold">✓</span>
-                                            <span>GPS kuzatuv & tezkor oflayn kesh</span>
-                                        </li>
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-emerald-600 font-bold">✓</span>
-                                            <span>Click, Payme va Nasiya muddatli to'lov</span>
-                                        </li>
-                                    </ul>
-                                </div>
                             </div>
-
-                            <div class="pt-6 mt-6 border-t border-[#E8ECE4] space-y-2.5">
-                                <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                    <span>Hajmi:</span>
-                                    <strong class="text-[#172326]">{{ $apks['superapp']['file_size_formatted'] ?? '17.7 MB' }}</strong>
-                                </div>
-                                <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                    <span>Format:</span>
-                                    <strong class="text-[#172326]">.APK (Android)</strong>
-                                </div>
-                                <a href="{{ route('apk.download', 'superapp') }}" class="w-full h-11 rounded-2xl bg-[#123C2F] hover:bg-[#0d2a21] text-[#C9F46B] font-black text-xs flex items-center justify-center gap-2 transition shadow-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>SuperApp Yuklab Olish</span>
-                                </a>
-                            </div>
+                            <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black border border-emerald-200 shrink-0">
+                                Avtomatik moslashuvchan
+                            </span>
                         </div>
 
-                        <!-- CARD 2: XARIDOR -->
-                        <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between relative group">
-                            <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            
+                            <!-- Role 1: Xaridor -->
+                            <div class="p-5 rounded-2xl bg-gradient-to-b from-blue-50/70 to-white border border-blue-100 space-y-3 relative group hover:shadow-sm transition">
                                 <div class="flex items-center justify-between">
-                                    <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black uppercase tracking-wider">
-                                        🛍️ {{ $apks['xaridor']['badge'] ?? 'Xaridorlar uchun' }}
+                                    <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl shadow-xs">
+                                        🛍️
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black uppercase">
+                                        Mijoz
                                     </span>
-                                    <span class="text-xs font-bold text-[#64748B]">v2.4.0</span>
                                 </div>
-
-                                <div class="flex items-center gap-3.5">
-                                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-700 to-indigo-600 text-white flex items-center justify-center text-3xl shadow-sm border border-blue-500/30 shrink-0">
-                                        🛒
-                                    </div>
-                                    <div>
-                                        <h3 class="font-black text-lg text-[#172326] leading-tight">
-                                            {{ $apks['xaridor']['name'] ?? 'Marketplace Xaridor' }}
-                                        </h3>
-                                        <span class="text-xs font-semibold text-blue-700 block">
-                                            {{ $apks['xaridor']['tagline'] ?? 'Faqat xaridlar uchun' }}
-                                        </span>
-                                    </div>
-                                </div>
-
+                                <h4 class="font-extrabold text-sm text-[#172326]">Xaridor Rejimi</h4>
                                 <p class="text-xs text-[#64748B] leading-relaxed">
-                                    {{ $apks['xaridor']['description'] ?? 'Yengil va chaqqon xarid ilovasi: tovarlar katalogi, qidiruv, savatcha va buyurtma holatini kuzatish.' }}
+                                    Katalog, savatcha, Click & Payme, 0% muddatli to'lov (nasiya) va buyurtmani GPS xaritasida jonli kuzatish.
                                 </p>
-
-                                <div class="pt-2 border-t border-[#E8ECE4] space-y-2">
-                                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#172326] block">Asosiy imkoniyatlar:</span>
-                                    <ul class="text-xs text-[#64748B] space-y-1.5">
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-blue-600 font-bold">✓</span>
-                                            <span>Mijozlar uchun to'liq tovarlar katalogi</span>
-                                        </li>
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-blue-600 font-bold">✓</span>
-                                            <span>Kuryer GPS harakatini xaritada ko'rish</span>
-                                        </li>
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-blue-600 font-bold">✓</span>
-                                            <span>Buyurtmalar tarixi va keshbeklar</span>
-                                        </li>
-                                    </ul>
+                                <div class="text-[11px] font-bold text-blue-700 pt-1">
+                                    ✓ Oddiy kirishda ochiladi
                                 </div>
                             </div>
 
-                            <div class="pt-6 mt-6 border-t border-[#E8ECE4] space-y-2.5">
-                                <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                    <span>Hajmi:</span>
-                                    <strong class="text-[#172326]">{{ $apks['xaridor']['file_size_formatted'] ?? '17.2 MB' }}</strong>
-                                </div>
-                                <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                    <span>Format:</span>
-                                    <strong class="text-[#172326]">.APK (Android)</strong>
-                                </div>
-                                <a href="{{ route('apk.download', 'xaridor') }}" class="w-full h-11 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-2 transition shadow-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>Xaridor APK Yuklab Olish</span>
-                                </a>
-                            </div>
-                        </div>
-
-                        <!-- CARD 3: KURYER -->
-                        <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between relative group">
-                            <div class="space-y-4">
+                            <!-- Role 2: Sotuvchi -->
+                            <div class="p-5 rounded-2xl bg-gradient-to-b from-emerald-50/70 to-white border border-emerald-100 space-y-3 relative group hover:shadow-sm transition">
                                 <div class="flex items-center justify-between">
-                                    <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-wider">
-                                        🛵 {{ $apks['kuryer']['badge'] ?? 'Kuryerlar uchun' }}
+                                    <div class="w-12 h-12 rounded-2xl bg-[#123C2F] text-[#C9F46B] flex items-center justify-center text-2xl shadow-xs">
+                                        🏪
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                                        Do'kon
                                     </span>
-                                    <span class="text-xs font-bold text-[#64748B]">v2.4.0</span>
                                 </div>
-
-                                <div class="flex items-center gap-3.5">
-                                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center text-3xl shadow-sm border border-amber-500/30 shrink-0">
-                                        🛵
-                                    </div>
-                                    <div>
-                                        <h3 class="font-black text-lg text-[#172326] leading-tight">
-                                            {{ $apks['kuryer']['name'] ?? 'Marketplace Kuryer' }}
-                                        </h3>
-                                        <span class="text-xs font-semibold text-amber-700 block">
-                                            {{ $apks['kuryer']['tagline'] ?? 'Yetkazib berish xizmati' }}
-                                        </span>
-                                    </div>
-                                </div>
-
+                                <h4 class="font-extrabold text-sm text-[#172326]">Sotuvchi Kabineti</h4>
                                 <p class="text-xs text-[#64748B] leading-relaxed">
-                                    {{ $apks['kuryer']['description'] ?? 'Kuryerlar va yetkazib beruvchilar uchun maxsus: yo\'nalishlar, xavfsiz OTP kod tasdig\'i va naqd pul hisobi.' }}
+                                    Yangi mahsulotlar qo'shish, ombor qoldiqlari, tushgan buyurtmalarni qabul qilish va do'kon sof tushumi balansi.
                                 </p>
-
-                                <div class="pt-2 border-t border-[#E8ECE4] space-y-2">
-                                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#172326] block">Asosiy imkoniyatlar:</span>
-                                    <ul class="text-xs text-[#64748B] space-y-1.5">
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-amber-600 font-bold">✓</span>
-                                            <span>Biriktirilgan buyurtmalar va marshrut</span>
-                                        </li>
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-amber-600 font-bold">✓</span>
-                                            <span>Xavfsiz OTP kod orqali yetkazish</span>
-                                        </li>
-                                        <li class="flex items-start gap-2">
-                                            <span class="text-amber-600 font-bold">✓</span>
-                                            <span>Naqd pul tushumi (COD) hisob-kitobi</span>
-                                        </li>
-                                    </ul>
+                                <div class="text-[11px] font-bold text-emerald-800 pt-1">
+                                    ✓ Sotuvchi logini bilan ochiladi
                                 </div>
                             </div>
 
-                            <div class="pt-6 mt-6 border-t border-[#E8ECE4] space-y-2.5">
-                                <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                    <span>Hajmi:</span>
-                                    <strong class="text-[#172326]">{{ $apks['kuryer']['file_size_formatted'] ?? '16.9 MB' }}</strong>
+                            <!-- Role 3: Kuryer -->
+                            <div class="p-5 rounded-2xl bg-gradient-to-b from-amber-50/70 to-white border border-amber-100 space-y-3 relative group hover:shadow-sm transition">
+                                <div class="flex items-center justify-between">
+                                    <div class="w-12 h-12 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-2xl shadow-xs">
+                                        🚚
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase">
+                                        Logistika
+                                    </span>
                                 </div>
-                                <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                    <span>Format:</span>
-                                    <strong class="text-[#172326]">.APK (Android)</strong>
+                                <h4 class="font-extrabold text-sm text-[#172326]">Kuryerlik Paneli</h4>
+                                <p class="text-xs text-[#64748B] leading-relaxed">
+                                    Biriktirilgan buyurtmalar ro'yxati, optimal GPS navigatsiya, xavfsiz OTP kod tasdig'i va naqd pul hisob-kitobi.
+                                </p>
+                                <div class="text-[11px] font-bold text-amber-700 pt-1">
+                                    ✓ Kuryer logini bilan ochiladi
                                 </div>
-                                <a href="{{ route('apk.download', 'kuryer') }}" class="w-full h-11 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center justify-center gap-2 transition shadow-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>Kuryer APK Yuklab Olish</span>
-                                </a>
                             </div>
+
+                            <!-- Role 4: Admin -->
+                            <div class="p-5 rounded-2xl bg-gradient-to-b from-purple-50/70 to-white border border-purple-100 space-y-3 relative group hover:shadow-sm transition">
+                                <div class="flex items-center justify-between">
+                                    <div class="w-12 h-12 rounded-2xl bg-purple-700 text-white flex items-center justify-center text-2xl shadow-xs">
+                                        👑
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black uppercase">
+                                        Superadmin
+                                    </span>
+                                </div>
+                                <h4 class="font-extrabold text-sm text-[#172326]">Admin Boshqaruvi</h4>
+                                <p class="text-xs text-[#64748B] leading-relaxed">
+                                    Yangi do'konlar moderatsiyasi, tizim aylanmasi statistikasi, kuryerlar nazorati va umumiy monitoring.
+                                </p>
+                                <div class="text-[11px] font-bold text-purple-700 pt-1">
+                                    ✓ Admin logini bilan ochiladi
+                                </div>
+                            </div>
+
                         </div>
+                    </div>
 
+                    <!-- Technical Specs & Mobile Mockup Presentation Card -->
+                    <div class="bg-white rounded-3xl border border-[#E8ECE4] p-6 sm:p-8 shadow-xs">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                            
+                            <!-- Left: Mobile Device Mockup Visual -->
+                            <div class="lg:col-span-5 flex justify-center">
+                                <div class="w-64 sm:w-72 rounded-[2.5rem] bg-slate-900 p-3 shadow-2xl border-4 border-slate-700/60 relative">
+                                    <!-- Notch & Speaker -->
+                                    <div class="w-24 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
+                                        <div class="w-10 h-1 bg-slate-700 rounded-full"></div>
+                                    </div>
+                                    <!-- Screen Display -->
+                                    <div class="rounded-3xl bg-[#0f172a] text-white p-4 space-y-3 text-left">
+                                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="w-6 h-6 rounded-lg bg-[#123C2F] text-white text-xs font-black flex items-center justify-center">M</span>
+                                                <span class="font-extrabold text-xs">SuperApp</span>
+                                            </div>
+                                            <span class="text-[10px] text-emerald-400 font-mono">v2.4.0</span>
+                                        </div>
+                                        <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 space-y-1">
+                                            <span class="text-[10px] font-bold text-slate-400 block uppercase">Faol Rol</span>
+                                            <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                                                <span>✓</span>
+                                                <span>Avtomatik aniqlanadi</span>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-1.5 text-[10px] font-bold">
+                                            <div class="p-2 rounded-xl bg-blue-900/40 border border-blue-500/30 text-blue-200">🛍️ Xaridor</div>
+                                            <div class="p-2 rounded-xl bg-emerald-900/40 border border-emerald-500/30 text-emerald-200">🏪 Sotuvchi</div>
+                                            <div class="p-2 rounded-xl bg-amber-900/40 border border-amber-500/30 text-amber-200">🚚 Kuryer</div>
+                                            <div class="p-2 rounded-xl bg-purple-900/40 border border-purple-500/30 text-purple-200">👑 Admin</div>
+                                        </div>
+                                        <div class="pt-2 text-center">
+                                            <span class="text-[10px] text-slate-400">Barcha imkoniyatlar 1 ta ilovada</span>
+                                        </div>
+                                    </div>
+                                    <!-- Home bar -->
+                                    <div class="w-20 h-1 bg-slate-600 rounded-full mx-auto mt-3"></div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Technical Details & Download Action -->
+                            <div class="lg:col-span-7 space-y-5">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase">
+                                            Rasmiy Reliz
+                                        </span>
+                                        <span class="text-xs text-[#64748B]">Yangilangan: 2026-11-10</span>
+                                    </div>
+                                    <h3 class="text-xl sm:text-2xl font-black text-[#172326]">
+                                        Marketplace SuperApp Texnik Ma'lumotlari
+                                    </h3>
+                                    <p class="text-xs sm:text-sm text-[#64748B] mt-1">
+                                        Ilova zamonaviy Flutter arxitekturasi asosida tayyorlangan bo'lib, har qanday Android telefonda tezkor va barqaror ishlaydi.
+                                    </p>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 text-xs">
+                                    <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                                        <span class="text-[#64748B] block text-[11px]">Haqiqiy fayl hajmi:</span>
+                                        <strong class="text-[#172326] text-sm">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</strong>
+                                    </div>
+                                    <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                                        <span class="text-[#64748B] block text-[11px]">Format / Paket:</span>
+                                        <strong class="text-[#172326] text-sm">.APK (Android)</strong>
+                                    </div>
+                                    <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                                        <span class="text-[#64748B] block text-[11px]">Minimal talab:</span>
+                                        <strong class="text-[#172326] text-sm">Android 7.0+</strong>
+                                    </div>
+                                    <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
+                                        <span class="text-[#64748B] block text-[11px]">Xavfsizlik:</span>
+                                        <strong class="text-emerald-700 text-sm font-extrabold">100% Viruslarsiz</strong>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 pt-2">
+                                    <a href="{{ route('apk.download', 'superapp') }}" 
+                                       class="w-full py-3.5 px-6 rounded-2xl bg-[#123C2F] hover:bg-[#0d2a21] text-[#C9F46B] font-black text-sm flex items-center justify-center gap-2.5 transition shadow-sm hover:shadow-md">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        <span>Marketplace SuperApp (.APK) Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
+                                    </a>
+
+                                    <div class="flex items-center justify-between text-xs text-[#64748B] px-1">
+                                        <span>To'g'ridan-to'g'ri statik havola:</span>
+                                        <a href="{{ url('/downloads/Marketplace_SuperApp.apk') }}" download class="text-emerald-700 font-bold hover:underline">
+                                            /downloads/Marketplace_SuperApp.apk
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
 
                     <!-- Step-by-Step Android Installation Guide -->
@@ -2330,10 +2359,10 @@
                         <div>
                             <h3 class="text-lg font-black text-[#172326] flex items-center gap-2">
                                 <span>📖</span>
-                                <span>Android qurilmaga o'rnatish bo'yicha 3 qadamli qo'llanma</span>
+                                <span>Android telefonga o'rnatish bo'yicha 3 qadamli tezkor qo'llanma</span>
                             </h3>
                             <p class="text-xs text-[#64748B] mt-1">
-                                Google Play do'koniga kirmasdan APK faylini telefoningizga o'rnatish juda oson:
+                                Google Play do'konisiz to'g'ridan-to'g'ri o'rnatish tartibi:
                             </p>
                         </div>
 
@@ -2346,7 +2375,7 @@
                                 </div>
                                 <h4 class="font-extrabold text-sm text-[#172326]">Faylni yuklab oling</h4>
                                 <p class="text-xs text-[#64748B] leading-relaxed">
-                                    Yuqoridagi tugmalardan birini bosing. Fayl telefoningizning "Yuklab olinganlar" (Downloads) papkasiga tushadi.
+                                    Yuqoridagi <strong>"SuperApp Yuklab Olish"</strong> tugmasini bosing. Fayl telefoningizning "Yuklab olinganlar" (Downloads) papkasiga saqlanadi.
                                 </p>
                             </div>
 
@@ -2357,7 +2386,7 @@
                                 </div>
                                 <h4 class="font-extrabold text-sm text-[#172326]">Ruxsat bering</h4>
                                 <p class="text-xs text-[#64748B] leading-relaxed">
-                                    O'rnatishda telefoningiz "Noma'lum manbalardan o'rnatish"ga ruxsat so'rasa, <strong>"Ruxsat berish"</strong> (Allow from this source) tugmasini bosing.
+                                    O'rnatishda telefoningiz "Noma'lum manbalardan ilova o'rnatish"ga ruxsat so'rasa, <strong>"Ruxsat berish"</strong> (Allow from this source) tugmasini tanlang.
                                 </p>
                             </div>
 
@@ -2368,7 +2397,7 @@
                                 </div>
                                 <h4 class="font-extrabold text-sm text-[#172326]">O'rnating va kiring</h4>
                                 <p class="text-xs text-[#64748B] leading-relaxed">
-                                    <strong>"O'rnatish"</strong> (Install) tugmasini bosing. Ilova o'rnatilgach, saytdagi login va parolingiz bilan tizimga kiring.
+                                    <strong>"O'rnatish"</strong> (Install) tugmasini bosing. Ilovani ochib, o'z loginingiz bilan kiring — sizning rolingizga tegishli barcha panellar bir zumda ochiladi!
                                 </p>
                             </div>
 
@@ -2379,7 +2408,7 @@
                             <div class="flex items-center gap-2.5">
                                 <span class="text-lg">🔗</span>
                                 <div>
-                                    <span class="font-bold text-[#172326] block">Telefonda ochish uchun to'g'ridan-to'g'ri havola:</span>
+                                    <span class="font-bold text-[#172326] block">Telefonda ochish yoki do'stlarga yuborish uchun havola:</span>
                                     <code class="text-[11px] text-[#64748B]">{{ url('/download/apk') }}</code>
                                 </div>
                             </div>

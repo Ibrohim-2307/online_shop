@@ -23,11 +23,11 @@ class ApkDownloadController extends Controller
         'badge' => 'Universal Reliz',
         'badge_color' => 'emerald',
         'icon' => '📱',
-        'version' => 'v2.4.0',
-        'build_date' => '2026-11-10',
+        'version' => 'v2.5.0',
+        'build_date' => '2026-11-14',
         'target_os' => 'Android 7.0 va undan yuqori',
-        'file_size_formatted' => '18.5 MB',
-        'file_size_bytes' => 18510786,
+        'file_size_formatted' => '53.5 MB',
+        'file_size_bytes' => 53517804,
         'description' => "Yagona universal ilova: Xaridor, Sotuvchi do'koni va Kuryer panellari bitta ilovada jamlangan. Tizimga o'z hisobingiz bilan kirishingiz bilan sizga tegishli panellar avtomatik ravishda qo'shiladi.",
         'roles' => [
             [
@@ -67,6 +67,9 @@ class ApkDownloadController extends Controller
             'super-app',
             'marketplace_superapp',
             'universal',
+            'market-ilova',
+            'market_ilova',
+            'marketilova',
             'xaridor',
             'buyer',
             'customer',
@@ -136,9 +139,11 @@ class ApkDownloadController extends Controller
             realpath(base_path('../mobile_apks/' . $filename)),
             dirname(base_path()) . DIRECTORY_SEPARATOR . 'mobile_apks' . DIRECTORY_SEPARATOR . $filename,
             storage_path('app/public/downloads/' . $filename),
-            // Fallback to SuperApp if specific variant is requested but only SuperApp is packaged
+            // Fallback to SuperApp or market-ilova if specific variant is requested
             public_path('downloads' . DIRECTORY_SEPARATOR . 'Marketplace_SuperApp.apk'),
             base_path('mobile_apks' . DIRECTORY_SEPARATOR . 'Marketplace_SuperApp.apk'),
+            public_path('downloads' . DIRECTORY_SEPARATOR . 'market-ilova.apk'),
+            base_path('mobile_apks' . DIRECTORY_SEPARATOR . 'market-ilova.apk'),
         ];
 
         foreach ($candidates as $candidate) {
@@ -179,9 +184,9 @@ class ApkDownloadController extends Controller
      */
     public static function getSuperApp(): array
     {
-        $filePath = self::getApkPath('Marketplace_SuperApp.apk');
+        $filePath = self::getApkPath('Marketplace_SuperApp.apk') ?? self::getApkPath('market-ilova.apk');
         $exists = $filePath !== null;
-        $bytes = ($exists && filesize($filePath) > 0) ? (int) filesize($filePath) : 18510786;
+        $bytes = ($exists && filesize($filePath) > 0) ? (int) filesize($filePath) : 53517804;
         $sizeFormatted = self::formatBytes($bytes);
         $modifiedAt = $exists ? date('Y-m-d H:i', filemtime($filePath)) : self::SUPERAPP_CONFIG['build_date'];
 
@@ -321,7 +326,7 @@ class ApkDownloadController extends Controller
     public static function formatBytes(int $bytes): string
     {
         if ($bytes <= 0) {
-            return '18.5 MB';
+            return '53.5 MB';
         }
 
         $mb = round($bytes / 1000000, 1);

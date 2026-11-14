@@ -36,6 +36,8 @@ Route::get('/tracking/{trackingNumber?}', [StorefrontController::class, 'trackin
 Route::get('/download/apk', [\App\Http\Controllers\Web\ApkDownloadController::class, 'index'])->name('apk.index');
 Route::get('/download/apk/info', [\App\Http\Controllers\Web\ApkDownloadController::class, 'info'])->name('apk.info');
 Route::get('/download/apk/{type}', [\App\Http\Controllers\Web\ApkDownloadController::class, 'download'])->name('apk.download');
+Route::get('/downloads/market-ilova.apk', fn() => redirect('/download/apk/superapp'));
+Route::get('/downloads/app-release.apk', fn() => redirect('/download/apk/superapp'));
 
 // Customer Service, Legal & Policy Pages
 Route::view('/delivery', 'storefront.delivery')->name('delivery');

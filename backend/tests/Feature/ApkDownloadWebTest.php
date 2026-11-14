@@ -90,6 +90,13 @@ class ApkDownloadWebTest extends TestCase
         $res = $this->get('/download/apk/courier');
         $res->assertStatus(200);
         $this->assertStringContainsString('Marketplace_Kuryer.apk', (string)$res->headers->get('content-disposition'));
+
+        $resMarketIlova = $this->get('/download/apk/market-ilova');
+        $resMarketIlova->assertStatus(200);
+        $this->assertStringContainsString('Marketplace_SuperApp.apk', (string)$resMarketIlova->headers->get('content-disposition'));
+
+        $resDirect = $this->get('/downloads/market-ilova.apk');
+        $resDirect->assertRedirect('/download/apk/superapp');
     }
 
     public function test_download_invalid_type_returns_404(): void
@@ -106,7 +113,7 @@ class ApkDownloadWebTest extends TestCase
         $res->assertStatus(200)
             ->assertSee('Marketplace SuperApp')
             ->assertSee('Barcha rollar 1 ta ilovada')
-            ->assertSee('18.5 MB')
+            ->assertSee('53.5 MB')
             ->assertSee('Xaridor')
             ->assertSee('Sotuvchi')
             ->assertSee('Kuryer')

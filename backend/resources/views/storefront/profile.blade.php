@@ -170,7 +170,7 @@
                     <button type="button" @click="activeTab = 'apk_download'" class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl bg-[#FAFBF7] hover:bg-emerald-50 text-[#123C2F] border border-[#E8ECE4] hover:border-emerald-300 font-bold text-xs flex items-center gap-1.5 shadow-xs transition" title="Android SuperApp ilovasini yuklab olish">
                         <span>📱</span>
                         <span>SuperApp .APK</span>
-                        <span class="hidden sm:inline px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
+                        <span class="hidden sm:inline px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">{{ $superApp['file_size_formatted'] ?? '53.5 MB' }}</span>
                     </button>
 
                     @auth
@@ -336,7 +336,7 @@
                     class="px-3 py-2 rounded-xl font-bold whitespace-nowrap border shadow-2xs flex items-center gap-1.5">
                 <span>📱</span>
                 <span>SuperApp (.APK)</span>
-                <span class="px-1.5 py-0.2 rounded text-[9px] bg-[#C9F46B] text-[#123C2F] font-black">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
+                <span class="px-1.5 py-0.2 rounded text-[9px] bg-[#C9F46B] text-[#123C2F] font-black">{{ $superApp['file_size_formatted'] ?? '53.5 MB' }}</span>
             </button>
         </div>
 
@@ -502,7 +502,7 @@
                             <span>SuperApp (.APK)</span>
                         </div>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeTab === 'apk_download' ? 'bg-[#C9F46B] text-[#123C2F]' : 'bg-emerald-100 text-emerald-800'">
-                            {{ $superApp['file_size_formatted'] ?? '18.5 MB' }}
+                            {{ $superApp['file_size_formatted'] ?? '53.5 MB' }}
                         </span>
                     </button>
                 </div>
@@ -561,7 +561,7 @@
                                 <svg class="w-4 h-4 text-[#C9F46B]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                                 <span>SuperApp Yuklab Olish</span>
                             </span>
-                            <span class="text-[10px] font-mono font-bold opacity-90">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
+                            <span class="text-[10px] font-mono font-bold opacity-90">{{ $superApp['file_size_formatted'] ?? '53.5 MB' }}</span>
                         </a>
 
                         <button type="button" @click="activeTab = 'apk_download'" 
@@ -618,7 +618,7 @@
                     <div class="flex items-center gap-2.5 shrink-0 relative z-10">
                         <a href="{{ route('apk.download', 'superapp') }}" class="px-4 py-2.5 rounded-2xl bg-[#123C2F] hover:bg-[#0d2a21] text-[#C9F46B] text-xs font-black transition-all flex items-center gap-2 shadow-xs whitespace-nowrap">
                             <svg class="w-4 h-4 text-[#C9F46B]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                            <span>Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
+                            <span>Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '53.5 MB' }})</span>
                         </a>
                         <button type="button" @click="activeTab = 'apk_download'" class="px-3.5 py-2.5 rounded-2xl bg-white hover:bg-white/90 text-[#123C2F] text-xs font-bold transition whitespace-nowrap border border-[#123C2F]/15 shadow-2xs">
                             Batafsil →
@@ -2173,7 +2173,7 @@
                                 <div class="flex items-center gap-3 pt-1 flex-wrap text-xs text-[#123C2F] font-bold">
                                     <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-[#123C2F]/15 shadow-2xs">
                                         <span>✓</span>
-                                        <span>Hajmi: <strong class="font-black">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</strong></span>
+                                        <span>Hajmi: <strong class="font-black">{{ $superApp['file_size_formatted'] ?? '53.5 MB' }}</strong></span>
                                     </span>
                                     <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-[#123C2F]/15 shadow-2xs">
                                         <span>✓</span>
@@ -2191,7 +2191,7 @@
                                 <a href="{{ route('apk.download', 'superapp') }}" 
                                    class="px-6 py-4 rounded-2xl bg-[#123C2F] hover:bg-[#0d2a21] text-[#C9F46B] font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition-all active:scale-95 text-center group">
                                     <svg class="w-6 h-6 shrink-0 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>SuperApp Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
+                                    <span>SuperApp Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '53.5 MB' }})</span>
                                 </a>
 
                                 <a href="{{ url('/downloads/Marketplace_SuperApp.apk') }}" download
@@ -2362,7 +2362,7 @@
                                 <div class="grid grid-cols-2 gap-3 text-xs">
                                     <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
                                         <span class="text-[#64748B] block text-[11px]">Haqiqiy fayl hajmi:</span>
-                                        <strong class="text-[#172326] text-sm">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</strong>
+                                        <strong class="text-[#172326] text-sm">{{ $superApp['file_size_formatted'] ?? '53.5 MB' }}</strong>
                                     </div>
                                     <div class="p-3.5 rounded-2xl bg-[#FAFBF7] border border-[#E8ECE4]">
                                         <span class="text-[#64748B] block text-[11px]">Format / Paket:</span>
@@ -2382,7 +2382,7 @@
                                     <a href="{{ route('apk.download', 'superapp') }}" 
                                        class="w-full py-3.5 px-6 rounded-2xl bg-[#123C2F] hover:bg-[#0d2a21] text-[#C9F46B] font-black text-sm flex items-center justify-center gap-2.5 transition shadow-sm hover:shadow-md">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                        <span>Marketplace SuperApp (.APK) Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
+                                        <span>Marketplace SuperApp (.APK) Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '53.5 MB' }})</span>
                                     </a>
 
                                     <div class="flex items-center justify-between text-xs text-[#64748B] px-1">

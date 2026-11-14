@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Services\Audit\AuditService;
 use App\Services\Backup\DatabaseBackupService;
 use App\Services\Ledger\SellerLedgerService;
+use App\Services\Order\OrderCancellationService;
 use App\Services\Refund\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,104 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminDashboardController extends Controller
 {
+    public const ORDER_STATUSES = ['pending_payment', 'processing', 'completed', 'cancelled'];
+
+    protected function searchTerm(Request $request, string $key): string
+    {
+        return mb_substr(trim((string) $request->query($key, '')), 0, 100);
+    }
+
+    /**
+     * Administrator cancels an order that has not been paid or handed to a courier yet.
+     */
+    public function cancelOrder(Request $request, int $id, OrderCancellationService $cancellation): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Buyurtmani faqat administrator bekor qila oladi.");
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:3', 'max:255'],
+        ], [
+            'reason.required' => "Bekor qilish sababini yozing — u tarixda saqlanadi.",
+            'reason.min' => "Bekor qilish sababini to'liqroq yozing.",
+        ]);
+
+        $order = Order::with(['suborders.shipments', 'payments', 'reservations'])->findOrFail($id);
+        $back = redirect()->route('admin.dashboard', ['tab' => 'orders']);
+
+        if (!$cancellation->isCancellable($order)) {
+            return $back->with('error', "#{$order->order_number}: " . $cancellation->refusalReason($order));
+        }
+
+        $cancellation->cancel($order, $user, 'admin.order_cancelled', $validated['reason'], 'Administrator bekor qildi');
+
+        return $back->with('success', "Buyurtma #{$order->order_number} bekor qilindi, band qilingan tovarlar omborga qaytdi.");
+    }
+
+    /**
+     * Administrator corrects a product's name, category, description or photo.
+     */
+    public function updateProduct(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Mahsulotni faqat administrator tahrirlay oladi.");
+        }
+
+        $product = Product::findOrFail($id);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'min:3', 'max:255'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'image_url' => ['nullable', 'string', 'max:1000', 'regex:#^(https?://|/)#'],
+        ], [
+            'image_url.regex' => "Rasm manzili http://, https:// yoki / bilan boshlanishi kerak.",
+        ]);
+
+        $old = $product->only(array_keys($validated));
+        $product->update($validated);
+
+        AuditService::log('admin.product_updated', $product, $old, $validated, $user);
+
+        return redirect()->route('admin.dashboard', array_merge($request->only('products_q', 'products_status', 'products_page'), ['tab' => 'products']))
+            ->with('success', "Mahsulot \"{$product->name}\" saqlandi.");
+    }
+
+    /**
+     * Administrator removes a product. Goods already promised to customers must be delivered or cancelled first.
+     */
+    public function deleteProduct(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Mahsulotni faqat administrator o'chira oladi.");
+        }
+
+        $product = Product::findOrFail($id);
+        $variantIds = $product->variants()->pluck('id');
+        $back = redirect()->route('admin.dashboard', array_merge($request->only('products_q', 'products_status', 'products_page'), ['tab' => 'products']));
+
+        $openReservations = \App\Models\InventoryReservation::whereIn('product_variant_id', $variantIds)
+            ->whereIn('status', ['reserved', 'committed'])
+            ->exists();
+        if ($openReservations) {
+            return $back->with('error', "\"{$product->name}\" faol buyurtmalarda bor. Avval ularni yetkazing yoki bekor qiling.");
+        }
+
+        DB::transaction(function () use ($product, $variantIds, $user) {
+            \App\Models\CartItem::whereIn('product_variant_id', $variantIds)->delete();
+            $product->update(['is_active' => false]);
+            // Soft delete: hidden everywhere, but order history keeps referring to it
+            $product->delete();
+
+            AuditService::log('admin.product_deleted', $product, null, ['name' => $product->name], $user);
+        });
+
+        return $back->with('success', "\"{$product->name}\" o'chirildi.");
+    }
+
     /**
      * Display the Superadmin / Admin Dashboard web page.
      */
@@ -62,13 +161,76 @@ class AdminDashboardController extends Controller
             'active_shipments' => Shipment::whereIn('status', ['assigned', 'picked_up', 'in_transit', 'out_for_delivery'])->count(),
         ];
 
+        // Every list pages and searches on its own, and its links bring the admin back to the same tab
+        $filters = [
+            'users_q' => $this->searchTerm($request, 'users_q'),
+            'users_status' => in_array($request->query('users_status'), ['active', 'blocked'], true) ? $request->query('users_status') : '',
+            'products_q' => $this->searchTerm($request, 'products_q'),
+            'products_status' => in_array($request->query('products_status'), ['pending', 'approved', 'rejected', 'hidden'], true) ? $request->query('products_status') : '',
+            'orders_q' => $this->searchTerm($request, 'orders_q'),
+            'orders_status' => in_array($request->query('orders_status'), self::ORDER_STATUSES, true) ? $request->query('orders_status') : '',
+            'shipments_q' => $this->searchTerm($request, 'shipments_q'),
+            'shipments_status' => in_array($request->query('shipments_status'), ['pending', 'assigned', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed'], true) ? $request->query('shipments_status') : '',
+        ];
+        $pageQuery = fn(string $tab) => array_merge($request->except('tab'), ['tab' => $tab]);
+        $like = fn(string $term) => '%' . $term . '%';
+
         $sellers = Seller::with('members.user')->latest()->get();
-        $users = User::with('roles')->latest()->paginate(15);
+
+        $users = User::with('roles')
+            ->when($filters['users_q'], fn($q, $term) => $q->where(fn($w) => $w
+                ->where('name', 'like', $like($term))
+                ->orWhere('email', 'like', $like($term))
+                ->orWhere('phone', 'like', $like($term))))
+            ->when($filters['users_status'], fn($q, $status) => $q->where('is_active', $status === 'active'))
+            ->latest()
+            ->paginate(15, ['*'], 'users_page')
+            ->appends($pageQuery('users'));
         $roles = Role::orderBy('id')->get();
-        $products = Product::with(['category', 'seller', 'variants.priceTiers', 'variants.inventoryBalances.warehouse'])->latest()->paginate(15);
-        $recentOrders = Order::with(['suborders.seller', 'suborders.shipments'])->latest()->limit(15)->get();
-        $shipments = Shipment::with(['courier', 'suborder.seller', 'suborder.order.user'])->latest()->paginate(15);
-        $auditLogs = AuditLog::with('user')->latest()->limit(20)->get();
+
+        $products = Product::with(['category', 'seller', 'variants.priceTiers', 'variants.inventoryBalances.warehouse'])
+            ->when($filters['products_q'], fn($q, $term) => $q->where(fn($w) => $w
+                ->where('name', 'like', $like($term))
+                ->orWhereHas('variants', fn($v) => $v->where('sku', 'like', $like($term)))
+                ->orWhereHas('seller', fn($s) => $s->where('name', 'like', $like($term)))))
+            ->when($filters['products_status'], fn($q, $status) => $status === 'hidden'
+                ? $q->where('is_active', false)
+                : $q->where('status', $status))
+            ->latest()
+            ->paginate(15, ['*'], 'products_page')
+            ->appends($pageQuery('products'));
+
+        $orders = Order::with(['user', 'suborders.seller', 'suborders.shipments', 'payments'])
+            ->when($filters['orders_q'], fn($q, $term) => $q->where(fn($w) => $w
+                ->where('order_number', 'like', $like($term))
+                ->orWhereHas('user', fn($u) => $u
+                    ->where('name', 'like', $like($term))
+                    ->orWhere('phone', 'like', $like($term)))))
+            ->when($filters['orders_status'], fn($q, $status) => $q->where('status', $status))
+            // Orders placed in the same second still keep a fixed order across pages
+            ->latest()
+            ->orderByDesc('id')
+            ->paginate(20, ['*'], 'orders_page')
+            ->appends($pageQuery('orders'));
+        $cancellation = app(OrderCancellationService::class);
+        $cancellableOrderIds = $orders->getCollection()
+            ->filter(fn(Order $order) => $cancellation->isCancellable($order))
+            ->pluck('id')
+            ->all();
+
+        $shipments = Shipment::with(['courier', 'suborder.seller', 'suborder.order.user'])
+            ->when($filters['shipments_q'], fn($q, $term) => $q->where(fn($w) => $w
+                ->where('tracking_number', 'like', $like($term))
+                ->orWhereHas('suborder.order', fn($o) => $o->where('order_number', 'like', $like($term)))))
+            ->when($filters['shipments_status'], fn($q, $status) => $q->where('status', $status))
+            ->latest()
+            ->paginate(15, ['*'], 'shipments_page')
+            ->appends($pageQuery('shipments'));
+
+        $auditLogs = AuditLog::with('user')
+            ->latest()
+            ->paginate(30, ['*'], 'audit_page')
+            ->appends($pageQuery('audit'));
         // Paying sellers moves real money, so moderators only see that it exists
         $canManagePayouts = $user->hasRole(['superadmin', 'admin']);
         $payouts = $canManagePayouts
@@ -163,7 +325,9 @@ class AdminDashboardController extends Controller
             'dailySales',
             'topProducts',
             'topSellers',
-            'recentOrders',
+            'orders',
+            'cancellableOrderIds',
+            'filters',
             'shipments',
             'couriers',
             'auditLogs',

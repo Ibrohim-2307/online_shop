@@ -9,7 +9,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>[x-cloak] { display: none !important; }</style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: '{{ $initialTab ?? 'sellers' }}', passwordModal: false, targetUser: { id: null, name: '', email: '' } }" x-init="$watch('currentTab', t => history.replaceState(null, '', '?tab=' + t))">
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: '{{ $initialTab ?? 'sellers' }}', editProduct: null, passwordModal: false, targetUser: { id: null, name: '', email: '' } }" x-init="$watch('currentTab', t => history.replaceState(null, '', '?tab=' + t))">
 
     <!-- Top Admin Header -->
     <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
@@ -128,7 +128,7 @@
                     🚚 Yetkazish ({{ $shipments->total() }})
                 </button>
                 <button @click="currentTab = 'orders'" :class="currentTab === 'orders' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
-                    🛒 Buyurtmalar ({{ $recentOrders->count() }})
+                    🛒 Buyurtmalar ({{ $stats['total_orders'] }})
                 </button>
                 <button @click="currentTab = 'refunds'" :class="currentTab === 'refunds' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
                     ↩ Qaytarish
@@ -243,9 +243,14 @@
 
         <!-- TAB: PRODUCTS -->
         <div x-show="currentTab === 'products'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-sm">Barcha Mahsulotlar Moderatsiyasi va Nazorati</h3>
-                <span class="text-xs text-slate-500">Jami: {{ $products->total() }} ta mahsulot</span>
+            <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm">Barcha Mahsulotlar Moderatsiyasi va Nazorati</h3>
+                    <span class="text-xs text-slate-500">Topildi: {{ $products->total() }} ta mahsulot</span>
+                </div>
+                <x-admin.list-filter tab="products" search-name="products_q" :search-value="$filters['products_q']"
+                    placeholder="Nomi, SKU yoki do'kon" status-name="products_status" :status-value="$filters['products_status']"
+                    :statuses="['pending' => 'Kutilmoqda', 'approved' => 'Tasdiqlangan', 'rejected' => 'Rad etilgan', 'hidden' => 'Yashirilgan']" />
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-600">
@@ -343,9 +348,68 @@
                                             {{ $prod->is_active ? 'Yashirish' : 'Ko\'rsatish' }}
                                         </button>
                                     </form>
+                                    @if($canManagePayouts)
+                                        <button type="button" @click="editProduct = (editProduct === {{ $prod->id }} ? null : {{ $prod->id }})"
+                                                class="px-2 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-[11px]">
+                                            ✏️ Tahrirlash
+                                        </button>
+                                        <form action="{{ route('admin.products.delete', $prod->id) }}" method="POST" class="inline"
+                                              onsubmit="return confirm('&quot;{{ addslashes($prod->name) }}&quot; o\'chirilsinmi? Xaridorlar uni boshqa ko\'rmaydi.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            @foreach(request()->only('products_q', 'products_status', 'products_page') as $k => $v)
+                                                <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+                                            @endforeach
+                                            <button type="submit" class="px-2 py-1 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 font-semibold text-[11px]">
+                                                🗑 O'chirish
+                                            </button>
+                                        </form>
+                                    @endif
                                 </td>
                             </tr>
+                            @if($canManagePayouts)
+                                <tr x-show="editProduct === {{ $prod->id }}" x-cloak class="bg-slate-50">
+                                    <td colspan="7" class="p-4">
+                                        <form action="{{ route('admin.products.update', $prod->id) }}" method="POST" class="grid gap-3 sm:grid-cols-2 text-xs">
+                                            @csrf
+                                            @foreach(request()->only('products_q', 'products_status', 'products_page') as $k => $v)
+                                                <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+                                            @endforeach
+                                            <label class="block">
+                                                <span class="font-bold text-slate-700 block mb-1">Nomi</span>
+                                                <input name="name" value="{{ $prod->name }}" required maxlength="255" class="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white">
+                                            </label>
+                                            <label class="block">
+                                                <span class="font-bold text-slate-700 block mb-1">Toifa</span>
+                                                <select name="category_id" class="w-full h-9 px-2 rounded-lg border border-slate-300 bg-white">
+                                                    @foreach($categories as $cat)
+                                                        <option value="{{ $cat->id }}" @selected($cat->id === $prod->category_id)>{{ $cat->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </label>
+                                            <label class="block sm:col-span-2">
+                                                <span class="font-bold text-slate-700 block mb-1">Rasm manzili</span>
+                                                <input name="image_url" value="{{ $prod->image_url }}" maxlength="1000" placeholder="/images/products/... yoki https://..." class="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white">
+                                            </label>
+                                            <label class="block sm:col-span-2">
+                                                <span class="font-bold text-slate-700 block mb-1">Tavsif</span>
+                                                <textarea name="description" rows="3" maxlength="5000" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">{{ $prod->description }}</textarea>
+                                            </label>
+                                            <div class="sm:col-span-2 flex items-center justify-between gap-2">
+                                                <span class="text-[11px] text-slate-500">Narx va qoldiqni sotuvchi o'z panelida o'zgartiradi.</span>
+                                                <div class="flex gap-2">
+                                                    <button type="button" @click="editProduct = null" class="px-3 py-2 rounded-lg bg-white border border-slate-300 font-semibold">Bekor</button>
+                                                    <button type="submit" class="px-3 py-2 rounded-lg bg-slate-900 text-white font-bold">Saqlash</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endif
                         @endforeach
+                        @if($products->isEmpty())
+                            <tr><td colspan="7" class="p-8 text-center text-slate-400">Hech narsa topilmadi</td></tr>
+                        @endif
                     </tbody>
                 </table>
             </div>
@@ -355,11 +419,14 @@
         </div>
         <!-- TAB 3: USERS & ROLES -->
         <div x-show="currentTab === 'users'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h3 class="font-bold text-slate-900 text-sm">Foydalanuvchilar va Rollar Boshqaruvi</h3>
-                    <p class="text-[11px] text-slate-500">Superadmin: Har qanday foydalanuvchini Xaridor, Sotuvchi, Kuryer yoki Administrator qilib tayinlash mumkin</p>
+                    <p class="text-[11px] text-slate-500">Topildi: {{ $users->total() }} ta. Administrator rolini faqat Superadmin bera oladi.</p>
                 </div>
+                <x-admin.list-filter tab="users" search-name="users_q" :search-value="$filters['users_q']"
+                    placeholder="Ism, telefon yoki email" status-name="users_status" :status-value="$filters['users_status']"
+                    :statuses="['active' => 'Faol', 'blocked' => 'Bloklangan']" />
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-600">
@@ -440,11 +507,14 @@
 
         <!-- TAB 4: SHIPMENTS & COURIERS -->
         <div x-show="currentTab === 'shipments'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h3 class="font-bold text-slate-900 text-sm">Yetkazib Berish & Kuryerlarni Biriktirish</h3>
-                    <p class="text-[11px] text-slate-500">Barcha faol jo'natmalar va kuryerlar boshqaruvi</p>
+                    <p class="text-[11px] text-slate-500">Topildi: {{ $shipments->total() }} ta jo'natma</p>
                 </div>
+                <x-admin.list-filter tab="shipments" search-name="shipments_q" :search-value="$filters['shipments_q']"
+                    placeholder="Tracking yoki buyurtma raqami" status-name="shipments_status" :status-value="$filters['shipments_status']"
+                    :statuses="['pending' => 'Kutilmoqda', 'assigned' => 'Kuryer biriktirilgan', 'picked_up' => 'Olib ketildi', 'in_transit' => 'Yo\'lda', 'out_for_delivery' => 'Yetkazilmoqda', 'delivered' => 'Yetkazildi', 'failed' => 'Bekor / muvaffaqiyatsiz']" />
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-600">
@@ -529,29 +599,67 @@
 
         <!-- TAB 3: ORDERS -->
         <div x-show="currentTab === 'orders'" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-sm">Oxirgi Buyurtmalar Tarixi</h3>
+            @php
+                $orderStatusLabels = [
+                    'pending_payment' => ["To'lov kutilmoqda", 'bg-amber-100 text-amber-900'],
+                    'processing' => ['Jarayonda', 'bg-blue-100 text-blue-800'],
+                    'completed' => ['Yakunlangan', 'bg-emerald-100 text-emerald-800'],
+                    'cancelled' => ['Bekor qilingan', 'bg-rose-100 text-rose-800'],
+                ];
+                $paymentLabels = [
+                    'cash_on_delivery' => 'Naqd',
+                    'click' => 'Click',
+                    'payme' => 'Payme',
+                    'uzum' => 'Uzum',
+                    'nasiya' => 'Nasiya',
+                    'demo_sandbox' => 'Sinov',
+                ];
+            @endphp
+            <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm">Barcha buyurtmalar</h3>
+                    <p class="text-[11px] text-slate-500">Topildi: {{ $orders->total() }} ta. Puli to'langan buyurtma qaytarish (refund) orqali bekor qilinadi.</p>
+                </div>
+                <x-admin.list-filter tab="orders" search-name="orders_q" :search-value="$filters['orders_q']"
+                    placeholder="Buyurtma raqami, mijoz ismi yoki telefoni" status-name="orders_status" :status-value="$filters['orders_status']"
+                    :statuses="collect($orderStatusLabels)->map(fn($l) => $l[0])->all()" />
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-600">
                     <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
                         <tr>
                             <th class="p-3.5">Buyurtma Raqami</th>
-                            <th class="p-3.5">Holat</th>
+                            <th class="p-3.5">Mijoz</th>
+                            <th class="p-3.5">Holat / To'lov</th>
                             <th class="p-3.5">Sotuvchilar</th>
                             <th class="p-3.5">Jami Summa</th>
                             <th class="p-3.5">Sana</th>
-                            <th class="p-3.5 text-right">Kuzatuv</th>
+                            <th class="p-3.5 text-right">Amal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @forelse($recentOrders as $order)
-                            <tr class="hover:bg-slate-50/50">
-                                <td class="p-3.5 font-bold text-slate-900 font-mono">{{ $order->order_number }}</td>
+                        @forelse($orders as $order)
+                            @php $payment = $order->payments->sortByDesc('id')->first(); @endphp
+                            <tr class="hover:bg-slate-50/50 align-top">
+                                <td class="p-3.5 font-bold text-slate-900 font-mono">
+                                    <a href="{{ route('orders.detail', $order->order_number) }}" target="_blank" class="hover:underline">{{ $order->order_number }}</a>
+                                </td>
                                 <td class="p-3.5">
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-800">
-                                        {{ $order->status }}
+                                    <span class="font-semibold text-slate-800">{{ $order->user->name ?? 'Mehmon' }}</span>
+                                    @if($order->user?->phone)
+                                        <a href="tel:{{ $order->user->phone }}" class="block text-[11px] text-slate-500 font-mono hover:underline">{{ $order->user->phone }}</a>
+                                    @endif
+                                </td>
+                                <td class="p-3.5">
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {{ $orderStatusLabels[$order->status][1] ?? 'bg-slate-100 text-slate-800' }}">
+                                        {{ $orderStatusLabels[$order->status][0] ?? $order->status }}
                                     </span>
+                                    @if($payment)
+                                        <span class="block mt-1 text-[10px] text-slate-500">
+                                            {{ $paymentLabels[$payment->payment_method] ?? $payment->payment_method }}
+                                            • {{ $payment->status === 'paid' ? "to'langan" : ($payment->status === 'pending' ? 'kutilmoqda' : $payment->status) }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="p-3.5">
                                     @foreach($order->suborders as $sub)
@@ -566,24 +674,39 @@
                                     @php
                                         $shipment = $order->suborders->flatMap->shipments->first();
                                     @endphp
-                                    @if($shipment)
-                                        <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] transition">
-                                            <span>📍</span> Jonli Xarita
+                                    <div class="inline-flex flex-wrap justify-end gap-1.5">
+                                        <a href="{{ route('orders.detail', $order->order_number) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-bold text-[11px] transition">
+                                            Batafsil
                                         </a>
-                                    @else
-                                        <a href="{{ route('tracking') }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-[11px] transition">
-                                            <span>📍</span> Xarita
-                                        </a>
+                                        @if($shipment)
+                                            <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] transition">
+                                                <span>📍</span> Xarita
+                                            </a>
+                                        @endif
+                                    </div>
+                                    @if($canManagePayouts && in_array($order->id, $cancellableOrderIds, true))
+                                        <form action="{{ route('admin.orders.cancel', $order->id) }}" method="POST" class="mt-2 flex justify-end gap-1.5"
+                                              onsubmit="return confirm('Buyurtma #{{ $order->order_number }} bekor qilinsinmi?')">
+                                            @csrf
+                                            <input type="text" name="reason" required minlength="3" maxlength="255" placeholder="Sabab"
+                                                   class="h-7 w-28 px-2 rounded-lg border border-slate-300 text-[11px]">
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-[11px]">
+                                                Bekor qilish
+                                            </button>
+                                        </form>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="p-8 text-center text-slate-400">Hozircha buyurtmalar mavjud emas</td>
+                                <td colspan="7" class="p-8 text-center text-slate-400">Buyurtma topilmadi</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="p-4 border-t border-slate-100">
+                {{ $orders->links() }}
             </div>
         </div>
 
@@ -1319,7 +1442,7 @@
                                 <td class="p-3.5 font-mono font-bold text-slate-900">{{ $log->action }}</td>
                                 <td class="p-3.5 font-medium text-slate-700">{{ $log->user->name ?? 'Tizim' }}</td>
                                 <td class="p-3.5 font-mono text-slate-500">{{ $log->ip_address ?? '127.0.0.1' }}</td>
-                                <td class="p-3.5 font-mono text-[11px] text-slate-500 max-w-xs truncate">{{ json_encode($log->details) }}</td>
+                                <td class="p-3.5 font-mono text-[11px] text-slate-500 max-w-xs truncate" title="{{ json_encode($log->new_values, JSON_UNESCAPED_UNICODE) }}">{{ $log->new_values ? json_encode($log->new_values, JSON_UNESCAPED_UNICODE) : '—' }}</td>
                                 <td class="p-3.5 text-slate-400">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
                             </tr>
                         @empty
@@ -1329,6 +1452,9 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="p-4 border-t border-slate-100">
+                {{ $auditLogs->links() }}
             </div>
         </div>
 

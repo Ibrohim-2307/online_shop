@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Audit\AuditService;
 use App\Services\Cart\CartService;
 use App\Services\Checkout\InventoryReservationService;
+use App\Services\Order\OrderCancellationService;
 use App\Services\Refund\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -282,30 +283,13 @@ class OrderHubController extends Controller
             return back()->with('error', "Bu buyurtmani endi bekor qilib bo'lmaydi. Agar mahsulot yetib kelgan bo'lsa, qaytarish so'rovini yuboring.");
         }
 
-        DB::transaction(function () use ($order, $reservations, $validated, $user) {
-            $previousStatus = $order->status;
-
-            foreach ($order->reservations as $reservation) {
-                $reservations->releaseReservation($reservation, 'Customer cancelled order ' . $order->order_number, true);
-            }
-
-            $order->update(['status' => 'cancelled']);
-            foreach ($order->suborders as $suborder) {
-                $suborder->update(['status' => 'cancelled']);
-                foreach ($suborder->shipments as $shipment) {
-                    $shipment->update(['status' => 'failed', 'delay_reason' => 'Mijoz buyurtmani bekor qildi']);
-                }
-            }
-            $order->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
-
-            AuditService::log(
-                'order.cancelled_by_customer',
-                $order,
-                ['status' => $previousStatus],
-                ['status' => 'cancelled', 'reason' => $validated['reason'] ?? null],
-                $user
-            );
-        });
+        app(OrderCancellationService::class)->cancel(
+            $order,
+            $user,
+            'order.cancelled_by_customer',
+            $validated['reason'] ?? null,
+            'Mijoz buyurtmani bekor qildi'
+        );
 
         return redirect()->route('orders.detail', $order->order_number)
             ->with('success', "Buyurtma bekor qilindi.");
@@ -316,15 +300,6 @@ class OrderHubController extends Controller
      */
     protected function isCancellable(Order $order): bool
     {
-        if (!in_array($order->status, ['pending_payment', 'processing'], true)) {
-            return false;
-        }
-
-        if ($order->payments->contains('status', 'paid')) {
-            return false;
-        }
-
-        return $order->suborders->flatMap->shipments
-            ->every(fn($shipment) => in_array($shipment->status, ['pending', 'assigned'], true));
+        return app(OrderCancellationService::class)->isCancellable($order);
     }
 }

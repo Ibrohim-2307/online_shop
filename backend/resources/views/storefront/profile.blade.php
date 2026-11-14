@@ -508,46 +508,105 @@
                 </div>
 
                 <!-- High-Visibility Mobile App Quick Card in Sidebar -->
-                <div class="bg-gradient-to-br from-[#123C2F] via-[#164436] to-[#0e2c22] text-white rounded-3xl p-5 shadow-sm border border-emerald-500/25 space-y-3.5 relative overflow-hidden group">
-                    <div class="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-emerald-400/10 pointer-events-none blur-xl"></div>
-                    <div class="flex items-center justify-between relative">
-                        <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-xl bg-[#C9F46B]/20 border border-[#C9F46B]/40 flex items-center justify-center text-base">📱</span>
-                            <div>
-                                <span class="text-[11px] font-black uppercase tracking-wider text-[#C9F46B] block">SuperApp .APK</span>
-                                <span class="text-[10px] text-white/70">Barchasi 1 ta ilovada</span>
+                <div class="relative overflow-hidden rounded-3xl bg-[#0B1512] text-white p-5 shadow-xl shadow-emerald-950/20 border border-emerald-500/20 space-y-4 group transition-all duration-300 hover:border-emerald-500/35">
+                    <!-- Top specular highlight & ambient glow -->
+                    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent"></div>
+                    <div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/0 blur-2xl pointer-events-none"></div>
+
+                    <!-- Header: Icon, Titles & Version Pill -->
+                    <div class="flex items-center justify-between relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center shadow-inner shrink-0">
+                                <svg class="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0002s.4482-1.0002.9993-1.0002c.5516 0 .9997.4486.9997 1.0002s-.4481 1.0002-.9997 1.0002m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0002s.4482-1.0002.9993-1.0002c.5516 0 .9997.4486.9997 1.0002s-.4481 1.0002-.9997 1.0002m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1523-.5676.416.416 0 00-.5676.1523l-2.0223 3.503C15.5873 8.396 13.8447 8.08 12 8.08s-3.5873.316-5.1366.8699L4.8411 5.4469a.4161.4161 0 00-.5676-.1523.416.416 0 00-.1523.5676l1.9973 3.4592C2.6889 10.9867 1 14.2813 1 18.08h22c0-3.7987-1.6889-7.0933-5.1185-8.7586"/>
+                                </svg>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-black tracking-tight text-white">SuperApp</span>
+                                    <span class="inline-flex items-center px-1.5 py-0.2 rounded-md bg-emerald-400/15 border border-emerald-400/25 text-emerald-300 font-mono text-[9px] font-bold">APK</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 block truncate">Universal mobil ilova</span>
                             </div>
                         </div>
-                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-black text-[10px]">v2.4.0</span>
+                        <span class="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-emerald-300 font-mono text-[10px] font-semibold tracking-wide">
+                            v2.4.0
+                        </span>
                     </div>
 
-                    <p class="text-xs text-white/90 leading-snug">
-                        Xaridor, sotuvchi, kuryer va admin panellari yagona ilovada. Loginingiz bilan kiring — kerakli panellar avtomatik ochiladi.
+                    <!-- 4 Roles Micro-Chips: Explaining 1 App = 4 Roles -->
+                    <div class="grid grid-cols-2 gap-1.5 pt-1 relative z-10">
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.07] text-[11px] text-slate-300 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
+                            <span class="text-slate-400 text-[10px]">Rol:</span>
+                            <span class="font-bold text-white">Xaridor</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.07] text-[11px] text-slate-300 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                            <span class="text-slate-400 text-[10px]">Rol:</span>
+                            <span class="font-bold text-white">Sotuvchi</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.07] text-[11px] text-slate-300 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                            <span class="text-slate-400 text-[10px]">Rol:</span>
+                            <span class="font-bold text-white">Kuryer</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.07] text-[11px] text-slate-300 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></span>
+                            <span class="text-slate-400 text-[10px]">Rol:</span>
+                            <span class="font-bold text-white">Admin</span>
+                        </div>
+                    </div>
+
+                    <!-- Explanatory Microcopy -->
+                    <p class="text-[11px] text-slate-400 leading-snug relative z-10">
+                        Hisobingiz bilan kiring — kerakli boshqaruv panellari avtomatik ochiladi.
                     </p>
 
-                    <div class="space-y-2 pt-1">
-                        <a href="{{ route('apk.download', 'superapp') }}" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#C9F46B] hover:bg-[#b8e855] text-[#123C2F] font-black text-xs transition shadow-xs group-hover:scale-[1.01]">
-                            <span class="flex items-center gap-1.5">
-                                <span>⬇️</span>
-                                <span>SuperApp Yuklab Olish</span>
-                            </span>
-                            <span class="text-[10px] font-extrabold opacity-80">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
+                    <!-- CTA Actions -->
+                    <div class="space-y-2 pt-1 relative z-10">
+                        <a href="{{ route('apk.download', 'superapp') }}" 
+                           class="group/btn relative w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-[#C9F46B] via-[#bbf250] to-[#a4e83c] hover:from-[#d8fa7d] hover:to-[#bbf250] text-[#0A2018] font-black text-xs transition-all duration-200 shadow-lg shadow-[#0B251C]/40 hover:shadow-xl hover:shadow-lime-500/20 active:scale-[0.98] overflow-hidden">
+                            <!-- Shimmer Sheen -->
+                            <div class="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
+                            
+                            <div class="flex items-center gap-2 relative z-10">
+                                <div class="w-6 h-6 rounded-lg bg-[#0A2018]/12 flex items-center justify-center shrink-0">
+                                    <svg class="w-3.5 h-3.5 text-[#0A2018] transition-transform duration-200 group-hover/btn:translate-y-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+                                    </svg>
+                                </div>
+                                <span class="tracking-tight text-xs font-black">Yuklab Olish</span>
+                            </div>
+                            
+                            <div class="relative z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#0A2018]/12">
+                                <span class="text-[10px] font-mono font-black text-[#0A2018]">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</span>
+                            </div>
                         </a>
 
-                        <button type="button" @click="activeTab = 'apk_download'" class="w-full text-center py-1 text-emerald-300 hover:text-white font-bold text-[11px] transition flex items-center justify-center gap-1">
+                        <button type="button" @click="activeTab = 'apk_download'" 
+                                class="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-semibold text-slate-400 hover:text-emerald-300 transition-colors group/link">
                             <span>Ilova haqida batafsil</span>
-                            <span>→</span>
+                            <svg class="w-3.5 h-3.5 text-slate-500 group-hover/link:text-emerald-300 group-hover/link:translate-x-0.5 transition-all" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                            </svg>
                         </button>
                     </div>
                 </div>
 
                 <!-- Customer Support Widget -->
-                <div class="bg-gradient-to-br from-[#123C2F] to-[#1f5c49] text-white rounded-3xl p-5 shadow-xs space-y-3">
-                    <span class="text-xs font-bold text-[#C9F46B] uppercase tracking-wider block">Yordam & Operator</span>
-                    <p class="text-xs text-white/80 leading-relaxed">
-                        Savollaringiz bormi? Do'kon, kuryer yoki buyurtma bo'yicha yordam berishga tayyormiz.
+                <div class="relative overflow-hidden rounded-3xl bg-[#0B1512] text-white p-5 shadow-lg border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black tracking-wider text-emerald-400 uppercase">Yordam & Aloqa</span>
+                        <span class="flex h-2 w-2 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Savollaringiz bormi? Do'kon, kuryer yoki buyurtma bo'yicha operatorlarimiz yordamga tayyor.
                     </p>
-                    <a href="tel:+998712000000" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#123C2F] font-bold text-xs hover:bg-[#C9F46B] transition shadow-xs">
+                    <a href="tel:+998712000000" class="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-white font-bold text-xs border border-white/10 transition shadow-xs">
                         <span>📞 +998 (71) 200-00-00</span>
                     </a>
                 </div>
@@ -557,28 +616,33 @@
             <div class="lg:col-span-9 space-y-6 min-w-0 max-w-full overflow-hidden">
 
                 <!-- High-visibility APK notification bar (shown when activeTab !== 'apk_download') -->
-                <div x-show="activeTab !== 'apk_download'" class="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-950 via-[#123C2F] to-[#164436] text-white border border-emerald-500/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex items-start sm:items-center gap-3.5">
-                        <div class="w-12 h-12 rounded-2xl bg-[#C9F46B]/15 border border-[#C9F46B]/30 flex items-center justify-center text-2xl shrink-0">
-                            📱
+                <div x-show="activeTab !== 'apk_download'" class="relative overflow-hidden p-4 sm:p-5 rounded-3xl bg-[#0B1512] text-white border border-emerald-500/20 shadow-xl shadow-emerald-950/20 flex flex-col md:flex-row md:items-center justify-between gap-4 group">
+                    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent"></div>
+                    <div class="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+
+                    <div class="flex items-start sm:items-center gap-3.5 relative z-10">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center shadow-inner shrink-0">
+                            <svg class="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0002s.4482-1.0002.9993-1.0002c.5516 0 .9997.4486.9997 1.0002s-.4481 1.0002-.9997 1.0002m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0002s.4482-1.0002.9993-1.0002c.5516 0 .9997.4486.9997 1.0002s-.4481 1.0002-.9997 1.0002m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1523-.5676.416.416 0 00-.5676.1523l-2.0223 3.503C15.5873 8.396 13.8447 8.08 12 8.08s-3.5873.316-5.1366.8699L4.8411 5.4469a.4161.4161 0 00-.5676-.1523.416.416 0 00-.1523.5676l1.9973 3.4592C2.6889 10.9867 1 14.2813 1 18.08h22c0-3.7987-1.6889-7.0933-5.1185-8.7586"/>
+                            </svg>
                         </div>
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="text-sm sm:text-base font-black text-white">Marketplace SuperApp (.APK) — Barcha rollar 1 ta ilovada!</h3>
-                                <span class="px-2 py-0.5 rounded-full bg-[#C9F46B] text-[#123C2F] text-[10px] font-black uppercase">Universal Reliz</span>
-                                <span class="px-2 py-0.5 rounded-full bg-white/10 text-emerald-200 text-[10px] font-bold">v2.4.0</span>
+                                <h3 class="text-sm sm:text-base font-black text-white">Marketplace SuperApp (.APK)</h3>
+                                <span class="px-2 py-0.5 rounded-full bg-emerald-400/15 border border-emerald-400/25 text-emerald-300 font-mono text-[10px] font-bold">Barcha rollar 1 ta ilovada</span>
+                                <span class="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300 font-mono text-[10px]">v2.4.0</span>
                             </div>
-                            <p class="text-xs text-white/80 mt-0.5">
-                                Xaridor, do'kon va kuryer panellari yagona ilovada. O'z hisobingiz bilan kirishingiz bilan kerakli panellar avtomatik ochiladi.
+                            <p class="text-xs text-slate-400 mt-1">
+                                Xaridor, do'kon, kuryer va admin rejimlari yagona ilovada jamlangan. Hisobingiz bilan kiring — kerakli panel avtomatik faollashadi.
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <a href="{{ route('apk.download', 'superapp') }}" class="px-4 py-2.5 rounded-xl bg-[#C9F46B] text-[#123C2F] hover:bg-[#b8e855] text-xs font-black transition flex items-center gap-1.5 shadow-xs whitespace-nowrap">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            <span>SuperApp Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
+                    <div class="flex items-center gap-2.5 shrink-0 relative z-10">
+                        <a href="{{ route('apk.download', 'superapp') }}" class="group/btn relative px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9F46B] via-[#bbf250] to-[#a4e83c] hover:from-[#d8fa7d] hover:to-[#bbf250] text-[#0A2018] text-xs font-black transition-all flex items-center gap-2 shadow-md shadow-lime-950/20 whitespace-nowrap overflow-hidden">
+                            <svg class="w-4 h-4 text-[#0A2018] group-hover/btn:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            <span>Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
                         </a>
-                        <button type="button" @click="activeTab = 'apk_download'" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition whitespace-nowrap border border-white/15">
+                        <button type="button" @click="activeTab = 'apk_download'" class="px-3.5 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 text-xs font-bold transition whitespace-nowrap border border-white/10">
                             Batafsil →
                         </button>
                     </div>
@@ -2099,23 +2163,24 @@
                 <div x-show="activeTab === 'apk_download'" class="space-y-6">
                     
                     <!-- Hero Showcase Card -->
-                    <div class="bg-gradient-to-br from-[#123C2F] via-[#164939] to-[#0c271f] text-white rounded-3xl p-6 sm:p-10 shadow-lg border border-emerald-500/30 relative overflow-hidden">
-                        <div class="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-emerald-400/15 pointer-events-none blur-3xl"></div>
-                        <div class="absolute -left-16 -top-16 w-48 h-48 rounded-full bg-[#C9F46B]/10 pointer-events-none blur-2xl"></div>
+                    <div class="relative overflow-hidden bg-[#0B1512] text-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-emerald-500/20">
+                        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent"></div>
+                        <div class="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-emerald-500/15 pointer-events-none blur-3xl"></div>
+                        <div class="absolute -left-16 -top-16 w-48 h-48 rounded-full bg-teal-500/10 pointer-events-none blur-2xl"></div>
 
                         <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                            <div class="space-y-3.5 max-w-2xl">
+                            <div class="space-y-4 max-w-2xl">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="px-3.5 py-1 rounded-full bg-[#C9F46B] text-[#123C2F] text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
-                                        <span>📱</span>
+                                    <span class="px-3.5 py-1 rounded-full bg-gradient-to-r from-[#C9F46B] to-[#aee83c] text-[#0A2018] text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                                        <svg class="w-3.5 h-3.5 text-[#0A2018]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0002s.4482-1.0002.9993-1.0002c.5516 0 .9997.4486.9997 1.0002s-.4481 1.0002-.9997 1.0002m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0002s.4482-1.0002.9993-1.0002c.5516 0 .9997.4486.9997 1.0002s-.4481 1.0002-.9997 1.0002m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1523-.5676.416.416 0 00-.5676.1523l-2.0223 3.503C15.5873 8.396 13.8447 8.08 12 8.08s-3.5873.316-5.1366.8699L4.8411 5.4469a.4161.4161 0 00-.5676-.1523.416.416 0 00-.1523.5676l1.9973 3.4592C2.6889 10.9867 1 14.2813 1 18.08h22c0-3.7987-1.6889-7.0933-5.1185-8.7586"/></svg>
                                         <span>Yagona Universal SuperApp</span>
                                     </span>
-                                    <span class="px-3 py-1 rounded-full bg-white/10 text-emerald-200 border border-white/15 text-xs font-bold">
+                                    <span class="px-3 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10 text-xs font-mono font-medium">
                                         v2.4.0 Rasmiy Reliz
                                     </span>
-                                    <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 text-xs font-semibold flex items-center gap-1">
-                                        <span>🛡️</span>
-                                        <span>Xavfsiz & Viruslarsiz</span>
+                                    <span class="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/20 text-xs font-semibold flex items-center gap-1.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span>100% Xavfsiz & Viruslarsiz</span>
                                     </span>
                                 </div>
 
@@ -2123,22 +2188,22 @@
                                     Marketplace SuperApp — Barcha rollar 1 ta ilovada!
                                 </h2>
 
-                                <p class="text-sm sm:text-base text-white/90 leading-relaxed font-medium">
-                                    Har xil ilovalarni alohida o'rnatish shart emas. <strong>Xaridor, Sotuvchi, Kuryer va Admin</strong> rollari yagona SuperApp ilovasida jamlangan. Ilovaga o'z hisobingiz bilan kirishingiz bilan tizim avtomatik ravishda sizga tegishli panellarni ochib beradi.
+                                <p class="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
+                                    Har xil ilovalarni alohida o'rnatish shart emas. <strong class="text-white font-bold">Xaridor, Sotuvchi, Kuryer va Admin</strong> rollari yagona SuperApp ilovasida jamlangan. Ilovaga o'z hisobingiz bilan kirishingiz bilan tizim avtomatik ravishda sizga tegishli panellarni ochib beradi.
                                 </p>
 
-                                <div class="flex items-center gap-4 pt-1 flex-wrap text-xs text-emerald-200/90 font-medium">
-                                    <span class="flex items-center gap-1.5">
+                                <div class="flex items-center gap-4 pt-1 flex-wrap text-xs text-slate-300 font-medium">
+                                    <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                                         <span class="text-[#C9F46B]">✓</span>
-                                        <span>Hajmi: <strong>{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</strong></span>
+                                        <span>Hajmi: <strong class="text-white font-mono">{{ $superApp['file_size_formatted'] ?? '18.5 MB' }}</strong></span>
                                     </span>
-                                    <span class="flex items-center gap-1.5">
+                                    <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                                         <span class="text-[#C9F46B]">✓</span>
-                                        <span>Format: <strong>.APK (Android 7.0+)</strong></span>
+                                        <span>Format: <strong class="text-white">.APK (Android 7.0+)</strong></span>
                                     </span>
-                                    <span class="flex items-center gap-1.5">
+                                    <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                                         <span class="text-[#C9F46B]">✓</span>
-                                        <span>Tizim: <strong>Tezkor & Oflayn kesh</strong></span>
+                                        <span>Tizim: <strong class="text-white">Tezkor & Oflayn kesh</strong></span>
                                     </span>
                                 </div>
                             </div>
@@ -2146,13 +2211,15 @@
                             <!-- Big CTA Download Box -->
                             <div class="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0 lg:min-w-[280px]">
                                 <a href="{{ route('apk.download', 'superapp') }}" 
-                                   class="px-6 py-4 rounded-2xl bg-[#C9F46B] hover:bg-[#b8e855] text-[#123C2F] font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl transition transform active:scale-95 text-center group">
-                                    <svg class="w-6 h-6 shrink-0 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>SuperApp Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
+                                   class="group/btn relative px-6 py-4 rounded-2xl bg-gradient-to-r from-[#C9F46B] via-[#bbf250] to-[#a4e83c] hover:from-[#d8fa7d] hover:to-[#bbf250] text-[#0A2018] font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl shadow-lime-950/30 hover:shadow-2xl hover:shadow-lime-500/25 transition transform active:scale-95 text-center overflow-hidden">
+                                    <!-- Shimmer sheen -->
+                                    <div class="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
+                                    <svg class="w-6 h-6 shrink-0 group-hover/btn:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    <span class="relative z-10">SuperApp Yuklab Olish ({{ $superApp['file_size_formatted'] ?? '18.5 MB' }})</span>
                                 </a>
 
                                 <a href="{{ url('/downloads/Marketplace_SuperApp.apk') }}" download
-                                   class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition text-center">
+                                   class="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition text-center">
                                     <span>⚡ To'g'ridan-to'g'ri statik havola (.apk)</span>
                                 </a>
                             </div>

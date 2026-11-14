@@ -8,10 +8,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('MARKET'), findsOneWidget);
+    // Only the active tab shows its name; the others are icons with a screen-reader label
     expect(find.text('Asosiy'), findsOneWidget);
-    expect(find.text('Katalog'), findsOneWidget);
-    expect(find.text('Savatcha'), findsOneWidget);
-    expect(find.text('Buyurtmalar'), findsOneWidget);
-    expect(find.text('Profil'), findsOneWidget);
+    for (final tab in ['Katalog', 'Savat', 'Buyurtma', 'Profil']) {
+      expect(find.bySemanticsLabel(tab), findsOneWidget);
+    }
   });
 }

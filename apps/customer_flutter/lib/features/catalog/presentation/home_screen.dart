@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/motion.dart';
 import '../data/catalog_repository.dart';
 import '../domain/product_model.dart';
 import 'catalog_screen.dart';
@@ -104,6 +105,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Products whose bulk tiers really save the most, best first.
+  List<ProductModel> get _bulkDeals {
+    final deals = _products
+        .where((p) => p.tradeMode != 'retail_only' && bulkDiscountPercent(p) >= 5)
+        .toList()
+      ..sort((a, b) => bulkDiscountPercent(b).compareTo(bulkDiscountPercent(a)));
+    return deals.take(8).toList();
+  }
+
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    String? trailing,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: iconColor, size: 22),
+        const SizedBox(width: 4),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, letterSpacing: -0.2, color: AppColors.textPrimary),
+        ),
+        const Spacer(),
+        if (trailing != null)
+          Text(trailing, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
   void _openCatalog({String? category, bool focusSearch = false}) {
     Navigator.push(
       context,
@@ -140,18 +171,39 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildTrustRow(),
             const SizedBox(height: 22),
 
+            // Biggest real bulk savings, side-scrolling
+            if (_bulkDeals.length >= 2) ...[
+              _buildSectionHeader(
+                icon: Icons.bolt_rounded,
+                iconColor: AppColors.brandEmerald,
+                title: 'Optomda arzon',
+                trailing: 'Hajm oshsa, narx tushadi',
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: productGridDelegate.mainAxisExtent! + 20,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  padding: const EdgeInsets.only(bottom: 20),
+                  itemCount: _bulkDeals.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) => SizedBox(
+                    width: 164,
+                    child: ProductCard(product: _bulkDeals[i], heroPrefix: 'deal'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+
             // Hot Deals / Flash Sale Section
             _buildFlashSaleHeader(),
             const SizedBox(height: 12),
 
             // Products Grid
             if (_isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40),
-                  child: CircularProgressIndicator(color: AppColors.brandDark),
-                ),
-              )
+              const ProductGridSkeleton()
             else if (_products.isEmpty)
               const EmptyState(
                 icon: Icons.inventory_2_outlined,
@@ -198,29 +250,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: Stack(
-            children: [
-              const Icon(Icons.notifications_none_outlined, color: AppColors.brandDark, size: 24),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.brandRose,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          onPressed: () {},
-        ),
-        const SizedBox(width: 4),
-      ],
     );
   }
 
@@ -249,14 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.brandLime.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.tune, size: 16, color: AppColors.brandDark),
-              ),
             ],
           ),
         ),
@@ -268,8 +289,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 155,
+          height: 184,
           child: PageView.builder(
+            clipBehavior: Clip.none,
             controller: _bannerController,
             onPageChanged: (i) => setState(() => _currentBannerIndex = i),
             itemCount: _banners.length,
@@ -348,7 +370,30 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Text(
                               b['subtitle'] as String,
                               maxLines: 2,
-                              style: const TextStyle(color: Colors.white70, fontSize: 11),
+                              style: const TextStyle(color: Colors.white70, fontSize: 11.5, height: 1.3),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Pressable(
+                            haptic: true,
+                            onTap: () => _openCatalog(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    b['btnText'] as String,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.textPrimary),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -457,25 +502,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        child: Stack(
-                          children: [
-                            const Center(
-                              child: Icon(Icons.grid_view_rounded, color: AppColors.brandDark, size: 28),
-                            ),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.95),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppColors.brandDark.withValues(alpha: 0.2), width: 0.8),
-                                ),
-                                child: const Text('✨', style: TextStyle(fontSize: 11)),
-                              ),
-                            ),
-                          ],
+                        child: const Center(
+                          child: Icon(Icons.grid_view_rounded, color: AppColors.brandDark, size: 28),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -514,34 +542,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           colors: [cat.bgColor, Colors.white],
                         ),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: cat.color.withValues(alpha: 0.28), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cat.color.withValues(alpha: 0.12),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
                       ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Icon(cat.icon, color: cat.color, size: 28),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.95),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: cat.color.withValues(alpha: 0.2), width: 0.8),
-                              ),
-                              child: Text(cat.emoji, style: const TextStyle(fontSize: 11)),
-                            ),
-                          ),
-                        ],
+                      child: Center(
+                        child: Icon(cat.icon, color: cat.color, size: 28),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -578,44 +581,28 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _TrustItem(icon: Icons.verified_user_outlined, label: 'Kafolatlangan sifat', color: AppColors.brandEmerald),
-          _TrustItem(icon: Icons.local_shipping_outlined, label: 'Tezkor yetkazish', color: AppColors.brandIndigo),
-          _TrustItem(icon: Icons.lock_outline, label: 'Xavfsiz to\'lov', color: AppColors.brandAmber),
-        ],
+      // Three labels must fit on the narrowest phones without clipping
+      child: const FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          children: [
+            _TrustItem(icon: Icons.verified_user_outlined, label: 'Kafolatlangan sifat', color: AppColors.brandEmerald),
+            SizedBox(width: 14),
+            _TrustItem(icon: Icons.local_shipping_outlined, label: 'Tezkor yetkazish', color: AppColors.brandIndigo),
+            SizedBox(width: 14),
+            _TrustItem(icon: Icons.lock_outline, label: 'Xavfsiz to\'lov', color: AppColors.brandAmber),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildFlashSaleHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Row(
-          children: [
-            Icon(Icons.whatshot, color: AppColors.brandOrange, size: 22),
-            SizedBox(width: 4),
-            Text(
-              'Ommabop Mahsulotlar',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.brandDark),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.brandLime.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.brandLime),
-          ),
-          child: const Text(
-            'Zavod narxida',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.brandDark),
-          ),
-        ),
-      ],
+    return _buildSectionHeader(
+      icon: Icons.whatshot_rounded,
+      iconColor: AppColors.brandOrange,
+      title: 'Barcha mahsulotlar',
+      trailing: _products.isEmpty ? null : '${_products.length} ta',
     );
   }
 }

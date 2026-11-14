@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_colors.dart';
 import 'core/theme/app_theme.dart';
@@ -115,52 +116,103 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               },
             )
           : null,
-      bottomNavigationBar: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
+      bottomNavigationBar: _BottomBar(
+        index: _currentIndex,
+        cartCount: cart.items.length,
+        onSelect: (index) {
+          if (index != _currentIndex) HapticFeedback.selectionClick();
           setState(() => _currentIndex = index);
         },
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppColors.brandDark),
-            label: 'Asosiy',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.category_outlined),
-            selectedIcon: Icon(Icons.category, color: AppColors.brandDark),
-            label: 'Katalog',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: cart.items.isNotEmpty,
-              label: Text(cart.totalItemCount.toString()),
-              backgroundColor: AppColors.statusError,
-              child: const Icon(Icons.shopping_cart_outlined),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: cart.items.isNotEmpty,
-              label: Text(cart.totalItemCount.toString()),
-              backgroundColor: AppColors.statusError,
-              child: const Icon(Icons.shopping_cart, color: AppColors.brandDark),
-            ),
-            label: 'Savatcha',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long, color: AppColors.brandDark),
-            label: 'Buyurtmalar',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.brandDark),
-            label: 'Profil',
-          ),
+      ),
+    );
+  }
+}
+
+/// Bottom menu: the active tab grows into a dark pill with its name; the rest stay icons.
+class _BottomBar extends StatelessWidget {
+  final int index;
+  final int cartCount;
+  final ValueChanged<int> onSelect;
+
+  const _BottomBar({required this.index, required this.cartCount, required this.onSelect});
+
+  static const _items = [
+    (Icons.home_outlined, Icons.home_rounded, 'Asosiy'),
+    (Icons.grid_view_outlined, Icons.grid_view_rounded, 'Katalog'),
+    (Icons.shopping_bag_outlined, Icons.shopping_bag_rounded, 'Savat'),
+    (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Buyurtma'),
+    (Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+        boxShadow: [
+          BoxShadow(color: AppColors.brandDark.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, -6)),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+          child: Row(
+            children: [
+              for (var i = 0; i < _items.length; i++)
+                Expanded(
+                  flex: i == index ? 18 : 10,
+                  child: Semantics(
+                    button: true,
+                    selected: i == index,
+                    label: _items[i].$3,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onSelect(i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOutCubic,
+                        height: 48,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          color: i == index ? AppColors.brandDark : Colors.transparent,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Badge(
+                              isLabelVisible: i == 2 && cartCount > 0,
+                              label: Text('$cartCount'),
+                              backgroundColor: AppColors.brandRose,
+                              child: Icon(
+                                i == index ? _items[i].$2 : _items[i].$1,
+                                size: 23,
+                                color: i == index ? AppColors.brandLime : AppColors.textSecondary,
+                              ),
+                            ),
+                            if (i == index)
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Text(
+                                    _items[i].$3,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.fade,
+                                    softWrap: false,
+                                    style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

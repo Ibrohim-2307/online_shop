@@ -113,7 +113,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
           // Products grid
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.brandDark))
+                ? const SingleChildScrollView(
+                    physics: NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.all(16),
+                    child: ProductGridSkeleton(count: 6),
+                  )
                 : _products.isEmpty
                     ? const EmptyState(
                         icon: Icons.search_off,

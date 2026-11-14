@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../network/api_config.dart';
+import 'motion.dart';
 
 class ProductImage extends StatelessWidget {
   final String? url;
@@ -16,37 +17,12 @@ class ProductImage extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surfaceMuted,
-            AppColors.brandLime.withValues(alpha: 0.15),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Container(
-          width: iconSize + 20,
-          height: iconSize + 20,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.8),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.inventory_2_outlined,
-            size: iconSize,
-            color: AppColors.brandDark.withValues(alpha: 0.7),
-          ),
-        ),
+      color: AppColors.surfaceMuted,
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.image_outlined,
+        size: iconSize,
+        color: AppColors.brandDark.withValues(alpha: 0.25),
       ),
     );
   }
@@ -59,9 +35,22 @@ class ProductImage extends StatelessWidget {
     return Image.network(
       source,
       fit: BoxFit.cover,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return _placeholder();
+      // Lets photos from the shop's server show in the web build as well
+      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded) return child;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (frame == null) const Shimmer(child: Bone(radius: 0)),
+            AnimatedOpacity(
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOut,
+              child: child,
+            ),
+          ],
+        );
       },
       errorBuilder: (context, error, stackTrace) => _placeholder(),
     );

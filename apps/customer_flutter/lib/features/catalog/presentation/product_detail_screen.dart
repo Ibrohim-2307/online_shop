@@ -11,7 +11,8 @@ import '../domain/product_model.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final ProductModel product;
-  const ProductDetailScreen({super.key, required this.product});
+  final String? heroTag;
+  const ProductDetailScreen({super.key, required this.product, this.heroTag});
 
   @override
   ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -65,27 +66,43 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(
-          widget.product.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+        backgroundColor: Colors.transparent,
+        leadingWidth: 64,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.94),
+              shape: const CircleBorder(),
+              elevation: 2,
+              shadowColor: Colors.black26,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.maybePop(context),
+                child: const SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.textPrimary),
+                ),
+              ),
+            ),
           ),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 8, 16, 16),
         children: [
-          // Image preview card
+          // Photo: flies in from the card the shopper tapped
           ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: SizedBox(
-              height: 300,
-              child: ProductImage(url: widget.product.imageUrl, iconSize: 72),
+            borderRadius: BorderRadius.circular(28),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: Hero(
+                tag: widget.heroTag ?? 'product-${widget.product.id}',
+                child: ProductImage(url: widget.product.imageUrl, iconSize: 72),
+              ),
             ),
           ),
           const SizedBox(height: 16),

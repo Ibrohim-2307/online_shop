@@ -156,19 +156,19 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 30),
           children: [
             // Search Bar
-            _buildSearchBar(),
+            Reveal(child: _buildSearchBar()),
             const SizedBox(height: 16),
 
             // Hero Promotion Carousel
-            _buildHeroCarousel(),
+            Reveal(delayMs: 80, child: _buildHeroCarousel()),
             const SizedBox(height: 20),
 
             // Category Story Bubbles
-            _buildCategoryStories(),
+            Reveal(delayMs: 160, child: _buildCategoryStories()),
             const SizedBox(height: 20),
 
             // Trust features row
-            _buildTrustRow(),
+            Reveal(delayMs: 240, child: _buildTrustRow()),
             const SizedBox(height: 22),
 
             // Biggest real bulk savings, side-scrolling
@@ -190,7 +190,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   separatorBuilder: (_, _) => const SizedBox(width: 12),
                   itemBuilder: (context, i) => SizedBox(
                     width: 164,
-                    child: ProductCard(product: _bulkDeals[i], heroPrefix: 'deal'),
+                    child: Reveal(
+                      delayMs: i * 70,
+                      child: ProductCard(product: _bulkDeals[i], heroPrefix: 'deal'),
+                    ),
                   ),
                 ),
               ),
@@ -217,7 +220,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: EdgeInsets.zero,
                 gridDelegate: productGridDelegate,
                 itemCount: _products.length,
-                itemBuilder: (context, i) => ProductCard(product: _products[i]),
+                itemBuilder: (context, i) => Reveal(
+                  delayMs: (i % 6) * 60,
+                  child: ProductCard(product: _products[i]),
+                ),
               ),
           ],
         ),

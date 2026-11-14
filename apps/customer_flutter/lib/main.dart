@@ -101,9 +101,30 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      // Tabs keep their state; the one being opened fades and slides up slightly
+      body: Stack(
+        children: [
+          for (var i = 0; i < _screens.length; i++)
+            Offstage(
+              offstage: i != _currentIndex,
+              child: TickerMode(
+                enabled: i == _currentIndex,
+                child: i == _currentIndex
+                    ? TweenAnimationBuilder<double>(
+                        key: ValueKey(i),
+                        tween: Tween(begin: 0, end: 1),
+                        duration: const Duration(milliseconds: 240),
+                        curve: Curves.easeOutCubic,
+                        child: _screens[i],
+                        builder: (context, v, child) => Opacity(
+                          opacity: v,
+                          child: Transform.translate(offset: Offset(0, 10 * (1 - v)), child: child),
+                        ),
+                      )
+                    : _screens[i],
+              ),
+            ),
+        ],
       ),
       floatingActionButton: (jumpRole != null && _currentIndex == 0)
           ? FloatingActionButton.extended(

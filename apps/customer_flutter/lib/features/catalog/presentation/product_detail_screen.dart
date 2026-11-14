@@ -533,13 +533,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Jami hisob:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                  Text(
-                    _formatCurrency(totalSum),
+                  // The total rolls to its new value when the quantity changes
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(end: totalSum.toDouble()),
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, _) => Text(
+                    _formatCurrency(value),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: AppColors.brandDark,
                     ),
+                  ),
                   ),
                   Text(
                     '(${_formatCurrency(activeUnitPrice)} / ${unitLabel(widget.product.unit)})',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/motion.dart';
 import '../data/catalog_repository.dart';
 import '../domain/product_model.dart';
 import 'product_card.dart';
@@ -131,7 +132,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           padding: const EdgeInsets.all(16),
                           gridDelegate: productGridDelegate,
                           itemCount: _products.length,
-                          itemBuilder: (context, i) => ProductCard(product: _products[i]),
+                          itemBuilder: (context, i) => Reveal(
+                            key: ValueKey(_products[i].id),
+                            delayMs: (i % 4) * 60,
+                            child: ProductCard(product: _products[i]),
+                          ),
                         ),
                       ),
           ),

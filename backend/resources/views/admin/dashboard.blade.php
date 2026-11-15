@@ -188,7 +188,7 @@
                             <th class="p-3.5">Komissiya</th>
                             <th class="p-3.5">Reyting</th>
                             <th class="p-3.5">Holati</th>
-                            <th class="p-3.5 text-right">Moderatsiya</th>
+                            <th class="p-3.5 text-right whitespace-nowrap">Holat & Amal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -217,25 +217,32 @@
                                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 uppercase tracking-wide">To'xtatilgan</span>
                                     @endif
                                 </td>
-                                <td class="p-3.5 text-right space-x-1">
-                                    @if($s->status !== 'active')
-                                        <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="status" value="active">
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px]">
-                                                Tasdiqlash
-                                            </button>
-                                        </form>
-                                    @endif
-                                    @if($s->status !== 'suspended')
-                                        <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="status" value="suspended">
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px]">
-                                                To'xtatish
-                                            </button>
-                                        </form>
-                                    @endif
+                                <td class="p-3.5 text-right whitespace-nowrap">
+                                    <div class="inline-flex items-center justify-end gap-1.5">
+                                        @if($s->status !== 'active')
+                                            <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="active">
+                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition inline-flex items-center gap-1" title="Do'konni faollashtirish">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>Faollashtirish</span>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline" onsubmit="return confirm('{{ addslashes($s->name) }} do\'konini to\'xtatmoqchimisiz?')">
+                                                @csrf
+                                                <input type="hidden" name="status" value="suspended">
+                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Do'kon faoliyatini to'xtatish">
+                                                    <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>To'xtatish</span>
+                                                </button>
+                                            </form>
+                                        @endif
+                                        <a href="{{ route('seller.show', $s->slug) }}" target="_blank" class="h-7.5 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-semibold text-xs transition inline-flex items-center gap-1" title="Do'kon vitrinasini ochish">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            <span>Ko'rish</span>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -265,7 +272,7 @@
                             <th class="p-3.5">Birligi & Qoldiq</th>
                             <th class="p-3.5">Boshlang'ich Narx</th>
                             <th class="p-3.5">Holati</th>
-                            <th class="p-3.5 text-right">Moderatsiya</th>
+                            <th class="p-3.5 text-right whitespace-nowrap">Amallar & Moderatsiya</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -313,61 +320,96 @@
                                         —
                                     @endif
                                 </td>
-                                <td class="p-3.5">
+                                <td class="p-3.5 whitespace-nowrap">
                                     @if($prod->status === 'approved')
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">Tasdiqlangan</span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Tasdiqlangan
+                                        </span>
                                     @elseif($prod->status === 'pending')
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">Kutilmoqda</span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Kutilmoqda
+                                        </span>
                                     @else
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 uppercase">Rad etilgan</span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Rad etilgan
+                                        </span>
                                     @endif
                                     @if(!$prod->is_active)
-                                        <span class="block text-[10px] text-rose-500 font-bold mt-0.5">(Nofaol)</span>
+                                        <span class="block text-[10px] text-slate-400 font-medium mt-0.5">Yashirilgan (Nofaol)</span>
                                     @endif
                                 </td>
-                                <td class="p-3.5 text-right space-x-1">
-                                    @if($prod->status !== 'approved')
+                                <td class="p-3.5 text-right whitespace-nowrap">
+                                    <div class="inline-flex items-center justify-end gap-1.5">
+                                        {{-- 1. Status Actions (Approve / Reject) --}}
+                                        @if($prod->status === 'pending')
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="approved">
+                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition inline-flex items-center gap-1" title="Mahsulotni tasdiqlash">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>Tasdiqlash</span>
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="rejected">
+                                                <button type="submit" class="h-7.5 px-2 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Rad etish">
+                                                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    <span>Rad</span>
+                                                </button>
+                                            </form>
+                                        @elseif($prod->status === 'rejected')
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="approved">
+                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Qayta tasdiqlash">
+                                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>Tasdiqlash</span>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline" onsubmit="return confirm('&quot;{{ addslashes($prod->name) }}&quot; rad etilsinmi?')">
+                                                @csrf
+                                                <input type="hidden" name="status" value="rejected">
+                                                <button type="submit" class="h-7.5 px-2 rounded-lg bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Moderatsiyadan rad etish">
+                                                    <span>Rad etish</span>
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        {{-- 2. Visibility Toggle (Ko'rsatish / Yashirish) --}}
                                         <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
                                             @csrf
-                                            <input type="hidden" name="status" value="approved">
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px]">
-                                                Tasdiqlash
+                                            <input type="hidden" name="is_active" value="{{ $prod->is_active ? 0 : 1 }}">
+                                            <button type="submit" 
+                                                    class="h-7.5 px-2.5 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1 {{ $prod->is_active ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900' : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100' }}"
+                                                    title="{{ $prod->is_active ? 'Mahsulotni xaridorlardan yashirish' : 'Mahsulotni faollashtirish' }}">
+                                                <span>{{ $prod->is_active ? '👁️ Yashirish' : '👁️‍🗨️ Ko\'rsatish' }}</span>
                                             </button>
                                         </form>
-                                    @endif
-                                    @if($prod->status !== 'rejected')
-                                        <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="status" value="rejected">
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px]">
-                                                Rad etish
+
+                                        {{-- 3. Edit & Delete --}}
+                                        @if($canManagePayouts)
+                                            <button type="button" 
+                                                    @click="editProduct = (editProduct === {{ $prod->id }} ? null : {{ $prod->id }})"
+                                                    class="h-7.5 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-xs font-semibold transition inline-flex items-center gap-1"
+                                                    title="Mahsulot ma'lumotlarini tahrirlash">
+                                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                <span>Tahrirlash</span>
                                             </button>
-                                        </form>
-                                    @endif
-                                    <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        <input type="hidden" name="is_active" value="{{ $prod->is_active ? 0 : 1 }}">
-                                        <button type="submit" class="px-2 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-[11px]">
-                                            {{ $prod->is_active ? 'Yashirish' : 'Ko\'rsatish' }}
-                                        </button>
-                                    </form>
-                                    @if($canManagePayouts)
-                                        <button type="button" @click="editProduct = (editProduct === {{ $prod->id }} ? null : {{ $prod->id }})"
-                                                class="px-2 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-[11px]">
-                                            ✏️ Tahrirlash
-                                        </button>
-                                        <form action="{{ route('admin.products.delete', $prod->id) }}" method="POST" class="inline"
-                                              onsubmit="return confirm('&quot;{{ addslashes($prod->name) }}&quot; o\'chirilsinmi? Xaridorlar uni boshqa ko\'rmaydi.')">
-                                            @csrf
-                                            @method('DELETE')
-                                            @foreach(request()->only('products_q', 'products_status', 'products_page') as $k => $v)
-                                                <input type="hidden" name="{{ $k }}" value="{{ $v }}">
-                                            @endforeach
-                                            <button type="submit" class="px-2 py-1 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 font-semibold text-[11px]">
-                                                🗑 O'chirish
-                                            </button>
-                                        </form>
-                                    @endif
+                                            <form action="{{ route('admin.products.delete', $prod->id) }}" method="POST" class="inline"
+                                                  onsubmit="return confirm('&quot;{{ addslashes($prod->name) }}&quot; o\'chirilsinmi? Xaridorlar uni boshqa ko\'rmaydi.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                @foreach(request()->only('products_q', 'products_status', 'products_page') as $k => $v)
+                                                    <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+                                                @endforeach
+                                                <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Mahsulotni o'chirish">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             @if($canManagePayouts)
@@ -444,9 +486,9 @@
                             <th class="p-3.5">Email</th>
                             <th class="p-3.5">Telefon</th>
                             <th class="p-3.5">Joriy Roli</th>
-                            <th class="p-3.5">Rolni O'zgartirish</th>
+                            <th class="p-3.5 whitespace-nowrap">Rol Biriktirish</th>
                             <th class="p-3.5">Holati</th>
-                            <th class="p-3.5 text-right">Amal</th>
+                            <th class="p-3.5 text-right whitespace-nowrap">Amallar</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -465,54 +507,60 @@
                                         </span>
                                     @endforeach
                                 </td>
-                                <td class="p-3.5">
-                                    <form action="{{ route('admin.users.role', $u->id) }}" method="POST" class="flex items-center gap-1.5">
+                                <td class="p-3.5 whitespace-nowrap">
+                                    <form action="{{ route('admin.users.role', $u->id) }}" method="POST" class="inline-flex items-center gap-1.5">
                                         @csrf
-                                        <select name="role" class="h-8 px-2 rounded-lg bg-slate-50 border border-slate-300 text-[11px] font-bold text-slate-800 outline-none focus:border-slate-900">
+                                        <select name="role" class="h-7.5 px-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-900">
                                             @foreach($roles as $r)
                                                 <option value="{{ $r->name }}" {{ $u->hasRole($r->name) ? 'selected' : '' }}>
                                                     {{ $r->label ?? $r->name }}
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <button type="submit" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-950 text-white font-bold text-[10px] transition" title="Rolni yangilash">
+                                        <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition" title="Rolni yangilash">
                                             Saqlash
                                         </button>
                                     </form>
                                 </td>
-                                <td class="p-3.5">
+                                <td class="p-3.5 whitespace-nowrap">
                                     @if($u->is_active)
-                                        <span class="text-emerald-700 font-bold text-[11px]">● Faol</span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Faol
+                                        </span>
                                     @else
-                                        <span class="text-rose-700 font-bold text-[11px]">● Bloklangan</span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Bloklangan
+                                        </span>
                                     @endif
                                 </td>
-                                <td class="p-3.5 text-right">
+                                <td class="p-3.5 text-right whitespace-nowrap">
                                     <div class="inline-flex items-center justify-end gap-1.5">
                                         <button type="button" 
                                                 @click="editUserModal = true; editUser = { id: {{ $u->id }}, name: '{{ addslashes($u->name) }}', email: '{{ addslashes($u->email) }}', phone: '{{ addslashes($u->phone ?? '') }}' }"
-                                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 transition"
+                                                class="h-7.5 px-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition inline-flex items-center gap-1"
                                                 title="Tahrirlash">
-                                            ✏️ Tahrirlash
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            <span>Tahrirlash</span>
                                         </button>
                                         <button type="button" 
                                                 @click="passwordModal = true; targetUser = { id: {{ $u->id }}, name: '{{ addslashes($u->name) }}', email: '{{ addslashes($u->email) }}' }"
-                                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition"
+                                                class="h-7.5 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold text-xs transition inline-flex items-center gap-1"
                                                 title="Parolni yangilash">
-                                            🔑 Parol
+                                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                            <span>Parol</span>
                                         </button>
                                         <form action="{{ route('admin.users.status', $u->id) }}" method="POST" class="inline">
                                             @csrf
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-bold {{ $u->is_active ? 'bg-slate-200 hover:bg-rose-100 hover:text-rose-700 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}">
-                                                {{ $u->is_active ? 'Bloklash' : 'Faollashtirish' }}
+                                            <button type="submit" class="h-7.5 px-2.5 rounded-lg text-xs font-semibold border transition inline-flex items-center gap-1 {{ $u->is_active ? 'bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border-slate-200 hover:border-rose-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 font-bold' }}" title="{{ $u->is_active ? 'Hisobni bloklash' : 'Hisobni faollashtirish' }}">
+                                                <span>{{ $u->is_active ? 'Bloklash' : 'Faollashtirish' }}</span>
                                             </button>
                                         </form>
                                         @if(Auth::id() !== $u->id)
                                             <form action="{{ route('admin.users.delete', $u->id) }}" method="POST" class="inline" onsubmit="return confirm('Haqiqatan ham {{ addslashes($u->name) }} hisobini o\'chirmoqchimisiz?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="O'chirish">
-                                                    🗑️
+                                                <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Foydalanuvchini o'chirish">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 </button>
                                             </form>
                                         @endif
@@ -548,7 +596,7 @@
                             <th class="p-3.5">Xaridor & Manzil</th>
                             <th class="p-3.5">Holati</th>
                             <th class="p-3.5">Biriktirilgan Kuryer</th>
-                            <th class="p-3.5 text-right">Amal</th>
+                            <th class="p-3.5 text-right whitespace-nowrap">Kuzatuv</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -585,10 +633,10 @@
                                         {{ $sh->status }}
                                     </span>
                                 </td>
-                                <td class="p-3.5">
-                                    <form action="{{ route('admin.shipments.assign', $sh->id) }}" method="POST" class="flex items-center gap-1.5">
+                                <td class="p-3.5 whitespace-nowrap">
+                                    <form action="{{ route('admin.shipments.assign', $sh->id) }}" method="POST" class="inline-flex items-center gap-1.5">
                                         @csrf
-                                        <select name="courier_id" class="h-8 px-2 rounded-lg bg-slate-50 border border-slate-300 text-[11px] font-medium text-slate-800 outline-none focus:border-slate-900">
+                                        <select name="courier_id" class="h-7.5 px-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-slate-900">
                                             <option value="">-- Kuryer tanlang --</option>
                                             @foreach($couriers as $cr)
                                                 <option value="{{ $cr->id }}" {{ $sh->courier_id === $cr->id ? 'selected' : '' }}>
@@ -596,14 +644,15 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <button type="submit" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] transition whitespace-nowrap">
+                                        <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition whitespace-nowrap">
                                             Biriktirish
                                         </button>
                                     </form>
                                 </td>
-                                <td class="p-3.5 text-right">
-                                    <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] transition">
-                                        <span>📍</span> Xarita
+                                <td class="p-3.5 text-right whitespace-nowrap">
+                                    <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="h-7.5 px-2.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-semibold text-xs transition inline-flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                        <span>Xarita</span>
                                     </a>
                                 </td>
                             </tr>
@@ -657,7 +706,7 @@
                             <th class="p-3.5">Sotuvchilar</th>
                             <th class="p-3.5">Jami Summa</th>
                             <th class="p-3.5">Sana</th>
-                            <th class="p-3.5 text-right">Amal</th>
+                            <th class="p-3.5 text-right whitespace-nowrap">Holat & Amal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -693,40 +742,41 @@
                                 </td>
                                 <td class="p-3.5 font-black text-slate-900">{{ number_format($order->grand_total) }} UZS</td>
                                 <td class="p-3.5 text-slate-400">{{ $order->created_at->format('Y-m-d H:i') }}</td>
-                                <td class="p-3.5 text-right">
+                                <td class="p-3.5 text-right whitespace-nowrap">
                                     @php
                                         $shipment = $order->suborders->flatMap->shipments->first();
                                     @endphp
-                                    <div class="inline-flex flex-wrap justify-end gap-1.5 items-center">
+                                    <div class="inline-flex items-center justify-end gap-1.5">
                                         <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" class="inline-flex items-center">
                                             @csrf
-                                            <select name="status" onchange="this.form.submit()" class="h-7 text-[10px] font-bold rounded-lg bg-slate-100 border border-slate-300 text-slate-800 px-1.5 py-0 outline-none focus:border-slate-900 cursor-pointer" title="Buyurtma holatini o'zgartirish">
-                                                <option value="pending_payment" {{ $order->status === 'pending_payment' ? 'selected' : '' }}>⏳ To'lov kutilmoqda</option>
+                                            <select name="status" onchange="this.form.submit()" class="h-7.5 px-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-900 cursor-pointer" title="Buyurtma holatini tezkor o'zgartirish">
+                                                <option value="pending_payment" {{ $order->status === 'pending_payment' ? 'selected' : '' }}>⏳ To'lov</option>
                                                 <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>⚙️ Jarayonda</option>
-                                                <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>✅ Yakunlangan</option>
-                                                <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>❌ Bekor qilingan</option>
+                                                <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>✅ Yakunlandi</option>
+                                                <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>❌ Bekor</option>
                                             </select>
                                         </form>
-                                        <a href="{{ route('orders.detail', $order->order_number) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-bold text-[11px] transition">
-                                            Batafsil
+                                        <a href="{{ route('orders.detail', $order->order_number) }}" target="_blank" class="h-7.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition inline-flex items-center gap-1" title="Buyurtma tafsilotlarini ko'rish">
+                                            <span>Batafsil</span>
                                         </a>
                                         @if($shipment)
-                                            <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] transition">
-                                                <span>📍</span> Xarita
+                                            <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" target="_blank" class="h-7.5 px-2 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Kuryer harakatini kuzatish">
+                                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                <span>Xarita</span>
                                             </a>
                                         @endif
+                                        @if($canManagePayouts && in_array($order->id, $cancellableOrderIds, true))
+                                            <form action="{{ route('admin.orders.cancel', $order->id) }}" method="POST" class="inline"
+                                                  onsubmit="const r = prompt('Buyurtma #{{ $order->order_number }} bekor qilish sababini kiriting (omborga qaytariladi):'); if(!r || r.trim().length < 3) { if(r !== null) alert('Bekor qilish sababini to\'liqroq yozing!'); return false; } this.reason.value = r; return true;">
+                                                @csrf
+                                                <input type="hidden" name="reason" value="">
+                                                <button type="submit" class="h-7.5 px-2 rounded-lg bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Bekor qilish va tovarlarni omborga qaytarish">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    <span>Bekor</span>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
-                                    @if($canManagePayouts && in_array($order->id, $cancellableOrderIds, true))
-                                        <form action="{{ route('admin.orders.cancel', $order->id) }}" method="POST" class="mt-2 flex justify-end gap-1.5"
-                                              onsubmit="return confirm('Buyurtma #{{ $order->order_number }} bekor qilinsinmi?')">
-                                            @csrf
-                                            <input type="text" name="reason" required minlength="3" maxlength="255" placeholder="Sabab"
-                                                   class="h-7 w-28 px-2 rounded-lg border border-slate-300 text-[11px]">
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-[11px]">
-                                                Bekor qilish
-                                            </button>
-                                        </form>
-                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -1214,7 +1264,7 @@
                                 <th class="p-3.5 text-center">Mahsulotlar</th>
                                 <th class="p-3.5 text-center">Tartib</th>
                                 <th class="p-3.5 text-center">Holati</th>
-                                <th class="p-3.5 text-right">Amallar</th>
+                                <th class="p-3.5 text-right whitespace-nowrap">Amallar</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -1232,20 +1282,22 @@
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">Nofaol</span>
                                         @endif
                                     </td>
-                                    <td class="p-3.5 text-right space-x-1.5">
-                                        <form action="{{ route('admin.categories.status', $cat->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 hover:bg-slate-100 transition">
-                                                {{ $cat->is_active ? 'Nofaol qilish' : 'Faollashtirish' }}
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('admin.categories.delete', $cat->id) }}" method="POST" class="inline" onsubmit="return confirm('Kategoriyani o\'chirishni tasdiqlaysizmi?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition">
-                                                O'chirish
-                                            </button>
-                                        </form>
+                                    <td class="p-3.5 text-right whitespace-nowrap">
+                                        <div class="inline-flex items-center justify-end gap-1.5">
+                                            <form action="{{ route('admin.categories.status', $cat->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1 {{ $cat->is_active ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold' }}">
+                                                    <span>{{ $cat->is_active ? 'Nofaol qilish' : 'Faollashtirish' }}</span>
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('admin.categories.delete', $cat->id) }}" method="POST" class="inline" onsubmit="return confirm('Kategoriyani o\'chirishni tasdiqlaysizmi?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Kategoriyani o'chirish">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -1321,7 +1373,7 @@
                                     <th class="p-3.5 text-center">Ishlatildi / Limit</th>
                                     <th class="p-3.5">Amal Qilish Muddati</th>
                                     <th class="p-3.5 text-center">Holati</th>
-                                    <th class="p-3.5 text-right">Amallar</th>
+                                    <th class="p-3.5 text-right whitespace-nowrap">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -1351,20 +1403,22 @@
                                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">To'xtatilgan</span>
                                             @endif
                                         </td>
-                                        <td class="p-3.5 text-right space-x-1.5">
-                                            <form action="{{ route('admin.promocodes.toggle', $pr->id) }}" method="POST" class="inline">
-                                                @csrf
-                                                <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 hover:bg-slate-100 transition">
-                                                    {{ $pr->is_active ? 'To\'xtatish' : 'Faollashtirish' }}
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('admin.promocodes.delete', $pr->id) }}" method="POST" class="inline" onsubmit="return confirm('Promokodni o\'chirishni tasdiqlaysizmi?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition">
-                                                    O'chirish
-                                                </button>
-                                            </form>
+                                        <td class="p-3.5 text-right whitespace-nowrap">
+                                            <div class="inline-flex items-center justify-end gap-1.5">
+                                                <form action="{{ route('admin.promocodes.toggle', $pr->id) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="h-7.5 px-2.5 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1 {{ $pr->is_active ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold' }}">
+                                                        <span>{{ $pr->is_active ? 'To\'xtatish' : 'Faollashtirish' }}</span>
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('admin.promocodes.delete', $pr->id) }}" method="POST" class="inline" onsubmit="return confirm('Promokodni o\'chirishni tasdiqlaysizmi?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Promokodni o'chirish">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -1429,15 +1483,16 @@
                                 <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
                                     <form action="{{ route('admin.banners.status', $bn->id) }}" method="POST" class="inline">
                                         @csrf
-                                        <button type="submit" class="text-xs font-semibold text-slate-600 hover:text-slate-900">
+                                        <button type="submit" class="h-7 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">
                                             {{ $bn->is_active ? 'Nofaol qilish' : 'Faollashtirish' }}
                                         </button>
                                     </form>
                                     <form action="{{ route('admin.banners.delete', $bn->id) }}" method="POST" class="inline" onsubmit="return confirm('Bannerni o\'chirmoqchimisiz?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-800">
-                                            O'chirish
+                                        <button type="submit" class="h-7 px-2 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>O'chirish</span>
                                         </button>
                                     </form>
                                 </div>

@@ -85,12 +85,17 @@ Route::post('/install', [\App\Http\Controllers\Install\InstallerController::clas
 Route::get('/admin', [\App\Http\Controllers\Web\AdminDashboardController::class, 'index'])->name('admin.dashboard');
 Route::get('/superadmin', [\App\Http\Controllers\Web\AdminDashboardController::class, 'index'])->name('superadmin.dashboard');
 Route::post('/admin/sellers/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateSellerStatus'])->name('admin.sellers.status');
+Route::post('/admin/users', [\App\Http\Controllers\Web\AdminDashboardController::class, 'storeUser'])->name('admin.users.store');
+Route::put('/admin/users/{id}', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateUser'])->whereNumber('id')->name('admin.users.update');
+Route::delete('/admin/users/{id}', [\App\Http\Controllers\Web\AdminDashboardController::class, 'deleteUser'])->whereNumber('id')->name('admin.users.delete');
 Route::post('/admin/users/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateUserStatus'])->name('admin.users.status');
 Route::post('/admin/users/{id}/role', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateUserRole'])->name('admin.users.role');
 Route::post('/admin/users/{id}/password', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateUserPassword'])->name('admin.users.password');
 Route::post('/admin/products/{id}', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateProduct'])->whereNumber('id')->name('admin.products.update');
 Route::delete('/admin/products/{id}', [\App\Http\Controllers\Web\AdminDashboardController::class, 'deleteProduct'])->whereNumber('id')->name('admin.products.delete');
 Route::post('/admin/orders/{id}/cancel', [\App\Http\Controllers\Web\AdminDashboardController::class, 'cancelOrder'])->whereNumber('id')->middleware('throttle:20,1')->name('admin.orders.cancel');
+Route::post('/admin/orders/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateOrderStatus'])->whereNumber('id')->name('admin.orders.status');
+Route::post('/admin/settings', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateSettings'])->name('admin.settings.update');
 Route::post('/admin/products/{id}/status', [\App\Http\Controllers\Web\AdminDashboardController::class, 'updateProductStatus'])->name('admin.products.status');
 Route::post('/admin/shipments/{id}/assign', [\App\Http\Controllers\Web\AdminDashboardController::class, 'assignCourier'])->name('admin.shipments.assign');
 Route::post('/admin/refunds/{id}/review', [\App\Http\Controllers\Web\AdminDashboardController::class, 'reviewRefund'])->name('admin.refunds.review');

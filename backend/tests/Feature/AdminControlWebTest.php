@@ -181,4 +181,110 @@ class AdminControlWebTest extends TestCase
 
         $this->assertSame('Himoyalangan', $product->fresh()->name);
     }
+
+    public function test_admin_can_create_user_with_role(): void
+    {
+        $admin = $this->user('admin');
+        Role::firstOrCreate(['name' => 'seller_owner'], ['label' => 'Do\'kon egasi']);
+
+        $response = $this->actingAs($admin)->post(route('admin.users.store'), [
+            'name' => 'Yangi Sotuvchi Aka',
+            'email' => 'new_seller@market.uz',
+            'phone' => '+998901234999',
+            'password' => 'Password123!',
+            'role' => 'seller_owner',
+            'is_active' => '1',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard', ['tab' => 'users']));
+        $response->assertSessionHas('success');
+
+        $newUser = User::where('email', 'new_seller@market.uz')->first();
+        $this->assertNotNull($newUser);
+        $this->assertSame('Yangi Sotuvchi Aka', $newUser->name);
+        $this->assertTrue($newUser->hasRole('seller_owner'));
+    }
+
+    public function test_admin_can_update_user_details(): void
+    {
+        $admin = $this->user('admin');
+        $customer = $this->user('customer', ['name' => 'Eski Ism', 'email' => 'eski@market.uz', 'phone' => '+998901110000']);
+
+        $response = $this->actingAs($admin)->put(route('admin.users.update', $customer->id), [
+            'name' => 'Yangilangan Ism',
+            'email' => 'yangilangan@market.uz',
+            'phone' => '+998902220000',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard', ['tab' => 'users']));
+        $response->assertSessionHas('success');
+
+        $customer->refresh();
+        $this->assertSame('Yangilangan Ism', $customer->name);
+        $this->assertSame('yangilangan@market.uz', $customer->email);
+        $this->assertSame('+998902220000', $customer->phone);
+    }
+
+    public function test_admin_can_delete_user(): void
+    {
+        $admin = $this->user('admin');
+        $customer = $this->user('customer');
+
+        $response = $this->actingAs($admin)->delete(route('admin.users.delete', $customer->id));
+
+        $response->assertRedirect(route('admin.dashboard', ['tab' => 'users']));
+        $response->assertSessionHas('success');
+
+        $this->assertNull(User::find($customer->id));
+    }
+
+    public function test_admin_can_update_order_status(): void
+    {
+        $admin = $this->user('admin');
+        $customer = $this->user('customer');
+        $order = $this->order($customer, 'ORD-STATUS-TEST-1', 'pending_payment');
+
+        $response = $this->actingAs($admin)->post(route('admin.orders.status', $order->id), [
+            'status' => 'processing',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard', ['tab' => 'orders']));
+        $response->assertSessionHas('success');
+        $this->assertSame('processing', $order->fresh()->status);
+    }
+
+    public function test_admin_can_update_platform_settings(): void
+    {
+        $admin = $this->user('admin');
+
+        $response = $this->actingAs($admin)->post(route('admin.settings.update'), [
+            'site_name' => 'Marketplace Yangi Nomi',
+            'site_tagline' => 'Eng zo\'r bozor',
+            'contact_phone' => '+998 71 999-99-99',
+            'contact_email' => 'support@market.uz',
+            'office_address' => 'Toshkent sh.',
+            'default_commission_rate' => 7.5,
+            'standard_delivery_fee' => 30000,
+            'free_delivery_threshold' => 500000,
+            'registration_enabled' => '1',
+            'maintenance_mode' => '0',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard', ['tab' => 'settings']));
+        $response->assertSessionHas('success');
+
+        $this->assertSame('Marketplace Yangi Nomi', \App\Models\PlatformSetting::get('site_name'));
+        $this->assertSame('7.5', \App\Models\PlatformSetting::get('default_commission_rate'));
+    }
+
+    public function test_admin_dashboard_renders_settings_and_user_crud_buttons(): void
+    {
+        $admin = $this->user('admin');
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard', ['tab' => 'users']));
+        $response->assertOk();
+        $response->assertSee('Yangi Foydalanuvchi');
+        $response->assertSee('Tahrirlash');
+        $response->assertSee('Sozlamalar');
+    }
 }

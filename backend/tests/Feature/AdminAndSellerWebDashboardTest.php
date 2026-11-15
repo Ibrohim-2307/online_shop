@@ -138,7 +138,8 @@ class AdminAndSellerWebDashboardTest extends TestCase
         $superadmin = User::factory()->create();
         $superadmin->assignRole('superadmin');
 
-        $admin = User::where('email', 'admin@market.uz')->first();
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
 
         $response = $this->actingAs($admin)->post("/admin/users/{$superadmin->id}/password", [
             'password' => 'HackedPassword123!',
@@ -152,7 +153,8 @@ class AdminAndSellerWebDashboardTest extends TestCase
 
     public function test_admin_cannot_reset_another_admin_or_moderator_password(): void
     {
-        $admin1 = User::where('email', 'admin@market.uz')->first();
+        $admin1 = User::factory()->create();
+        $admin1->assignRole('admin');
 
         $admin2 = User::factory()->create([
             'password' => bcrypt('OriginalAdmin2Pass123!'),

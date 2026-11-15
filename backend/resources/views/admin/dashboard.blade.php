@@ -9,7 +9,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>[x-cloak] { display: none !important; }</style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: '{{ $initialTab ?? 'sellers' }}', editProduct: null, passwordModal: false, targetUser: { id: null, name: '', email: '' } }" x-init="$watch('currentTab', t => history.replaceState(null, '', '?tab=' + t))">
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans" x-data="{ currentTab: '{{ $initialTab ?? 'sellers' }}', editProduct: null, passwordModal: false, targetUser: { id: null, name: '', email: '' }, addUserModal: false, editUserModal: false, editUser: { id: null, name: '', email: '', phone: '' } }" x-init="$watch('currentTab', t => history.replaceState(null, '', '?tab=' + t))">
 
     <!-- Top Admin Header -->
     <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
@@ -155,6 +155,9 @@
                         💾 Zaxira
                     </button>
                 @endif
+                <button @click="currentTab = 'settings'" :class="currentTab === 'settings' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 bg-white'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+                    ⚙️ Sozlamalar
+                </button>
             </div>
 
             <!-- Fast Excel / CSV Export Dropdown / Buttons -->
@@ -422,11 +425,16 @@
             <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h3 class="font-bold text-slate-900 text-sm">Foydalanuvchilar va Rollar Boshqaruvi</h3>
-                    <p class="text-[11px] text-slate-500">Topildi: {{ $users->total() }} ta. Administrator rolini faqat Superadmin bera oladi.</p>
+                    <p class="text-[11px] text-slate-500">Topildi: {{ $users->total() }} ta. Barcha foydalanuvchilarni to'liq nazorat qilish, tahrirlash va yangi qo'shish.</p>
                 </div>
-                <x-admin.list-filter tab="users" search-name="users_q" :search-value="$filters['users_q']"
-                    placeholder="Ism, telefon yoki email" status-name="users_status" :status-value="$filters['users_status']"
-                    :statuses="['active' => 'Faol', 'blocked' => 'Bloklangan']" />
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" @click="addUserModal = true" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                        <span>➕</span> <span>Yangi Foydalanuvchi</span>
+                    </button>
+                    <x-admin.list-filter tab="users" search-name="users_q" :search-value="$filters['users_q']"
+                        placeholder="Ism, telefon yoki email" status-name="users_status" :status-value="$filters['users_status']"
+                        :statuses="['active' => 'Faol', 'blocked' => 'Bloklangan']" />
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-600">
@@ -482,6 +490,12 @@
                                 <td class="p-3.5 text-right">
                                     <div class="inline-flex items-center justify-end gap-1.5">
                                         <button type="button" 
+                                                @click="editUserModal = true; editUser = { id: {{ $u->id }}, name: '{{ addslashes($u->name) }}', email: '{{ addslashes($u->email) }}', phone: '{{ addslashes($u->phone ?? '') }}' }"
+                                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 transition"
+                                                title="Tahrirlash">
+                                            ✏️ Tahrirlash
+                                        </button>
+                                        <button type="button" 
                                                 @click="passwordModal = true; targetUser = { id: {{ $u->id }}, name: '{{ addslashes($u->name) }}', email: '{{ addslashes($u->email) }}' }"
                                                 class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition"
                                                 title="Parolni yangilash">
@@ -493,6 +507,15 @@
                                                 {{ $u->is_active ? 'Bloklash' : 'Faollashtirish' }}
                                             </button>
                                         </form>
+                                        @if(Auth::id() !== $u->id)
+                                            <form action="{{ route('admin.users.delete', $u->id) }}" method="POST" class="inline" onsubmit="return confirm('Haqiqatan ham {{ addslashes($u->name) }} hisobini o\'chirmoqchimisiz?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="O'chirish">
+                                                    🗑️
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -674,7 +697,16 @@
                                     @php
                                         $shipment = $order->suborders->flatMap->shipments->first();
                                     @endphp
-                                    <div class="inline-flex flex-wrap justify-end gap-1.5">
+                                    <div class="inline-flex flex-wrap justify-end gap-1.5 items-center">
+                                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" class="inline-flex items-center">
+                                            @csrf
+                                            <select name="status" onchange="this.form.submit()" class="h-7 text-[10px] font-bold rounded-lg bg-slate-100 border border-slate-300 text-slate-800 px-1.5 py-0 outline-none focus:border-slate-900 cursor-pointer" title="Buyurtma holatini o'zgartirish">
+                                                <option value="pending_payment" {{ $order->status === 'pending_payment' ? 'selected' : '' }}>⏳ To'lov kutilmoqda</option>
+                                                <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>⚙️ Jarayonda</option>
+                                                <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>✅ Yakunlangan</option>
+                                                <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>❌ Bekor qilingan</option>
+                                            </select>
+                                        </form>
                                         <a href="{{ route('orders.detail', $order->order_number) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-bold text-[11px] transition">
                                             Batafsil
                                         </a>
@@ -1455,6 +1487,243 @@
             </div>
             <div class="p-4 border-t border-slate-100">
                 {{ $auditLogs->links() }}
+            </div>
+        </div>
+
+        <!-- TAB: SETTINGS & PLATFORM CONTROL -->
+        <div x-show="currentTab === 'settings'" x-cloak class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">⚙️ Platforma va Sayt Sozlamalari</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sayt parametrlari, aloqa ma'lumotlari, komissiya foizi, yetkazib berish narxlari va tizim rejimlarini to'liq boshqaring.</p>
+                </div>
+            </div>
+
+            <form action="{{ route('admin.settings.update') }}" method="POST" class="p-6 space-y-6">
+                @csrf
+
+                <!-- Section 1: Platform Identity -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-lime-500"></span> 1. Sayt Ma'lumotlari & Brending
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Platforma Nomi</label>
+                            <input type="text" name="site_name" value="{{ $platformSettings['site_name'] ?? 'Marketplace' }}" required
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Platforma Shiori (Tagline)</label>
+                            <input type="text" name="site_tagline" value="{{ $platformSettings['site_tagline'] ?? 'O\'zbekistondagi eng zamonaviy onlayn bozor' }}"
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Contact Information -->
+                <div class="pt-4 border-t border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> 2. Bog'lanish & Mijozlar Qo'llab-quvvatlash
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Qo'llab-quvvatlash Telefoni</label>
+                            <input type="text" name="contact_phone" value="{{ $platformSettings['contact_phone'] ?? '+998 71 200-00-00' }}" required
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Aloqa Emaili</label>
+                            <input type="email" name="contact_email" value="{{ $platformSettings['contact_email'] ?? 'info@market.uz' }}" required
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Ofis Manzili</label>
+                            <input type="text" name="office_address" value="{{ $platformSettings['office_address'] ?? 'Toshkent sh., Bunyodkor ko\'chasi, 42-uy' }}"
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Finance & Logistics -->
+                <div class="pt-4 border-t border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> 3. Moliya, Komissiya & Yetkazib Berish
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Standart Platforma Komissiyasi (%)</label>
+                            <input type="number" step="0.1" min="0" max="100" name="default_commission_rate" value="{{ $platformSettings['default_commission_rate'] ?? '5.0' }}" required
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                            <p class="text-[10px] text-slate-400 mt-1">Yangi sotuvchilar uchun avtomatik qo'llaniladi</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Standart Yetkazib Berish Narxi (UZS)</label>
+                            <input type="number" step="500" min="0" name="standard_delivery_fee" value="{{ $platformSettings['standard_delivery_fee'] ?? '25000' }}" required
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Bepul Yetkazib Berish Chegarasi (UZS)</label>
+                            <input type="number" step="1000" min="0" name="free_delivery_threshold" value="{{ $platformSettings['free_delivery_threshold'] ?? '300000' }}" required
+                                   class="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                            <p class="text-[10px] text-slate-400 mt-1">Shu summadan ortiq savatda kuryer bepul bo'ladi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: System Modes -->
+                <div class="pt-4 border-t border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> 4. Tizim Rejimlari & Xavfsizlik
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                            <div>
+                                <span class="font-bold text-xs text-slate-900 block">Yangi Foydalanuvchilar Ro'yxatdan O'tishi</span>
+                                <span class="text-[11px] text-slate-500">Yangi xaridor va sotuvchilar ro'yxatdan o'tishini ruxsat berish yoki to'xtatish</span>
+                            </div>
+                            <select name="registration_enabled" class="h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-800 outline-none focus:border-slate-900">
+                                <option value="1" {{ ($platformSettings['registration_enabled'] ?? '1') == '1' ? 'selected' : '' }}>✅ Ochiq (Ruxsat)</option>
+                                <option value="0" {{ ($platformSettings['registration_enabled'] ?? '1') == '0' ? 'selected' : '' }}>⛔ Yopiq (Cheklangan)</option>
+                            </select>
+                        </div>
+                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                            <div>
+                                <span class="font-bold text-xs text-slate-900 block">Texnik Ishlar Rejimi (Maintenance)</span>
+                                <span class="text-[11px] text-slate-500">Platformada profilaktika yoki ta'mirlash o'tkazilganda yoqiladi</span>
+                            </div>
+                            <select name="maintenance_mode" class="h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-800 outline-none focus:border-slate-900">
+                                <option value="0" {{ ($platformSettings['maintenance_mode'] ?? '0') == '0' ? 'selected' : '' }}>🟢 O'chirilgan (Sayt ishlamoqda)</option>
+                                <option value="1" {{ ($platformSettings['maintenance_mode'] ?? '0') == '1' ? 'selected' : '' }}>🔴 Yoqilgan (Texnik tanaffus)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer">
+                        <span>💾</span> <span>Sozlamalarni Saqlash</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Add User Modal -->
+        <div x-show="addUserModal" 
+             x-cloak 
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+             @keydown.escape.window="addUserModal = false">
+            <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 relative" 
+                 @click.away="addUserModal = false">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base shadow-xs">➕</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Yangi Foydalanuvchi Qo'shish</h4>
+                            <p class="text-[11px] text-slate-500">Tizimga yangi xaridor, sotuvchi, kuryer yoki administrator qo'shish</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="addUserModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition text-lg leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <form action="{{ route('admin.users.store') }}" method="POST" class="mt-4 space-y-3.5">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">To'liq Ism (F.I.O) <span class="text-rose-500">*</span></label>
+                        <input type="text" name="name" required placeholder="Masalan: Sardor Aliyev"
+                               class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Email <span class="text-rose-500">*</span></label>
+                            <input type="email" name="email" required placeholder="foydalanuvchi@market.uz"
+                                   class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Telefon Raqami</label>
+                            <input type="text" name="phone" placeholder="+998901234567"
+                                   class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Dastlabki Parol <span class="text-rose-500">*</span></label>
+                            <input type="password" name="password" required minlength="6" placeholder="Kamida 6 belgi"
+                                   class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Biriktiriladigan Rol <span class="text-rose-500">*</span></label>
+                            <select name="role" required class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 outline-none focus:border-slate-900">
+                                @foreach($roles as $r)
+                                    <option value="{{ $r->name }}">{{ $r->label ?? $r->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 pt-1">
+                        <input type="checkbox" id="add_is_active" name="is_active" value="1" checked class="w-4 h-4 rounded text-emerald-600 border-slate-300">
+                        <label for="add_is_active" class="text-xs font-semibold text-slate-700 cursor-pointer">Hisob faol bo'lsin</label>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="addUserModal = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition cursor-pointer">
+                            Yaratish
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit User Modal -->
+        <div x-show="editUserModal" 
+             x-cloak 
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+             @keydown.escape.window="editUserModal = false">
+            <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 relative" 
+                 @click.away="editUserModal = false">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-base shadow-xs">✏️</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Foydalanuvchini Tahrirlash</h4>
+                            <p class="text-[11px] text-slate-500">ID: #<span x-text="editUser.id"></span></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="editUserModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition text-lg leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <form :action="'/admin/users/' + (editUser.id || '')" method="POST" class="mt-4 space-y-3.5">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">To'liq Ism (F.I.O) <span class="text-rose-500">*</span></label>
+                        <input type="text" name="name" x-model="editUser.name" required
+                               class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Email <span class="text-rose-500">*</span></label>
+                        <input type="email" name="email" x-model="editUser.email" required
+                               class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Telefon Raqami</label>
+                        <input type="text" name="phone" x-model="editUser.phone" placeholder="+998901234567"
+                               class="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition">
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="editUserModal = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition cursor-pointer">
+                            Saqlash
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

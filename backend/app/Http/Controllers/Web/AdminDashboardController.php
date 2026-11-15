@@ -8,6 +8,7 @@ use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PlatformSetting;
 use App\Models\Product;
 use App\Models\Promocode;
 use App\Models\Refund;
@@ -70,6 +71,32 @@ class AdminDashboardController extends Controller
         $cancellation->cancel($order, $user, 'admin.order_cancelled', $validated['reason'], 'Administrator bekor qildi');
 
         return $back->with('success', "Buyurtma #{$order->order_number} bekor qilindi, band qilingan tovarlar omborga qaytdi.");
+    }
+
+    /**
+     * Administrator directly updates an order's status (pending_payment, processing, completed, cancelled).
+     */
+    public function updateOrderStatus(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Buyurtma holatini faqat administrator o'zgartira oladi.");
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:pending_payment,processing,completed,cancelled'],
+        ]);
+
+        $order = Order::findOrFail($id);
+        $oldStatus = $order->status;
+        $newStatus = $validated['status'];
+
+        $order->update(['status' => $newStatus]);
+
+        AuditService::log('admin.order_status_updated', $order, ['status' => $oldStatus], ['status' => $newStatus], $user);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'orders'])
+            ->with('success', "Buyurtma #{$order->order_number} holati '{$newStatus}' ga muvaffaqiyatli o'zgartirildi.");
     }
 
     /**
@@ -294,7 +321,9 @@ class AdminDashboardController extends Controller
         // Blocked / Suspicious Users
         $blockedUsers = User::where('is_active', false)->with('roles')->latest()->get();
 
-        $tabs = ['sellers', 'products', 'categories', 'marketing', 'analytics', 'users', 'shipments', 'orders', 'refunds', 'audit'];
+        $platformSettings = PlatformSetting::all()->pluck('value', 'key')->all();
+
+        $tabs = ['sellers', 'products', 'categories', 'marketing', 'analytics', 'users', 'shipments', 'orders', 'refunds', 'audit', 'settings'];
         if ($canManageBackups) {
             $tabs[] = 'backups';
         }
@@ -334,7 +363,8 @@ class AdminDashboardController extends Controller
             'payouts',
             'payoutBalances',
             'finance',
-            'canManagePayouts'
+            'canManagePayouts',
+            'platformSettings'
         ));
     }
 
@@ -598,6 +628,195 @@ class AdminDashboardController extends Controller
         ]);
 
         return back()->with('success', "Foydalanuvchi ({$targetUser->name}) paroli muvaffaqiyatli yangilandi va barcha faol sessiyalari tugatildi.");
+    }
+
+    /**
+     * Superadmin / Admin: Create a new user with name, email, phone, password and assigned role.
+     */
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Foydalanuvchi qo'shish huquqi faqat administratorga berilgan.");
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone'],
+            'password' => ['required', 'string', 'min:6'],
+            'role' => ['required', 'string', 'exists:roles,name'],
+            'is_active' => ['nullable'],
+        ], [
+            'name.required' => "Foydalanuvchi ismini kiriting.",
+            'email.required' => "Email manzilini kiriting.",
+            'email.unique' => "Bu email bilan boshqa foydalanuvchi ro'yxatdan o'tgan.",
+            'phone.unique' => "Bu telefon raqami bilan boshqa foydalanuvchi mavjud.",
+            'password.min' => "Parol kamida 6 belgidan iborat bo'lishi kerak.",
+        ]);
+
+        $roleName = $validated['role'];
+        if (in_array($roleName, ['superadmin', 'admin'], true) && !$user->hasRole('superadmin')) {
+            return back()->with('error', "Faqat Superadministrator yangi administrator yaratishi mumkin.");
+        }
+
+        $newUser = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => !empty($validated['phone']) ? $validated['phone'] : null,
+            'password' => Hash::make($validated['password']),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        $role = Role::where('name', $roleName)->first();
+        if ($role) {
+            $newUser->roles()->sync([$role->id]);
+        }
+
+        if (in_array($roleName, ['seller_owner', 'seller_manager', 'seller_operator'])) {
+            $seller = Seller::firstOrCreate(
+                ['slug' => Str::slug($newUser->name . '-store')],
+                [
+                    'name' => $newUser->name . " Do'koni",
+                    'legal_name' => $newUser->name . " XK",
+                    'status' => 'active',
+                    'commission_rate' => 5.0,
+                    'rating' => 5.0,
+                    'phone' => $newUser->phone,
+                    'email' => $newUser->email,
+                ]
+            );
+            SellerMember::firstOrCreate(
+                ['seller_id' => $seller->id, 'user_id' => $newUser->id],
+                ['role' => 'owner', 'is_active' => true]
+            );
+            $newUser->update(['seller_id' => $seller->id]);
+        }
+
+        AuditService::log('admin.user_created', $newUser, null, [
+            'created_by' => $user->id,
+            'role' => $roleName,
+            'email' => $newUser->email,
+        ]);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'users'])->with('success', "Yangi foydalanuvchi ({$newUser->name}) muvaffaqiyatli yaratildi.");
+    }
+
+    /**
+     * Superadmin / Admin: Edit user's name, email, phone.
+     */
+    public function updateUser(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Foydalanuvchini tahrirlash huquqi faqat administratorga berilgan.");
+        }
+
+        $targetUser = User::findOrFail($id);
+
+        if ($targetUser->hasRole(['superadmin', 'admin']) && !$user->hasRole('superadmin') && $user->id !== $targetUser->id) {
+            return back()->with('error', "Boshqa administrator ma'lumotlarini faqat Superadministrator o'zgartira oladi.");
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $id],
+            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone,' . $id],
+        ], [
+            'name.required' => "Foydalanuvchi ismini kiriting.",
+            'email.required' => "Email manzilini kiriting.",
+            'email.unique' => "Bu email band.",
+            'phone.unique' => "Bu telefon raqami band.",
+        ]);
+
+        $old = $targetUser->only(['name', 'email', 'phone']);
+        $targetUser->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => !empty($validated['phone']) ? $validated['phone'] : null,
+        ]);
+
+        AuditService::log('admin.user_updated', $targetUser, $old, $validated, $user);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'users'])->with('success', "Foydalanuvchi ({$targetUser->name}) ma'lumotlari muvaffaqiyatli yangilandi.");
+    }
+
+    /**
+     * Superadmin / Admin: Permanently delete or deactivate user.
+     */
+    public function deleteUser(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Foydalanuvchini o'chirish huquqi faqat administratorga berilgan.");
+        }
+
+        $targetUser = User::findOrFail($id);
+
+        if ($targetUser->id === $user->id) {
+            return back()->with('error', "O'z hisobingizni o'chira olmaysiz.");
+        }
+
+        if ($targetUser->hasRole('superadmin')) {
+            $activeSuperadmins = User::whereHas('roles', fn($q) => $q->where('name', 'superadmin'))->count();
+            if ($activeSuperadmins <= 1) {
+                return back()->with('error', "Tizimdagi yagona Superadministratorni o'chirib bo'lmaydi.");
+            }
+            if (!$user->hasRole('superadmin')) {
+                return back()->with('error', "Superadministrator hisobini faqat Superadmin o'chira oladi.");
+            }
+        }
+
+        $userName = $targetUser->name;
+        $userEmail = $targetUser->email;
+
+        // Revoke tokens and detach roles
+        $targetUser->tokens()->delete();
+        $targetUser->roles()->detach();
+
+        try {
+            $targetUser->delete();
+        } catch (\Throwable $e) {
+            // If foreign keys prevent hard delete (e.g. historical orders), deactivate user
+            $targetUser->update(['is_active' => false]);
+            return redirect()->route('admin.dashboard', ['tab' => 'users'])->with('warning', "Foydalanuvchi ({$userName}) ning bog'liq ma'lumotlari mavjudligi sababli hisobi to'liq bloklandi va rollardan mahrum qilindi.");
+        }
+
+        AuditService::log('admin.user_deleted', null, ['email' => $userEmail, 'name' => $userName], null, $user);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'users'])->with('success', "Foydalanuvchi ({$userName}) hisobi o'chirildi.");
+    }
+
+    /**
+     * Superadmin / Admin: Update platform settings.
+     */
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(['superadmin', 'admin'])) {
+            abort(403, "Tizim sozlamalarini faqat administrator o'zgartira oladi.");
+        }
+
+        $validated = $request->validate([
+            'site_name' => ['required', 'string', 'max:100'],
+            'site_tagline' => ['nullable', 'string', 'max:255'],
+            'contact_phone' => ['required', 'string', 'max:30'],
+            'contact_email' => ['required', 'email', 'max:100'],
+            'office_address' => ['nullable', 'string', 'max:255'],
+            'default_commission_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'standard_delivery_fee' => ['required', 'numeric', 'min:0'],
+            'free_delivery_threshold' => ['required', 'numeric', 'min:0'],
+            'registration_enabled' => ['required', 'in:0,1'],
+            'maintenance_mode' => ['required', 'in:0,1'],
+        ]);
+
+        foreach ($validated as $key => $value) {
+            PlatformSetting::set($key, (string) $value);
+        }
+
+        AuditService::log('admin.settings_updated', null, null, $validated, $user);
+
+        return redirect()->route('admin.dashboard', ['tab' => 'settings'])->with('success', "Platforma sozlamalari muvaffaqiyatli saqlandi.");
     }
 
     /**

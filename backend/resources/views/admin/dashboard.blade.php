@@ -188,7 +188,7 @@
                             <th class="p-3.5">Komissiya</th>
                             <th class="p-3.5">Reyting</th>
                             <th class="p-3.5">Holati</th>
-                            <th class="p-3.5 text-right whitespace-nowrap">Holat & Amal</th>
+                            <th class="p-3.5 text-right whitespace-nowrap min-w-[240px]">Holat & Amal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -218,29 +218,29 @@
                                     @endif
                                 </td>
                                 <td class="p-3.5 text-right whitespace-nowrap">
-                                    <div class="inline-flex items-center justify-end gap-1.5">
+                                    <div class="inline-flex items-center justify-end gap-2 whitespace-nowrap flex-nowrap">
                                         @if($s->status !== 'active')
-                                            <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline">
+                                            <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline flex-shrink-0">
                                                 @csrf
                                                 <input type="hidden" name="status" value="active">
-                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition inline-flex items-center gap-1" title="Do'konni faollashtirish">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer flex-shrink-0" title="Do'konni faollashtirish">
+                                                    <span>✓</span>
                                                     <span>Faollashtirish</span>
                                                 </button>
                                             </form>
                                         @else
-                                            <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline" onsubmit="return confirm('{{ addslashes($s->name) }} do\'konini to\'xtatmoqchimisiz?')">
+                                            <form action="{{ route('admin.sellers.status', $s->id) }}" method="POST" class="inline flex-shrink-0" onsubmit="return confirm('{{ addslashes($s->name) }} do\'konini to\'xtatmoqchimisiz?')">
                                                 @csrf
                                                 <input type="hidden" name="status" value="suspended">
-                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Do'kon faoliyatini to'xtatish">
-                                                    <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer flex-shrink-0" title="Do'kon faoliyatini to'xtatish">
+                                                    <span>⏸</span>
                                                     <span>To'xtatish</span>
                                                 </button>
                                             </form>
                                         @endif
-                                        <a href="{{ route('seller.show', $s->slug) }}" target="_blank" class="h-7.5 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-semibold text-xs transition inline-flex items-center gap-1" title="Do'kon vitrinasini ochish">
-                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                            <span>Ko'rish</span>
+                                        <a href="{{ route('seller.show', $s->slug) }}" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 flex-shrink-0" title="Do'kon vitrinasini ochish">
+                                            <span>↗</span>
+                                            <span>Do'kon</span>
                                         </a>
                                     </div>
                                 </td>
@@ -272,7 +272,7 @@
                             <th class="p-3.5">Birligi & Qoldiq</th>
                             <th class="p-3.5">Boshlang'ich Narx</th>
                             <th class="p-3.5">Holati</th>
-                            <th class="p-3.5 text-right whitespace-nowrap">Amallar & Moderatsiya</th>
+                            <th class="p-3.5 text-right whitespace-nowrap min-w-[420px]">Amallar & Moderatsiya</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -339,50 +339,51 @@
                                     @endif
                                 </td>
                                 <td class="p-3.5 text-right whitespace-nowrap">
-                                    <div class="inline-flex items-center justify-end gap-1.5">
+                                    <div class="inline-flex items-center justify-end gap-2 whitespace-nowrap flex-nowrap">
                                         {{-- 1. Status Actions (Approve / Reject) --}}
                                         @if($prod->status === 'pending')
-                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline flex-shrink-0">
                                                 @csrf
                                                 <input type="hidden" name="status" value="approved">
-                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition inline-flex items-center gap-1" title="Mahsulotni tasdiqlash">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer flex-shrink-0" title="Mahsulotni tasdiqlash">
+                                                    <span>✓</span>
                                                     <span>Tasdiqlash</span>
                                                 </button>
                                             </form>
-                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline flex-shrink-0">
                                                 @csrf
                                                 <input type="hidden" name="status" value="rejected">
-                                                <button type="submit" class="h-7.5 px-2 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Rad etish">
-                                                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                    <span>Rad</span>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer flex-shrink-0" title="Rad etish">
+                                                    <span>✕</span>
+                                                    <span>Rad etish</span>
                                                 </button>
                                             </form>
                                         @elseif($prod->status === 'rejected')
-                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline flex-shrink-0">
                                                 @csrf
                                                 <input type="hidden" name="status" value="approved">
-                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Qayta tasdiqlash">
-                                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer flex-shrink-0" title="Qayta tasdiqlash">
+                                                    <span>✓</span>
                                                     <span>Tasdiqlash</span>
                                                 </button>
                                             </form>
                                         @else
-                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline" onsubmit="return confirm('&quot;{{ addslashes($prod->name) }}&quot; rad etilsinmi?')">
+                                            <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline flex-shrink-0" onsubmit="return confirm('&quot;{{ addslashes($prod->name) }}&quot; rad etilsinmi?')">
                                                 @csrf
                                                 <input type="hidden" name="status" value="rejected">
-                                                <button type="submit" class="h-7.5 px-2 rounded-lg bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Moderatsiyadan rad etish">
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 font-bold text-xs transition inline-flex items-center gap-1.5 cursor-pointer flex-shrink-0" title="Moderatsiyadan rad etish">
+                                                    <span>✕</span>
                                                     <span>Rad etish</span>
                                                 </button>
                                             </form>
                                         @endif
 
                                         {{-- 2. Visibility Toggle (Ko'rsatish / Yashirish) --}}
-                                        <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline">
+                                        <form action="{{ route('admin.products.status', $prod->id) }}" method="POST" class="inline flex-shrink-0">
                                             @csrf
                                             <input type="hidden" name="is_active" value="{{ $prod->is_active ? 0 : 1 }}">
                                             <button type="submit" 
-                                                    class="h-7.5 px-2.5 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1 {{ $prod->is_active ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900' : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100' }}"
+                                                    class="px-3.5 py-1.5 rounded-xl font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0 {{ $prod->is_active ? 'border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold' }}"
                                                     title="{{ $prod->is_active ? 'Mahsulotni xaridorlardan yashirish' : 'Mahsulotni faollashtirish' }}">
                                                 <span>{{ $prod->is_active ? '👁️ Yashirish' : '👁️‍🗨️ Ko\'rsatish' }}</span>
                                             </button>
@@ -392,20 +393,21 @@
                                         @if($canManagePayouts)
                                             <button type="button" 
                                                     @click="editProduct = (editProduct === {{ $prod->id }} ? null : {{ $prod->id }})"
-                                                    class="h-7.5 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-xs font-semibold transition inline-flex items-center gap-1"
+                                                    class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0"
                                                     title="Mahsulot ma'lumotlarini tahrirlash">
-                                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                <span>✏️</span>
                                                 <span>Tahrirlash</span>
                                             </button>
-                                            <form action="{{ route('admin.products.delete', $prod->id) }}" method="POST" class="inline"
+                                            <form action="{{ route('admin.products.delete', $prod->id) }}" method="POST" class="inline flex-shrink-0"
                                                   onsubmit="return confirm('&quot;{{ addslashes($prod->name) }}&quot; o\'chirilsinmi? Xaridorlar uni boshqa ko\'rmaydi.')">
                                                 @csrf
                                                 @method('DELETE')
                                                 @foreach(request()->only('products_q', 'products_status', 'products_page') as $k => $v)
                                                     <input type="hidden" name="{{ $k }}" value="{{ $v }}">
                                                 @endforeach
-                                                <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Mahsulotni o'chirish">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0" title="Mahsulotni o'chirish">
+                                                    <span>🗑️</span>
+                                                    <span>O'chirish</span>
                                                 </button>
                                             </form>
                                         @endif
@@ -486,9 +488,9 @@
                             <th class="p-3.5">Email</th>
                             <th class="p-3.5">Telefon</th>
                             <th class="p-3.5">Joriy Roli</th>
-                            <th class="p-3.5 whitespace-nowrap">Rol Biriktirish</th>
+                            <th class="p-3.5 whitespace-nowrap min-w-[200px]">Rol Biriktirish</th>
                             <th class="p-3.5">Holati</th>
-                            <th class="p-3.5 text-right whitespace-nowrap">Amallar</th>
+                            <th class="p-3.5 text-right whitespace-nowrap min-w-[380px]">Amallar</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -508,16 +510,16 @@
                                     @endforeach
                                 </td>
                                 <td class="p-3.5 whitespace-nowrap">
-                                    <form action="{{ route('admin.users.role', $u->id) }}" method="POST" class="inline-flex items-center gap-1.5">
+                                    <form action="{{ route('admin.users.role', $u->id) }}" method="POST" class="inline-flex items-center gap-2 flex-nowrap">
                                         @csrf
-                                        <select name="role" class="h-7.5 px-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-900">
+                                        <select name="role" class="h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-800 outline-none focus:border-slate-900 shadow-2xs">
                                             @foreach($roles as $r)
                                                 <option value="{{ $r->name }}" {{ $u->hasRole($r->name) ? 'selected' : '' }}>
                                                     {{ $r->label ?? $r->name }}
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition" title="Rolni yangilash">
+                                        <button type="submit" class="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-xs cursor-pointer flex-shrink-0" title="Rolni yangilash">
                                             Saqlash
                                         </button>
                                     </form>
@@ -534,33 +536,34 @@
                                     @endif
                                 </td>
                                 <td class="p-3.5 text-right whitespace-nowrap">
-                                    <div class="inline-flex items-center justify-end gap-1.5">
+                                    <div class="inline-flex items-center justify-end gap-2 whitespace-nowrap flex-nowrap">
                                         <button type="button" 
                                                 @click="editUserModal = true; editUser = { id: {{ $u->id }}, name: '{{ addslashes($u->name) }}', email: '{{ addslashes($u->email) }}', phone: '{{ addslashes($u->phone ?? '') }}' }"
-                                                class="h-7.5 px-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition inline-flex items-center gap-1"
+                                                class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0"
                                                 title="Tahrirlash">
-                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            <span>✏️</span>
                                             <span>Tahrirlash</span>
                                         </button>
                                         <button type="button" 
                                                 @click="passwordModal = true; targetUser = { id: {{ $u->id }}, name: '{{ addslashes($u->name) }}', email: '{{ addslashes($u->email) }}' }"
-                                                class="h-7.5 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold text-xs transition inline-flex items-center gap-1"
+                                                class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0"
                                                 title="Parolni yangilash">
-                                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                            <span>🔑</span>
                                             <span>Parol</span>
                                         </button>
-                                        <form action="{{ route('admin.users.status', $u->id) }}" method="POST" class="inline">
+                                        <form action="{{ route('admin.users.status', $u->id) }}" method="POST" class="inline flex-shrink-0">
                                             @csrf
-                                            <button type="submit" class="h-7.5 px-2.5 rounded-lg text-xs font-semibold border transition inline-flex items-center gap-1 {{ $u->is_active ? 'bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border-slate-200 hover:border-rose-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 font-bold' }}" title="{{ $u->is_active ? 'Hisobni bloklash' : 'Hisobni faollashtirish' }}">
-                                                <span>{{ $u->is_active ? 'Bloklash' : 'Faollashtirish' }}</span>
+                                            <button type="submit" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0 {{ $u->is_active ? 'bg-slate-100 hover:bg-rose-600 text-slate-800 hover:text-white border border-slate-300 hover:border-rose-600' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}" title="{{ $u->is_active ? 'Hisobni bloklash' : 'Hisobni faollashtirish' }}">
+                                                <span>{{ $u->is_active ? '🚫 Bloklash' : '✓ Faollashtirish' }}</span>
                                             </button>
                                         </form>
                                         @if(Auth::id() !== $u->id)
-                                            <form action="{{ route('admin.users.delete', $u->id) }}" method="POST" class="inline" onsubmit="return confirm('Haqiqatan ham {{ addslashes($u->name) }} hisobini o\'chirmoqchimisiz?')">
+                                            <form action="{{ route('admin.users.delete', $u->id) }}" method="POST" class="inline flex-shrink-0" onsubmit="return confirm('Haqiqatan ham {{ addslashes($u->name) }} hisobini o\'chirmoqchimisiz?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Foydalanuvchini o'chirish">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0" title="Foydalanuvchini o'chirish">
+                                                    <span>🗑️</span>
+                                                    <span>O'chirish</span>
                                                 </button>
                                             </form>
                                         @endif
@@ -595,8 +598,8 @@
                             <th class="p-3.5">Buyurtma & Do'kon</th>
                             <th class="p-3.5">Xaridor & Manzil</th>
                             <th class="p-3.5">Holati</th>
-                            <th class="p-3.5">Biriktirilgan Kuryer</th>
-                            <th class="p-3.5 text-right whitespace-nowrap">Kuzatuv</th>
+                            <th class="p-3.5 whitespace-nowrap min-w-[280px]">Biriktirilgan Kuryer</th>
+                            <th class="p-3.5 text-right whitespace-nowrap min-w-[120px]">Kuzatuv</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -634,9 +637,9 @@
                                     </span>
                                 </td>
                                 <td class="p-3.5 whitespace-nowrap">
-                                    <form action="{{ route('admin.shipments.assign', $sh->id) }}" method="POST" class="inline-flex items-center gap-1.5">
+                                    <form action="{{ route('admin.shipments.assign', $sh->id) }}" method="POST" class="inline-flex items-center gap-2 flex-nowrap">
                                         @csrf
-                                        <select name="courier_id" class="h-7.5 px-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-slate-900">
+                                        <select name="courier_id" class="h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-800 outline-none focus:border-slate-900 shadow-2xs">
                                             <option value="">-- Kuryer tanlang --</option>
                                             @foreach($couriers as $cr)
                                                 <option value="{{ $cr->id }}" {{ $sh->courier_id === $cr->id ? 'selected' : '' }}>
@@ -644,14 +647,15 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <button type="submit" class="h-7.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition whitespace-nowrap">
-                                            Biriktirish
+                                        <button type="submit" class="h-9 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 flex-shrink-0">
+                                            <span>📦</span>
+                                            <span>Biriktirish</span>
                                         </button>
                                     </form>
                                 </td>
                                 <td class="p-3.5 text-right whitespace-nowrap">
-                                    <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="h-7.5 px-2.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-semibold text-xs transition inline-flex items-center gap-1">
-                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <a href="{{ route('tracking', ['trackingNumber' => $sh->tracking_number]) }}" target="_blank" class="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs flex-shrink-0">
+                                        <span>🗺️</span>
                                         <span>Xarita</span>
                                     </a>
                                 </td>
@@ -706,7 +710,7 @@
                             <th class="p-3.5">Sotuvchilar</th>
                             <th class="p-3.5">Jami Summa</th>
                             <th class="p-3.5">Sana</th>
-                            <th class="p-3.5 text-right whitespace-nowrap">Holat & Amal</th>
+                            <th class="p-3.5 text-right whitespace-nowrap min-w-[360px]">Holat & Amal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -746,32 +750,33 @@
                                     @php
                                         $shipment = $order->suborders->flatMap->shipments->first();
                                     @endphp
-                                    <div class="inline-flex items-center justify-end gap-1.5">
-                                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" class="inline-flex items-center">
+                                    <div class="inline-flex items-center justify-end gap-2 whitespace-nowrap flex-nowrap">
+                                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" class="inline-flex items-center flex-shrink-0">
                                             @csrf
-                                            <select name="status" onchange="this.form.submit()" class="h-7.5 px-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-900 cursor-pointer" title="Buyurtma holatini tezkor o'zgartirish">
+                                            <select name="status" onchange="this.form.submit()" class="h-9 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-800 outline-none focus:border-slate-900 cursor-pointer shadow-2xs" title="Buyurtma holatini tezkor o'zgartirish">
                                                 <option value="pending_payment" {{ $order->status === 'pending_payment' ? 'selected' : '' }}>⏳ To'lov</option>
                                                 <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>⚙️ Jarayonda</option>
                                                 <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>✅ Yakunlandi</option>
                                                 <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>❌ Bekor</option>
                                             </select>
                                         </form>
-                                        <a href="{{ route('orders.detail', $order->order_number) }}" target="_blank" class="h-7.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition inline-flex items-center gap-1" title="Buyurtma tafsilotlarini ko'rish">
+                                        <a href="{{ route('orders.detail', $order->order_number) }}" target="_blank" class="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs flex-shrink-0" title="Buyurtma tafsilotlarini ko'rish">
+                                            <span>📄</span>
                                             <span>Batafsil</span>
                                         </a>
                                         @if($shipment)
-                                            <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" target="_blank" class="h-7.5 px-2 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Kuryer harakatini kuzatish">
-                                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            <a href="{{ route('tracking', ['trackingNumber' => $shipment->tracking_number]) }}" target="_blank" class="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs flex-shrink-0" title="Kuryer harakatini kuzatish">
+                                                <span>🗺️</span>
                                                 <span>Xarita</span>
                                             </a>
                                         @endif
                                         @if($canManagePayouts && in_array($order->id, $cancellableOrderIds, true))
-                                            <form action="{{ route('admin.orders.cancel', $order->id) }}" method="POST" class="inline"
+                                            <form action="{{ route('admin.orders.cancel', $order->id) }}" method="POST" class="inline flex-shrink-0"
                                                   onsubmit="const r = prompt('Buyurtma #{{ $order->order_number }} bekor qilish sababini kiriting (omborga qaytariladi):'); if(!r || r.trim().length < 3) { if(r !== null) alert('Bekor qilish sababini to\'liqroq yozing!'); return false; } this.reason.value = r; return true;">
                                                 @csrf
                                                 <input type="hidden" name="reason" value="">
-                                                <button type="submit" class="h-7.5 px-2 rounded-lg bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold text-xs transition inline-flex items-center gap-1" title="Bekor qilish va tovarlarni omborga qaytarish">
-                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                <button type="submit" class="h-9 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0" title="Bekor qilish va tovarlarni omborga qaytarish">
+                                                    <span>❌</span>
                                                     <span>Bekor</span>
                                                 </button>
                                             </form>
@@ -854,15 +859,15 @@
                                     <input type="text" name="notes" maxlength="500" placeholder="Izoh (rad etishda majburiy)"
                                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs">
                                     <div class="flex gap-2 lg:justify-end">
-                                        <button name="decision" value="approve" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold">✓ Tasdiqlash</button>
-                                        <button name="decision" value="reject" class="px-3 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold">✕ Rad etish</button>
+                                        <button name="decision" value="approve" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer">✓ Tasdiqlash</button>
+                                        <button name="decision" value="reject" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 font-bold text-xs shadow-xs cursor-pointer">✕ Rad etish</button>
                                     </div>
                                 </form>
                             @elseif(in_array($refund->status, ['approved', 'goods_returned'], true))
                                 <form method="POST" action="{{ route('admin.refunds.complete', $refund->id) }}"
                                       onsubmit="return confirm('Tovar qaytib keldi va mijozga {{ number_format($refund->amount, 0, '.', ' ') }} UZS qaytarildimi?')">
                                     @csrf
-                                    <button class="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold">💸 Tovar qaytdi, pul qaytarildi</button>
+                                    <button class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs cursor-pointer">💸 Tovar qaytdi, pul qaytarildi</button>
                                 </form>
                             @else
                                 <span class="text-slate-400">Yakunlangan</span>
@@ -949,8 +954,8 @@
                                         <div class="flex gap-2 lg:justify-end">
                                             <button name="decision" value="paid"
                                                     onclick="return confirm('{{ number_format($payout->amount, 0, '.', ' ') }} UZS sotuvchiga haqiqatan o\'tkazildimi? Bu amalni ortga qaytarib bo\'lmaydi.')"
-                                                    class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold">✓ To'landi</button>
-                                            <button name="decision" value="reject" class="px-3 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold">✕ Rad etish</button>
+                                                    class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer">✓ To'landi</button>
+                                            <button name="decision" value="reject" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 font-bold text-xs shadow-xs cursor-pointer">✕ Rad etish</button>
                                         </div>
                                     </form>
                                 @else
@@ -1264,7 +1269,7 @@
                                 <th class="p-3.5 text-center">Mahsulotlar</th>
                                 <th class="p-3.5 text-center">Tartib</th>
                                 <th class="p-3.5 text-center">Holati</th>
-                                <th class="p-3.5 text-right whitespace-nowrap">Amallar</th>
+                                <th class="p-3.5 text-right whitespace-nowrap min-w-[260px]">Amallar</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -1283,18 +1288,19 @@
                                         @endif
                                     </td>
                                     <td class="p-3.5 text-right whitespace-nowrap">
-                                        <div class="inline-flex items-center justify-end gap-1.5">
-                                            <form action="{{ route('admin.categories.status', $cat->id) }}" method="POST" class="inline">
+                                        <div class="inline-flex items-center justify-end gap-2 whitespace-nowrap flex-nowrap">
+                                            <form action="{{ route('admin.categories.status', $cat->id) }}" method="POST" class="inline flex-shrink-0">
                                                 @csrf
-                                                <button type="submit" class="h-7.5 px-2.5 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1 {{ $cat->is_active ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold' }}">
-                                                    <span>{{ $cat->is_active ? 'Nofaol qilish' : 'Faollashtirish' }}</span>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0 {{ $cat->is_active ? 'border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}">
+                                                    <span>{{ $cat->is_active ? '⏸ Nofaol qilish' : '✓ Faollashtirish' }}</span>
                                                 </button>
                                             </form>
-                                            <form action="{{ route('admin.categories.delete', $cat->id) }}" method="POST" class="inline" onsubmit="return confirm('Kategoriyani o\'chirishni tasdiqlaysizmi?');">
+                                            <form action="{{ route('admin.categories.delete', $cat->id) }}" method="POST" class="inline flex-shrink-0" onsubmit="return confirm('Kategoriyani o\'chirishni tasdiqlaysizmi?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Kategoriyani o'chirish">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0" title="Kategoriyani o'chirish">
+                                                    <span>🗑️</span>
+                                                    <span>O'chirish</span>
                                                 </button>
                                             </form>
                                         </div>
@@ -1373,7 +1379,7 @@
                                     <th class="p-3.5 text-center">Ishlatildi / Limit</th>
                                     <th class="p-3.5">Amal Qilish Muddati</th>
                                     <th class="p-3.5 text-center">Holati</th>
-                                    <th class="p-3.5 text-right whitespace-nowrap">Amallar</th>
+                                    <th class="p-3.5 text-right whitespace-nowrap min-w-[260px]">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -1404,18 +1410,19 @@
                                             @endif
                                         </td>
                                         <td class="p-3.5 text-right whitespace-nowrap">
-                                            <div class="inline-flex items-center justify-end gap-1.5">
-                                                <form action="{{ route('admin.promocodes.toggle', $pr->id) }}" method="POST" class="inline">
+                                            <div class="inline-flex items-center justify-end gap-2 whitespace-nowrap flex-nowrap">
+                                                <form action="{{ route('admin.promocodes.toggle', $pr->id) }}" method="POST" class="inline flex-shrink-0">
                                                     @csrf
-                                                    <button type="submit" class="h-7.5 px-2.5 rounded-lg border text-xs font-semibold transition inline-flex items-center gap-1 {{ $pr->is_active ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold' }}">
-                                                        <span>{{ $pr->is_active ? 'To\'xtatish' : 'Faollashtirish' }}</span>
+                                                    <button type="submit" class="px-3.5 py-1.5 rounded-xl font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0 {{ $pr->is_active ? 'border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}">
+                                                        <span>{{ $pr->is_active ? '⏸ To\'xtatish' : '✓ Faollashtirish' }}</span>
                                                     </button>
                                                 </form>
-                                                <form action="{{ route('admin.promocodes.delete', $pr->id) }}" method="POST" class="inline" onsubmit="return confirm('Promokodni o\'chirishni tasdiqlaysizmi?');">
+                                                <form action="{{ route('admin.promocodes.delete', $pr->id) }}" method="POST" class="inline flex-shrink-0" onsubmit="return confirm('Promokodni o\'chirishni tasdiqlaysizmi?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="h-7.5 w-7.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer" title="Promokodni o'chirish">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                    <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0" title="Promokodni o'chirish">
+                                                        <span>🗑️</span>
+                                                        <span>O'chirish</span>
                                                     </button>
                                                 </form>
                                             </div>
@@ -1480,18 +1487,18 @@
                             <div class="p-4 space-y-2">
                                 <h4 class="font-bold text-sm text-slate-900">{{ $bn->title }}</h4>
                                 <p class="text-xs font-mono text-slate-500 truncate">{{ $bn->link_url }}</p>
-                                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                                     <form action="{{ route('admin.banners.status', $bn->id) }}" method="POST" class="inline">
                                         @csrf
-                                        <button type="submit" class="h-7 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">
-                                            {{ $bn->is_active ? 'Nofaol qilish' : 'Faollashtirish' }}
+                                        <button type="submit" class="px-3.5 py-1.5 rounded-xl font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer {{ $bn->is_active ? 'border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}">
+                                            <span>{{ $bn->is_active ? '⏸ Nofaol qilish' : '✓ Faollashtirish' }}</span>
                                         </button>
                                     </form>
                                     <form action="{{ route('admin.banners.delete', $bn->id) }}" method="POST" class="inline" onsubmit="return confirm('Bannerni o\'chirmoqchimisiz?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="h-7 px-2 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
+                                            <span>🗑️</span>
                                             <span>O'chirish</span>
                                         </button>
                                     </form>
